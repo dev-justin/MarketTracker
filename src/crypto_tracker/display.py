@@ -52,7 +52,7 @@ class Display:
 
         # Add chart settings
         self.chart_rect = pygame.Rect(50, 180, 700, 250)  # x, y, width, height
-        self.chart_color = (100, 149, 237)  # Cornflower blue
+        self.chart_color = self.GREEN  # Changed to green
         self.chart_data = []
         self.max_data_points = 168  # 7 days worth of hourly points
 
@@ -60,9 +60,8 @@ class Display:
         if not prices:
             return
 
-        # Draw chart background
-        pygame.draw.rect(self.screen, (20, 20, 20), self.chart_rect)
-        pygame.draw.rect(self.screen, (40, 40, 40), self.chart_rect, 1)
+        # Draw chart background (just black, no grid)
+        pygame.draw.rect(self.screen, self.BLACK, self.chart_rect)
 
         # Calculate min and max for scaling
         min_price = min(prices)
@@ -71,17 +70,9 @@ class Display:
 
         # Handle case where all prices are the same
         if price_range == 0:
-            price_range = max_price * 0.1  # Use 10% of the price as range
+            price_range = max_price * 0.1
             min_price = max_price - price_range
             max_price = max_price + price_range
-
-        # Draw price labels
-        label_font = pygame.font.Font(None, 24)
-        for i in range(5):
-            price = min_price + (price_range * (i / 4))
-            y = self.chart_rect.bottom - (i * self.chart_rect.height / 4)
-            label = label_font.render(f"${price:,.2f}", True, self.WHITE)
-            self.screen.blit(label, (self.chart_rect.left - 45, y - 10))
 
         # Draw the chart line
         points = []
@@ -93,15 +84,6 @@ class Display:
         if len(points) > 1:
             pygame.draw.lines(self.screen, self.chart_color, False, points, 2)
 
-        # Draw time labels
-        time_font = pygame.font.Font(None, 20)
-        for i in range(4):
-            x = self.chart_rect.left + (i * self.chart_rect.width / 3)
-            days_ago = int((3 - i) * 7/3)  # Split 7 days into 4 labels
-            time_label = f"{days_ago}d" if days_ago > 0 else "now"
-            label = time_font.render(time_label, True, self.WHITE)
-            self.screen.blit(label, (x - 10, self.chart_rect.bottom + 10))
-
     def update(self, prices):
         # Clear the screen
         self.screen.fill(self.BLACK)
@@ -110,16 +92,16 @@ class Display:
         if prices:
             symbol, price = next(iter(prices.items()))
             
-            # Draw symbol
-            symbol_font = pygame.font.Font(None, 72)
+            # Draw symbol (larger and left-aligned)
+            symbol_font = pygame.font.Font(None, 96)  # Increased size
             symbol_text = symbol_font.render(symbol, True, self.WHITE)
-            symbol_rect = symbol_text.get_rect(centerx=self.width//2, y=40)
+            symbol_rect = symbol_text.get_rect(left=50, y=40)  # Left aligned
             self.screen.blit(symbol_text, symbol_rect)
             
-            # Draw price
-            price_font = pygame.font.Font(None, 96)
+            # Draw price (larger and left-aligned)
+            price_font = pygame.font.Font(None, 120)  # Increased size
             price_text = price_font.render(f"${price:,.2f}", True, self.GREEN)
-            price_rect = price_text.get_rect(centerx=self.width//2, y=100)
+            price_rect = price_text.get_rect(left=50, y=100)  # Left aligned
             self.screen.blit(price_text, price_rect)
             
             # Get historical prices and draw the chart
