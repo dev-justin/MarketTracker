@@ -2,15 +2,12 @@ from typing import Dict, Optional, List
 import pygame
 import os
 from datetime import datetime
-import requests
 import pytz
 from ..config.settings import AppConfig
 from ..constants import EventTypes, ScreenNames
 from ..utils.logger import get_logger
 from .base import Screen
 import time
-import urllib.request
-from io import BytesIO
 
 logger = get_logger(__name__)
 
@@ -40,10 +37,9 @@ class DashboardScreen(Screen):
             logger.warning("Could not detect system timezone, using default: America/Vancouver")
         
         # Display settings
-        self.header_font_size = 48
+        self.time_font_size = 96  # Larger font for time
+        self.date_font_size = 48  # Medium font for date
         self.ticker_font_size = 72
-        self.date_font_size = 36
-        self.news_font_size = 24
         self.padding = 20
         
         # Touch handling
@@ -57,54 +53,7 @@ class DashboardScreen(Screen):
         self.price_changes: Dict[str, float] = {}
         self.ticker_items: List[Dict] = []
         
-        # News data
-        self.news_items: List[Dict] = []
-        self.news_images: Dict[str, pygame.Surface] = {}
-        self.last_news_update: float = 0
-        self.news_update_interval: float = 300  # Update every 5 minutes
-        
         logger.info("DashboardScreen initialized")
-    
-    def _update_news(self) -> None:
-        """Fetch latest crypto news from CryptoCompare."""
-        current_time = time.time()
-        if (current_time - self.last_news_update) >= self.news_update_interval:
-            try:
-                url = "https://min-api.cryptocompare.com/data/v2/news/?lang=EN&sortOrder=popular"
-                response = requests.get(url)
-                data = response.json()
-                
-                if 'Data' in data:
-                    self.news_items = data['Data'][:3]  # Get top 3 news items
-                    logger.info(f"Fetched {len(self.news_items)} news items")
-                    
-                    # Load images for each news item
-                    headers = {
-                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-                    }
-                    
-                    for item in self.news_items:
-                        if item['imageurl'] not in self.news_images:
-                            try:
-                                # Use requests instead of urllib
-                                image_response = requests.get(item['imageurl'], headers=headers)
-                                image_response.raise_for_status()  # Raise an error for bad status codes
-                                
-                                image_data = BytesIO(image_response.content)
-                                image = pygame.image.load(image_data)
-                                # Scale image to reasonable size (e.g., 200x120)
-                                image = pygame.transform.scale(image, (200, 120))
-                                self.news_images[item['imageurl']] = image
-                                logger.info(f"Loaded image for news item: {item['title'][:30]}...")
-                            except Exception as e:
-                                logger.error(f"Error loading news image: {str(e)}")
-                    
-                    self.last_news_update = current_time
-                    logger.info("News data updated successfully")
-                else:
-                    logger.error(f"Unexpected API response structure: {data.keys()}")
-            except Exception as e:
-                logger.error(f"Error updating news: {str(e)}")
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """
@@ -140,7 +89,7 @@ class DashboardScreen(Screen):
     
     def update(self, prices: Optional[Dict[str, float]] = None) -> None:
         """
-        Update the screen with new price and news data.
+        Update the screen with new price data.
         
         Args:
             prices: Dictionary of current prices
@@ -161,9 +110,6 @@ class DashboardScreen(Screen):
                         'change': f"{change_percent:+.2f}%" if change_percent >= 0 else f"{change_percent:.2f}%",
                         'color': AppConfig.GREEN if change_percent >= 0 else AppConfig.RED
                     })
-        
-        # Update news data
-        self._update_news()
     
     def draw(self, display: pygame.Surface) -> None:
         """
@@ -177,20 +123,20 @@ class DashboardScreen(Screen):
         if not self.ticker_items:
             return
         
-        # Draw current date
-        current_date = datetime.now(self.local_tz).strftime("%A, %B %d, %Y")
-        date_text = self._create_text_surface(current_date, self.date_font_size, AppConfig.WHITE)
-        date_rect = date_text.get_rect(centerx=self.width//2, top=self.padding)
-        display.blit(date_text, date_rect)
-        
-        # Draw current time (remove leading zero from hour)
+        # Draw current time in large font (remove leading zero from hour)
         current_time = datetime.now(self.local_tz).strftime("%I:%M %p").lstrip("0")
-        time_text = self._create_text_surface(current_time, self.date_font_size, AppConfig.WHITE)
-        time_rect = time_text.get_rect(centerx=self.width//2, top=date_rect.bottom + 10)
+        time_text = self._create_text_surface(current_time, self.time_font_size, AppConfig.WHITE)
+        time_rect = time_text.get_rect(centerx=self.width//2, top=self.padding)
         display.blit(time_text, time_rect)
         
+        # Draw current date below time
+        current_date = datetime.now(self.local_tz).strftime("%A, %B %d, %Y")
+        date_text = self._create_text_surface(current_date, self.date_font_size, AppConfig.WHITE)
+        date_rect = date_text.get_rect(centerx=self.width//2, top=time_rect.bottom + 10)
+        display.blit(date_text, date_rect)
+        
         # Draw dividing line
-        line_y = time_rect.bottom + self.padding
+        line_y = date_rect.bottom + self.padding
         pygame.draw.line(display, AppConfig.CELL_BORDER_COLOR, 
                         (self.padding, line_y), (self.width - self.padding, line_y), 2)
         
@@ -224,31 +170,4 @@ class DashboardScreen(Screen):
             # Draw texts
             display.blit(symbol_text, symbol_rect)
             display.blit(price_text, price_rect)
-            display.blit(change_text, change_rect)
-        
-        # Draw news section
-        news_top = grid_top + ((len(self.ticker_items) + 1) // 2) * row_height + self.padding
-        news_left = self.padding
-        
-        # Draw news header
-        news_header = self._create_text_surface("Latest Crypto News", self.header_font_size, AppConfig.WHITE)
-        header_rect = news_header.get_rect(left=news_left, top=news_top)
-        display.blit(news_header, header_rect)
-        
-        # Draw news items
-        for i, news in enumerate(self.news_items):
-            news_y = header_rect.bottom + (i * 140) + self.padding
-            
-            # Draw news image if available
-            if news['imageurl'] in self.news_images:
-                image = self.news_images[news['imageurl']]
-                display.blit(image, (news_left, news_y))
-                text_left = news_left + 220  # Image width + padding
-            else:
-                text_left = news_left
-            
-            # Draw news title (wrap text if needed)
-            title = news['title']
-            title_surface = self._create_text_surface(title, self.news_font_size, AppConfig.WHITE)
-            title_rect = title_surface.get_rect(left=text_left, top=news_y)
-            display.blit(title_surface, title_rect) 
+            display.blit(change_text, change_rect) 
