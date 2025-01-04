@@ -222,7 +222,7 @@ class DashboardScreen(Screen):
         
         current_time = datetime.now(self.local_tz).strftime("%I:%M %p").lstrip("0")
         time_text = self._create_time_text(current_time, AppConfig.WHITE)
-        time_rect = time_text.get_rect(centerx=self.width//2, top=date_rect.bottom + 10)
+        time_rect = time_text.get_rect(centerx=self.width//2, top=date_rect.bottom + 5)
         display.blit(time_text, time_rect)
         
         # Draw tickers in a grid (2 columns)
