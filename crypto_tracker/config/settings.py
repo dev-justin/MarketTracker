@@ -36,6 +36,11 @@ class AppConfig:
     # Touch settings
     SWIPE_THRESHOLD = 0.15
     DOUBLE_TAP_THRESHOLD = 0.3
+    TOUCH_MARGIN = 10
+    
+    # Chart settings
+    CHART_HEIGHT = 250
+    CHART_Y_POSITION = 220
     
     # Grid settings
     GRID_ROWS = 4
