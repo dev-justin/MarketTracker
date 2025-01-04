@@ -242,7 +242,9 @@ class Display:
             historical_prices = self.crypto_api.get_historical_prices(symbol)
             if historical_prices:
                 self._draw_chart(historical_prices)
-                if self.touch_active and self.touch_price and self.touch_date:
+                # Add check for all required touch data
+                if all([self.touch_active, self.touch_x is not None, 
+                       self.touch_price is not None, self.touch_date is not None]):
                     self._draw_touch_indicator(self.touch_x, self.touch_price, self.touch_date)
 
         pygame.display.flip()
