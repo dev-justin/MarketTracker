@@ -55,8 +55,8 @@ class Display:
         self.chart_data = []
         self.max_data_points = 168  # 7 days worth of hourly points
 
-    def _draw_chart(self, prices):
-        if not prices:
+    def _draw_chart(self, price):
+        if price is None:
             return
 
         # Draw chart background
@@ -64,7 +64,7 @@ class Display:
         pygame.draw.rect(self.screen, (40, 40, 40), self.chart_rect, 1)
 
         # Add new price point
-        self.chart_data.append(prices)
+        self.chart_data.append(price)
         if len(self.chart_data) > self.max_data_points:
             self.chart_data.pop(0)
 
@@ -76,6 +76,12 @@ class Display:
         max_price = max(self.chart_data)
         price_range = max_price - min_price
 
+        # Handle case where all prices are the same
+        if price_range == 0:
+            price_range = max_price * 0.1  # Use 10% of the price as range
+            min_price = max_price - price_range
+            max_price = max_price + price_range
+
         # Draw price labels
         label_font = pygame.font.Font(None, 24)
         for i in range(5):
@@ -86,13 +92,22 @@ class Display:
 
         # Draw the chart line
         points = []
-        for i, price in enumerate(self.chart_data):
+        for i, point_price in enumerate(self.chart_data):
             x = self.chart_rect.left + (i * self.chart_rect.width / (self.max_data_points - 1))
-            y = self.chart_rect.bottom - ((price - min_price) * self.chart_rect.height / price_range)
+            y = self.chart_rect.bottom - ((point_price - min_price) * self.chart_rect.height / price_range)
             points.append((x, y))
 
         if len(points) > 1:
             pygame.draw.lines(self.screen, self.chart_color, False, points, 2)
+
+        # Draw time labels (optional)
+        time_font = pygame.font.Font(None, 20)
+        for i in range(4):
+            x = self.chart_rect.left + (i * self.chart_rect.width / 3)
+            days_ago = int((3 - i) * 7/3)  # Split 7 days into 4 labels
+            time_label = f"{days_ago}d" if days_ago > 0 else "now"
+            label = time_font.render(time_label, True, self.WHITE)
+            self.screen.blit(label, (x - 10, self.chart_rect.bottom + 10))
 
     def update(self, prices):
         # Clear the screen

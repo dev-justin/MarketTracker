@@ -14,7 +14,8 @@ def main():
             prices = crypto_api.get_crypto_prices(['BTC'])
             
             # Update display
-            display.update(prices)
+            if prices:  # Only update if we got valid prices
+                display.update(prices)
             
             # Wait for 5 seconds before next update
             time.sleep(5)
