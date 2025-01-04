@@ -296,16 +296,13 @@ class DashboardScreen(Screen):
             # Position price at the right
             price_rect = price_text.get_rect(
                 right=card_rect.right - 15,
-                centery=card_rect.centery - 10
+                centery=card_rect.centery - total_height//4  # Align with name
             )
-            
-            # Draw arrow and change percentage
-            is_positive = item['color'] == AppConfig.GREEN
             
             # Position change percentage right-aligned with price
             change_rect = change_text.get_rect(
                 right=price_rect.right,
-                centery=price_rect.centery + 25
+                top=price_rect.bottom + 5  # Same 5px gap as name/symbol
             )
             
             # Position arrow to the left of change text
