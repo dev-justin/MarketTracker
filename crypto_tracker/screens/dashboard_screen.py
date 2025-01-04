@@ -45,25 +45,6 @@ class DashboardScreen(Screen):
         self.rotation_speed = 5  # Degrees per frame
         self.flip_coins = set()  # Set of coins currently flipping
         
-        # Load custom fonts
-        try:
-            # Create fonts using settings
-            self.date_font = pygame.font.Font(AppConfig.FONT_PATHS['light'], AppConfig.FONT_SIZES['date'])
-            self.time_font = pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['time'])
-            self.coin_font = pygame.font.Font(AppConfig.FONT_PATHS['semibold'], AppConfig.FONT_SIZES['coin_name'])
-            self.price_font = pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['price'])
-            self.label_font = pygame.font.Font(AppConfig.FONT_PATHS['regular'], AppConfig.FONT_SIZES['label'])
-            
-            logger.info("Custom fonts loaded successfully")
-        except Exception as e:
-            logger.warning(f"Failed to load custom fonts, falling back to default: {e}")
-            # Fallback to default fonts
-            self.date_font = pygame.font.Font(None, AppConfig.FONT_SIZES['date'])
-            self.time_font = pygame.font.Font(None, AppConfig.FONT_SIZES['time'])
-            self.coin_font = pygame.font.Font(None, AppConfig.FONT_SIZES['coin_name'])
-            self.price_font = pygame.font.Font(None, AppConfig.FONT_SIZES['price'])
-            self.label_font = pygame.font.Font(None, AppConfig.FONT_SIZES['label'])
-        
         # Background gradient colors
         self.gradient_top = (13, 17, 23)     # Dark navy
         self.gradient_bottom = (22, 27, 34)  # Slightly lighter navy
@@ -175,7 +156,7 @@ class DashboardScreen(Screen):
     
     def _create_date_text(self, text: str, color: tuple) -> pygame.Surface:
         """Create text surface using the non-bold date font."""
-        return self.date_font.render(text, True, color)
+        return self._create_text(text, 'light-md', color)
     
     def _create_gradient_background(self, surface: pygame.Surface) -> None:
         """Create a vertical gradient background."""
@@ -193,19 +174,19 @@ class DashboardScreen(Screen):
     
     def _create_price_text(self, text: str, color: tuple) -> pygame.Surface:
         """Create text surface using the price font."""
-        return self.price_font.render(text, True, color)
+        return self._create_text(text, 'bold-lg', color)
     
     def _create_coin_text(self, text: str, color: tuple) -> pygame.Surface:
         """Create text surface using the coin font."""
-        return self.coin_font.render(text, True, color)
+        return self._create_text(text, 'bold-md', color)
     
     def _create_label_text(self, text: str, color: tuple) -> pygame.Surface:
         """Create text surface using the label font."""
-        return self.label_font.render(text, True, color)
+        return self._create_text(text, 'xs', color)
     
     def _create_time_text(self, text: str, color: tuple) -> pygame.Surface:
         """Create text surface using the time font."""
-        return self.time_font.render(text, True, color)
+        return self._create_text(text, 'title-lg', color)
     
     def draw(self, display: pygame.Surface) -> None:
         """Draw the screen contents."""
