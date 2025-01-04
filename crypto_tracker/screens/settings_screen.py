@@ -41,38 +41,48 @@ class SettingsScreen(Screen):
             button_height
         )
         
-        # Long press detection
-        self.press_start_time = 0
-        self.long_press_duration = 0.5  # seconds
-        self.pressed_cell_index = None
-        self.showing_delete_confirm = False
+        # Action popup settings
+        self.showing_action_popup = False
+        self.selected_symbol_index = None
         
-        # Delete confirmation buttons
-        confirm_width = 120
-        confirm_height = 50
+        # Action buttons
+        action_width = 200
+        action_height = 50
         padding = 20
-        total_width = (confirm_width * 2) + (padding * 3)
-        start_x = (self.width - total_width) // 2
+        popup_width = action_width + (padding * 2)
+        popup_height = (action_height * 3) + (padding * 4)
         
-        self.delete_confirm_rect = pygame.Rect(
-            start_x,
-            self.height // 2 - confirm_height - padding,
-            confirm_width * 2 + padding,
-            confirm_height * 2 + padding
+        # Popup background
+        self.action_popup_rect = pygame.Rect(
+            (self.width - popup_width) // 2,
+            (self.height - popup_height) // 2,
+            popup_width,
+            popup_height
         )
         
-        self.confirm_delete_rect = pygame.Rect(
-            start_x + padding,
-            self.height // 2 - confirm_height // 2,
-            confirm_width,
-            confirm_height
+        # Action buttons
+        button_x = (self.width - action_width) // 2
+        button_y = self.action_popup_rect.top + padding
+        
+        self.edit_button_rect = pygame.Rect(
+            button_x,
+            button_y,
+            action_width,
+            action_height
         )
         
-        self.cancel_delete_rect = pygame.Rect(
-            start_x + confirm_width + padding * 2,
-            self.height // 2 - confirm_height // 2,
-            confirm_width,
-            confirm_height
+        self.delete_button_rect = pygame.Rect(
+            button_x,
+            button_y + action_height + padding,
+            action_width,
+            action_height
+        )
+        
+        self.cancel_button_rect = pygame.Rect(
+            button_x,
+            button_y + (action_height + padding) * 2,
+            action_width,
+            action_height
         )
 
     def _create_cell_rects(self):
@@ -99,17 +109,18 @@ class SettingsScreen(Screen):
         y = int(event.y * self.height)
 
         if event.type == pygame.FINGERDOWN:
-            if self.showing_delete_confirm:
-                # Handle delete confirmation
-                if self.confirm_delete_rect.collidepoint(x, y):
-                    symbol = self.ticker_screen.symbols[self.pressed_cell_index]
+            if self.showing_action_popup:
+                # Handle action buttons
+                if self.edit_button_rect.collidepoint(x, y):
+                    # TODO: Implement edit functionality
+                    self.showing_action_popup = False
+                elif self.delete_button_rect.collidepoint(x, y):
+                    symbol = self.ticker_screen.symbols[self.selected_symbol_index]
                     if self.crypto_api.remove_ticker(symbol):
                         self.ticker_screen.symbols = self.crypto_api.get_tracked_symbols()
-                    self.showing_delete_confirm = False
-                    self.pressed_cell_index = None
-                elif self.cancel_delete_rect.collidepoint(x, y) or not self.delete_confirm_rect.collidepoint(x, y):
-                    self.showing_delete_confirm = False
-                    self.pressed_cell_index = None
+                    self.showing_action_popup = False
+                elif self.cancel_button_rect.collidepoint(x, y) or not self.action_popup_rect.collidepoint(x, y):
+                    self.showing_action_popup = False
                 return
             
             # Check for back button press
@@ -121,21 +132,13 @@ class SettingsScreen(Screen):
             for i, rect in enumerate(self.cell_rects):
                 if rect.collidepoint(x, y):
                     if i < len(self.ticker_screen.symbols):
-                        # Start long press detection for existing symbol
-                        self.press_start_time = time.time()
-                        self.pressed_cell_index = i
+                        # Show action popup for existing symbol
+                        self.selected_symbol_index = i
+                        self.showing_action_popup = True
                     else:
                         # Add new symbol
                         self.manager.switch_to('keyboard')
                     break
-                    
-        elif event.type == pygame.FINGERUP:
-            # Check if it was a long press
-            if self.pressed_cell_index is not None:
-                press_duration = time.time() - self.press_start_time
-                if press_duration >= self.long_press_duration:
-                    self.showing_delete_confirm = True
-                self.press_start_time = 0
 
     def _draw_plus_icon(self, cell_rect):
         # Calculate plus dimensions
@@ -190,11 +193,6 @@ class SettingsScreen(Screen):
                 symbol_text = symbol_font.render(symbol, True, self.manager.WHITE)
                 symbol_rect = symbol_text.get_rect(center=cell_rect.center)
                 self.screen.blit(symbol_text, symbol_rect)
-                
-                # Show visual feedback for long press
-                if i == self.pressed_cell_index and not self.showing_delete_confirm:
-                    if time.time() - self.press_start_time >= self.long_press_duration:
-                        pygame.draw.rect(self.screen, (255, 0, 0, 128), cell_rect, 2, border_radius=10)
             else:
                 # Draw plus icon for empty cells
                 self._draw_plus_icon(cell_rect)
@@ -206,33 +204,39 @@ class SettingsScreen(Screen):
         back_rect = back_text.get_rect(center=self.back_button.center)
         self.screen.blit(back_text, back_rect)
         
-        # Draw delete confirmation overlay
-        if self.showing_delete_confirm:
+        # Draw action popup
+        if self.showing_action_popup:
             # Draw semi-transparent background
             overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
             overlay.fill((0, 0, 0, 200))
             self.screen.blit(overlay, (0, 0))
             
-            # Draw confirmation dialog background
-            pygame.draw.rect(self.screen, (40, 40, 40), self.delete_confirm_rect, border_radius=15)
-            pygame.draw.rect(self.screen, (60, 60, 60), self.delete_confirm_rect, 1, border_radius=15)
+            # Draw popup background
+            pygame.draw.rect(self.screen, (40, 40, 40), self.action_popup_rect, border_radius=15)
+            pygame.draw.rect(self.screen, (60, 60, 60), self.action_popup_rect, 1, border_radius=15)
             
-            # Draw message
-            symbol = self.ticker_screen.symbols[self.pressed_cell_index]
-            message_font = pygame.font.Font(None, 36)
-            message_text = message_font.render(f"Delete {symbol}?", True, self.manager.WHITE)
-            message_rect = message_text.get_rect(centerx=self.width//2, bottom=self.height//2 - 10)
-            self.screen.blit(message_text, message_rect)
+            # Draw symbol name
+            symbol = self.ticker_screen.symbols[self.selected_symbol_index]
+            symbol_font = pygame.font.Font(None, 36)
+            symbol_text = symbol_font.render(symbol, True, self.manager.WHITE)
+            symbol_rect = symbol_text.get_rect(centerx=self.width//2, top=self.action_popup_rect.top + 10)
+            self.screen.blit(symbol_text, symbol_rect)
             
-            # Draw confirm button
-            pygame.draw.rect(self.screen, (180, 0, 0), self.confirm_delete_rect, border_radius=10)
-            confirm_text = pygame.font.Font(None, 36).render("Delete", True, self.manager.WHITE)
-            confirm_rect = confirm_text.get_rect(center=self.confirm_delete_rect.center)
-            self.screen.blit(confirm_text, confirm_rect)
+            # Draw edit button
+            pygame.draw.rect(self.screen, (60, 60, 60), self.edit_button_rect, border_radius=10)
+            edit_text = pygame.font.Font(None, 36).render("Edit", True, self.manager.WHITE)
+            edit_rect = edit_text.get_rect(center=self.edit_button_rect.center)
+            self.screen.blit(edit_text, edit_rect)
+            
+            # Draw delete button
+            pygame.draw.rect(self.screen, (180, 0, 0), self.delete_button_rect, border_radius=10)
+            delete_text = pygame.font.Font(None, 36).render("Delete", True, self.manager.WHITE)
+            delete_rect = delete_text.get_rect(center=self.delete_button_rect.center)
+            self.screen.blit(delete_text, delete_rect)
             
             # Draw cancel button
-            pygame.draw.rect(self.screen, self.cell_bg_color, self.cancel_delete_rect, border_radius=10)
-            pygame.draw.rect(self.screen, self.cell_border_color, self.cancel_delete_rect, 1, border_radius=10)
+            pygame.draw.rect(self.screen, self.cell_bg_color, self.cancel_button_rect, border_radius=10)
+            pygame.draw.rect(self.screen, self.cell_border_color, self.cancel_button_rect, 1, border_radius=10)
             cancel_text = pygame.font.Font(None, 36).render("Cancel", True, self.manager.WHITE)
-            cancel_rect = cancel_text.get_rect(center=self.cancel_delete_rect.center)
+            cancel_rect = cancel_text.get_rect(center=self.cancel_button_rect.center)
             self.screen.blit(cancel_text, cancel_rect) 
