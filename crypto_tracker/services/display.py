@@ -44,6 +44,9 @@ class Display:
         # Get the ticker screen instance to pass to settings
         ticker_screen = self.screen_manager.screens['ticker']
         self.screen_manager.add_screen('settings', SettingsScreen, ticker_screen)
+        
+        # Set initial screen
+        self.screen_manager.switch_to('ticker')
 
     def handle_event(self, event):
         self.screen_manager.handle_event(event)

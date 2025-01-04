@@ -1,4 +1,5 @@
 import pygame
+import time
 from ..services.screen_manager import Screen
 
 class SettingsScreen(Screen):
