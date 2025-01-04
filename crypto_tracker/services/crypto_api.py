@@ -155,3 +155,19 @@ class CryptoAPI:
     def get_historical_prices(self, symbol):
         """Get historical price data for a symbol"""
         return self.historical_prices.get(symbol, []) 
+
+    def get_coin_name(self, symbol: str) -> str:
+        """Get the full name of a coin from its symbol."""
+        coin_names = {
+            'BTC': 'Bitcoin',
+            'ETH': 'Ethereum',
+            'SOL': 'Solana',
+            'DOGE': 'Dogecoin',
+            'XRP': 'Ripple',
+            'ADA': 'Cardano',
+            'DOT': 'Polkadot',
+            'MATIC': 'Polygon',
+            'LINK': 'Chainlink',
+            'AVAX': 'Avalanche'
+        }
+        return coin_names.get(symbol, symbol) 
