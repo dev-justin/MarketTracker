@@ -19,9 +19,10 @@ def main():
                 elif event.type in (1792, 1793, 1794):  # Touch events
                     display.handle_event(event)
             
-            # Try to get new prices
+            # Try to get new prices for all tracked symbols
             try:
-                new_prices = crypto_api.get_crypto_prices(['BTC', 'ETH'])
+                tracked_symbols = crypto_api.get_tracked_symbols()
+                new_prices = crypto_api.get_crypto_prices(tracked_symbols)
                 if new_prices:  # Only update if we got valid prices
                     prices = new_prices
             except Exception as e:
