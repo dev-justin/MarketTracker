@@ -16,13 +16,12 @@ class Display:
         # Add symbol management
         self.symbols = ['BTC', 'ETH']
         self.current_symbol_index = 0
-        self.swipe_start_x = None
-        self.swipe_start_time = None
-        self.swipe_threshold = 30  # Even more sensitive
-        self.min_swipe_speed = 0.1  # Lower speed requirement
         
-        # Define swipe area (top portion of screen)
-        self.swipe_area = pygame.Rect(0, 0, self.width, 180)  # Area above chart
+        # Double tap detection
+        self.last_tap_time = 0
+        self.double_tap_threshold = 0.3  # seconds between taps
+        self.tap_area_left = pygame.Rect(0, 0, self.width // 2, 180)  # Left half
+        self.tap_area_right = pygame.Rect(self.width // 2, 0, self.width // 2, 180)  # Right half
 
     def _setup_runtime_dir(self):
         if os.geteuid() == 0:
@@ -213,28 +212,19 @@ class Display:
         x = int(event.x * self.width)
         y = int(event.y * self.height)
 
-        # Handle swipes in the top area
-        if self.swipe_area.collidepoint(x, y):
-            if event.type == self.FINGERDOWN:
-                self.swipe_start_x = x
-                self.swipe_start_time = time.time()
-            
-            elif event.type == self.FINGERUP:
-                if self.swipe_start_x is not None:
-                    swipe_distance = x - self.swipe_start_x
-                    swipe_time = time.time() - self.swipe_start_time
-                    swipe_speed = abs(swipe_distance) / swipe_time if swipe_time > 0 else 0
+        # Handle double tap in the top area
+        if event.type == self.FINGERDOWN:
+            current_time = time.time()
+            if current_time - self.last_tap_time < self.double_tap_threshold:
+                if self.tap_area_left.collidepoint(x, y):
+                    # Double tap on left, switch to previous symbol
+                    self.current_symbol_index = (self.current_symbol_index - 1) % len(self.symbols)
+                elif self.tap_area_right.collidepoint(x, y):
+                    # Double tap on right, switch to next symbol
+                    self.current_symbol_index = (self.current_symbol_index + 1) % len(self.symbols)
+            self.last_tap_time = current_time
 
-                    if abs(swipe_distance) > self.swipe_threshold and swipe_speed > self.min_swipe_speed:
-                        if swipe_distance > 0 and self.current_symbol_index > 0:
-                            self.current_symbol_index -= 1
-                        elif swipe_distance < 0 and self.current_symbol_index < len(self.symbols) - 1:
-                            self.current_symbol_index += 1
-                
-                self.swipe_start_x = None
-                self.swipe_start_time = None
-
-        # Handle chart touches separately
+        # Handle chart touches
         if self.chart_rect.collidepoint(x, y):
             if event.type == self.FINGERDOWN:
                 self.touch_active = True
