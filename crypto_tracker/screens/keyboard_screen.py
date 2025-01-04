@@ -123,12 +123,12 @@ class KeyboardScreen(Screen):
         if self.done_button_rect.collidepoint(x, y) and self.input_text:
             logger.info(f"Done pressed with input: {self.input_text}")
             self.callback(self.input_text)
-            self.manager.switch_to(ScreenNames.SETTINGS.value)
+            self.manager.switch_screen(ScreenNames.SETTINGS.value)
         
         # Check for cancel button
         elif self.cancel_button_rect.collidepoint(x, y):
             logger.info("Cancel pressed")
-            self.manager.switch_to(ScreenNames.SETTINGS.value)
+            self.manager.switch_screen(ScreenNames.SETTINGS.value)
 
     def update(self, *args, **kwargs) -> None:
         """Update the screen state."""
