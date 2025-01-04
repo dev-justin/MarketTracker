@@ -25,7 +25,7 @@ class TickerScreen(Screen):
         self.crypto_api = crypto_api
         
         # Symbol management
-        self.symbols: List[str] = self.crypto_api.get_tracked_symbols()
+        self.symbols: List[str] = crypto_api.get_tracked_symbols()
         self.current_symbol_index: int = 0
         self.current_prices: Optional[Dict[str, float]] = None
         

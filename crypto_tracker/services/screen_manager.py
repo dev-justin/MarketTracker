@@ -45,10 +45,17 @@ class ScreenManager:
     
     def _init_screens(self):
         """Initialize all application screens."""
+        # Create ticker screen first since settings screen needs it
+        ticker_screen = TickerScreen(self, self.crypto_api)
+        settings_screen = SettingsScreen(self, ticker_screen)
+        
+        # Create keyboard screen with settings screen's add_ticker callback
+        keyboard_screen = KeyboardScreen(self, settings_screen.add_ticker)
+        
         self.screens = {
-            ScreenNames.TICKER.value: TickerScreen(self.crypto_api, self),
-            ScreenNames.SETTINGS.value: SettingsScreen(self.crypto_api, self),
-            ScreenNames.KEYBOARD.value: KeyboardScreen(self.crypto_api, self)
+            ScreenNames.TICKER.value: ticker_screen,
+            ScreenNames.SETTINGS.value: settings_screen,
+            ScreenNames.KEYBOARD.value: keyboard_screen
         }
     
     def switch_screen(self, screen_name: str):
