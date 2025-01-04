@@ -433,3 +433,18 @@ class TickerScreen(Screen):
             date = datetime.now().replace(hour=0) - timedelta(days=7) + timedelta(hours=data_index * 6)
             return price, date
         return None, None 
+
+    def _switch_symbol(self) -> None:
+        """Switch to the next or previous symbol based on touch position."""
+        if not self.symbols:
+            return
+            
+        x, y = self._scale_touch_input(pygame.event.Event(0))  # Create dummy event for scaling
+        if x < self.width // 2:
+            logger.debug("Switching to previous symbol")
+            self.current_symbol_index = (self.current_symbol_index - 1) % len(self.symbols)
+        else:
+            logger.debug("Switching to next symbol")
+            self.current_symbol_index = (self.current_symbol_index + 1) % len(self.symbols)
+            
+        logger.info(f"Switched to symbol: {self.symbols[self.current_symbol_index]}") 
