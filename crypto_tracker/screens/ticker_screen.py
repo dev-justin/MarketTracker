@@ -94,22 +94,17 @@ class TickerScreen(Screen):
         self.current_prices = prices
 
     def draw(self):
-        print("Drawing ticker screen")
         self.screen.fill(self.manager.BLACK)
         
         if not self.current_prices:
-            print("No prices available")
             return
             
         current_symbol = self.get_current_symbol()
         price = self.current_prices.get(current_symbol)
         
         if price is None:
-            print(f"No price for {current_symbol}")
             return
 
-        print(f"Drawing price for {current_symbol}: ${price:,.2f}")
-        
         # Draw price
         price_font = pygame.font.Font(None, 120)
         price_text = price_font.render(f"${price:,.2f}", True, self.manager.GREEN)
