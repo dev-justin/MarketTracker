@@ -11,23 +11,28 @@ def main():
     
     try:
         while True:
-            # Process events first
-            for event in pygame.event.get():
+            # Get crypto prices (just BTC for now)
+            prices = crypto_api.get_crypto_prices(['BTC'])
+            
+            # Process all events
+            events = pygame.event.get()
+            for event in events:
+                print(f"Main loop event: {event.type}")  # Debug print
                 if event.type == pygame.QUIT:
                     return
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_q:
                         return
-            
-            # Get crypto prices (just BTC for now)
-            prices = crypto_api.get_crypto_prices(['BTC'])
+                elif event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION):
+                    if prices:  # Only process touch events if we have prices
+                        display.handle_event(event)
             
             # Update display
             if prices:  # Only update if we got valid prices
                 display.update(prices)
             
-            # Wait for 5 seconds before next update
-            time.sleep(5)
+            # Small delay to prevent excessive CPU usage
+            time.sleep(0.1)  # Reduced from 5 seconds to be more responsive
             
     except KeyboardInterrupt:
         display.cleanup()
