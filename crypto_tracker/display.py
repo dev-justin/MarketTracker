@@ -265,3 +265,57 @@ class Display:
 
     def cleanup(self):
         pygame.quit() 
+
+    def _draw_chart(self, prices):
+        if not prices or len(prices) < 2:
+            return
+
+        pygame.draw.rect(self.screen, self.BLACK, self.chart_rect)
+
+        min_price = min(prices)
+        max_price = max(prices)
+        price_range = max_price - min_price or max_price * 0.1
+
+        if price_range == 0:
+            price_range = max_price * 0.1
+            min_price = max_price - price_range
+            max_price = max_price + price_range
+
+        points = []
+        for i, price in enumerate(prices):
+            x = self.chart_rect.left + (i * self.chart_rect.width / (len(prices) - 1))
+            y = self.chart_rect.bottom - ((price - min_price) * self.chart_rect.height / price_range)
+            points.append((x, y))
+
+        # Draw gradient
+        gradient_height = self.height - self.chart_rect.y
+        gradient_surface = pygame.Surface(
+            (self.chart_rect.width, gradient_height), 
+            pygame.SRCALPHA
+        )
+        
+        for y in range(gradient_height):
+            alpha = max(0, 25 * (1 - y / gradient_height))
+            pygame.draw.line(
+                gradient_surface,
+                (0, 255, 0, int(alpha)),
+                (0, y),
+                (self.chart_rect.width, y)
+            )
+        
+        mask_surface = pygame.Surface(
+            (self.chart_rect.width, gradient_height),
+            pygame.SRCALPHA
+        )
+        
+        mask_points = [(x - self.chart_rect.left, y - self.chart_rect.y) for x, y in points]
+        mask_points += [
+            (self.chart_rect.width, gradient_height),
+            (0, gradient_height)
+        ]
+        
+        pygame.draw.polygon(mask_surface, (255, 255, 255, 255), mask_points)
+        gradient_surface.blit(mask_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+        self.screen.blit(gradient_surface, (self.chart_rect.left, self.chart_rect.y))
+        
+        pygame.draw.lines(self.screen, self.chart_color, False, points, 2) 
