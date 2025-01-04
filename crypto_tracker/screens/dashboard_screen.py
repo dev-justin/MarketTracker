@@ -38,9 +38,12 @@ class DashboardScreen(Screen):
         
         # Display settings
         self.time_font_size = 96  # Larger font for time
-        self.date_font_size = 72  # Larger font for date to match time width
+        self.date_font_size = 48  # Smaller font for date
         self.ticker_font_size = 72
         self.padding = 20
+        
+        # Create fonts
+        self.date_font = pygame.font.Font(None, self.date_font_size)  # Use default font (not bold)
         
         # Touch handling
         self.swipe_start_y: Optional[int] = None
@@ -111,6 +114,10 @@ class DashboardScreen(Screen):
                         'color': AppConfig.GREEN if change_percent >= 0 else AppConfig.RED
                     })
     
+    def _create_date_text(self, text: str, color: tuple) -> pygame.Surface:
+        """Create text surface using the non-bold date font."""
+        return self.date_font.render(text, True, color)
+    
     def draw(self, display: pygame.Surface) -> None:
         """
         Draw the screen contents.
@@ -123,9 +130,9 @@ class DashboardScreen(Screen):
         if not self.ticker_items:
             return
         
-        # Draw current date at top in large font
-        current_date = datetime.now(self.local_tz).strftime("%b %d")  # Format: Jan 04
-        date_text = self._create_text_surface(current_date, self.date_font_size, AppConfig.WHITE)
+        # Draw current date at top in smaller, non-bold font
+        current_date = datetime.now(self.local_tz).strftime("%a, %b %-d")  # Format: Sat, Jan 4
+        date_text = self._create_date_text(current_date, AppConfig.WHITE)
         date_rect = date_text.get_rect(centerx=self.width//2, top=self.padding)
         display.blit(date_text, date_rect)
         
