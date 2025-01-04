@@ -180,160 +180,127 @@ class TickerScreen(Screen):
         self.touch_active = False
         self.touch_x = self.touch_price = self.touch_date = None
 
-    def _draw_price(self, display: pygame.Surface, price: float) -> None:
-        """Draw the price and coin name in the top left, with coin logo in top right."""
-        # Draw main price
-        price_text = self._create_text(
-            f"${price:,.2f}",
-            'title-xl',
-            AppConfig.WHITE
-        )
-        price_rect = price_text.get_rect(
-            left=40,
-            top=40
-        )
-        display.blit(price_text, price_rect)
+    def _draw_price(self, display: pygame.Surface, price: float, change_24h: Optional[float] = None) -> None:
+        """Draw the current price and 24h change."""
+        # Draw price
+        price_text = f"${price:,.2f}"
+        price_surface = self._create_text(price_text, 'title-lg', AppConfig.WHITE)
+        price_rect = price_surface.get_rect(left=40, top=40)
+        display.blit(price_surface, price_rect)
         
-        # Map symbols to full names
-        full_names = {
-            'BTC': 'Bitcoin',
-            'ETH': 'Ethereum',
-            'LTC': 'Litecoin',
-            'DOGE': 'Dogecoin',
-            'XRP': 'Ripple',
-            'ADA': 'Cardano',
-            'DOT': 'Polkadot',
-            'SOL': 'Solana',
-            'MATIC': 'Polygon',
-            'LINK': 'Chainlink'
-        }
-        
-        # Draw full coin name below price
-        current_symbol = self.get_current_symbol()
-        coin_name = full_names.get(current_symbol, current_symbol)
-        name_text = self._create_text(
-            coin_name,
-            'light-lg',
-            AppConfig.GRAY
-        )
-        name_rect = name_text.get_rect(
-            left=40,
-            top=price_rect.bottom + 10
-        )
-        display.blit(name_text, name_rect)
-        
-        # Draw coin logo in top right
-        icon = self.icon_manager.get_icon(current_symbol)
-        if icon:
-            icon_rect = pygame.Rect(
-                self.width - AppConfig.ICON_SIZE - 40,  # 40px from right edge
-                40,  # Same top margin as price
-                AppConfig.ICON_SIZE,
-                AppConfig.ICON_SIZE
-            )
-            display.blit(icon, icon_rect)
+        # Draw coin name
+        coin_name = self.crypto_api.get_coin_name(self.symbols[self.current_symbol_index])
+        if coin_name:
+            name_surface = self._create_text(coin_name, 'lg', AppConfig.GRAY)
+            name_rect = name_surface.get_rect(left=40, top=price_rect.bottom + 10)
+            display.blit(name_surface, name_rect)
         
         # Draw 24h change if available
-        if current_symbol in self.price_changes:
-            change = self.price_changes[current_symbol]
-            color = AppConfig.GREEN if change >= 0 else AppConfig.RED
-            change_text = self._create_text(
-                f"{change:+.2f}%",
-                'md',
-                color
-            )
-            change_rect = change_text.get_rect(
-                left=40,
-                top=name_rect.bottom + 10
-            )
-            display.blit(change_text, change_rect)
+        if change_24h is not None:
+            change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
+            change_text = f"{'+' if change_24h >= 0 else ''}{change_24h:.1f}%"
+            change_surface = self._create_text(change_text, 'md', change_color)
+            change_rect = change_surface.get_rect(left=40, top=name_rect.bottom + 10)
+            display.blit(change_surface, change_rect)
 
     def _draw_chart(self, display: pygame.Surface, prices: List[float]) -> None:
-        """
-        Draw the price chart.
-        
-        Args:
-            display: The pygame surface to draw on
-            prices: List of historical prices
-        """
-        if not prices or len(prices) < 2:
+        """Draw the price chart."""
+        if not prices:
             return
-
+            
+        # Calculate chart dimensions
+        chart_height = self.height - self.chart_rect.top - AppConfig.CHART_BOTTOM_MARGIN
+        self.chart_rect = pygame.Rect(
+            AppConfig.CHART_MARGIN,
+            self.chart_rect.top,
+            self.width - (AppConfig.CHART_MARGIN * 2),
+            chart_height
+        )
+        
+        # Draw chart background
+        pygame.draw.rect(display, AppConfig.CHART_BG_COLOR, self.chart_rect)
+        
+        # Calculate price range
         min_price = min(prices)
         max_price = max(prices)
-        price_range = max_price - min_price or max_price * 0.1
-
-        points = self._calculate_chart_points(prices, min_price, price_range)
-        self._draw_chart_gradient(display, points)
-        pygame.draw.lines(
-            display,
-            self.chart_color,
-            False,
-            points,
-            ChartSettings.LINE_WIDTH
-        )
-
-    def _calculate_chart_points(
-        self,
-        prices: List[float],
-        min_price: float,
-        price_range: float
-    ) -> List[Tuple[float, float]]:
-        """
-        Calculate points for the chart line.
+        price_range = max_price - min_price
         
-        Args:
-            prices: List of prices
-            min_price: Minimum price in the range
-            price_range: Price range for scaling
+        # Add 10% padding to price range
+        padding = price_range * 0.1
+        min_price -= padding
+        max_price += padding
+        price_range = max_price - min_price
+        
+        # Draw price axis labels
+        label_margin = 10
+        for i in range(5):
+            price = min_price + (price_range * (i / 4))
+            y = self.chart_rect.bottom - (self.chart_rect.height * (i / 4))
             
-        Returns:
-            List of (x, y) coordinates for the chart line
-        """
-        points = []
-        for i, price in enumerate(prices):
-            x = self.chart_rect.left + (i * self.chart_rect.width / (len(prices) - 1))
-            y = self.chart_rect.bottom - ((price - min_price) * self.chart_rect.height / price_range)
-            points.append((x, y))
-        return points
-
-    def _draw_chart_gradient(self, display: pygame.Surface, points: List[Tuple[float, float]]) -> None:
-        """
-        Draw the gradient under the chart line.
-        
-        Args:
-            display: The pygame surface to draw on
-            points: List of chart line points
-        """
-        gradient_height = self.height - self.chart_rect.y
-        gradient_surface = pygame.Surface(
-            (self.chart_rect.width, gradient_height),
-            pygame.SRCALPHA
-        )
-        
-        for y in range(gradient_height):
-            alpha = max(0, ChartSettings.GRADIENT_ALPHA_MAX * (1 - y / gradient_height))
+            # Draw horizontal grid line
             pygame.draw.line(
-                gradient_surface,
-                (0, 255, 0, int(alpha)),
-                (0, y),
-                (self.chart_rect.width, y)
+                display,
+                AppConfig.CHART_GRID_COLOR,
+                (self.chart_rect.left, y),
+                (self.chart_rect.right, y),
+                1
             )
+            
+            # Draw price label
+            price_text = self._create_text(
+                f"${price:,.0f}",
+                'sm',
+                AppConfig.CHART_LABEL_COLOR
+            )
+            text_rect = price_text.get_rect(
+                right=self.chart_rect.left - label_margin,
+                centery=y
+            )
+            display.blit(price_text, text_rect)
         
-        mask_surface = pygame.Surface(
-            (self.chart_rect.width, gradient_height),
-            pygame.SRCALPHA
-        )
+        # Draw time axis labels
+        time_labels = ["1w", "6d", "5d", "4d", "3d", "2d", "1d", "Now"]
+        label_width = self.chart_rect.width / (len(time_labels) - 1)
         
-        mask_points = [(x - self.chart_rect.left, y - self.chart_rect.y) for x, y in points]
-        mask_points += [
-            (self.chart_rect.width, gradient_height),
-            (0, gradient_height)
-        ]
+        for i, label in enumerate(time_labels):
+            x = self.chart_rect.right - (i * label_width)
+            
+            # Draw vertical grid line
+            pygame.draw.line(
+                display,
+                AppConfig.CHART_GRID_COLOR,
+                (x, self.chart_rect.top),
+                (x, self.chart_rect.bottom),
+                1
+            )
+            
+            # Draw time label
+            time_text = self._create_text(
+                label,
+                'sm',
+                AppConfig.CHART_LABEL_COLOR
+            )
+            text_rect = time_text.get_rect(
+                centerx=x,
+                top=self.chart_rect.bottom + label_margin
+            )
+            display.blit(time_text, text_rect)
         
-        pygame.draw.polygon(mask_surface, (255, 255, 255, 255), mask_points)
-        gradient_surface.blit(mask_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
-        display.blit(gradient_surface, (self.chart_rect.left, self.chart_rect.y))
+        # Draw price line
+        if len(prices) > 1:
+            points = []
+            for i, price in enumerate(reversed(prices)):
+                x = self.chart_rect.right - (i * (self.chart_rect.width / (len(prices) - 1)))
+                y = self.chart_rect.bottom - ((price - min_price) / price_range * self.chart_rect.height)
+                points.append((x, y))
+            
+            # Draw line with anti-aliasing
+            pygame.draw.aalines(
+                display,
+                AppConfig.CHART_LINE_COLOR,
+                False,
+                points
+            )
 
     def _draw_touch_indicator(self, display: pygame.Surface, x: int, price: float, date: datetime) -> None:
         """
@@ -381,56 +348,42 @@ class TickerScreen(Screen):
             ChartSettings.DOT_RADIUS
         )
 
-    def _draw_touch_tooltip(self, display: pygame.Surface, x: int, price: float, date: datetime) -> None:
-        """
-        Draw the touch indicator tooltip.
-        
-        Args:
-            display: The pygame surface to draw on
-            x: Touch x coordinate
-            price: Price at touch point
-            date: Date at touch point
-        """
+    def _draw_touch_tooltip(self, display: pygame.Surface, x: int, price: float, date: str) -> None:
+        """Draw the tooltip that appears when touching the chart."""
+        # Format price with commas and 2 decimal places
         price_text = f"${price:,.2f}"
-        date_text = date.strftime("%b %-d %-I:%M %p")
         
-        price_surface = self._create_text_surface(price_text, 32, AppConfig.GREEN)
-        date_surface = self._create_text_surface(date_text, 32, AppConfig.WHITE)
-
-        padding = ChartSettings.TOOLTIP_PADDING
-        box_width = max(price_surface.get_width(), date_surface.get_width()) + padding * 2
-        box_height = price_surface.get_height() + date_surface.get_height() + padding * 2
-
-        box_x = min(max(x - box_width/2, padding), self.width - box_width - padding)
-        box_y = self.chart_rect.y - box_height - 10
-
-        if box_y < 0:
-            box_y = self.chart_rect.y + 10
-
-        tooltip_surface = pygame.Surface((box_width, box_height), pygame.SRCALPHA)
-        pygame.draw.rect(
-            tooltip_surface,
-            (40, 40, 40, ChartSettings.TOOLTIP_ALPHA),
-            (0, 0, box_width, box_height),
-            border_radius=ChartSettings.TOOLTIP_BORDER_RADIUS
+        # Create text surfaces
+        price_surface = self._create_text(price_text, 'md', AppConfig.GREEN)
+        date_surface = self._create_text(date, 'sm', AppConfig.GRAY)
+        
+        # Calculate tooltip dimensions
+        padding = 10
+        margin = 5
+        tooltip_width = max(price_surface.get_width(), date_surface.get_width()) + (padding * 2)
+        tooltip_height = price_surface.get_height() + date_surface.get_height() + (padding * 2) + margin
+        
+        # Position tooltip above touch point
+        tooltip_x = min(max(x - tooltip_width // 2, 0), self.width - tooltip_width)
+        tooltip_y = self.chart_rect.top - tooltip_height - 10
+        
+        # Draw tooltip background
+        tooltip_rect = pygame.Rect(tooltip_x, tooltip_y, tooltip_width, tooltip_height)
+        pygame.draw.rect(display, AppConfig.TOOLTIP_BG_COLOR, tooltip_rect, border_radius=5)
+        pygame.draw.rect(display, AppConfig.TOOLTIP_BORDER_COLOR, tooltip_rect, 1, border_radius=5)
+        
+        # Draw text
+        price_rect = price_surface.get_rect(
+            centerx=tooltip_rect.centerx,
+            top=tooltip_rect.top + padding
         )
-
-        pygame.draw.rect(
-            tooltip_surface,
-            (60, 60, 60, ChartSettings.TOOLTIP_BORDER_ALPHA),
-            (0, 0, box_width, box_height),
-            width=1,
-            border_radius=ChartSettings.TOOLTIP_BORDER_RADIUS
+        display.blit(price_surface, price_rect)
+        
+        date_rect = date_surface.get_rect(
+            centerx=tooltip_rect.centerx,
+            top=price_rect.bottom + margin
         )
-
-        tooltip_surface.blit(price_surface, (padding, padding))
-        tooltip_surface.blit(
-            date_surface,
-            (padding, padding + price_surface.get_height() + 5)
-        )
-
-        y_offset = abs(math.sin(time.time() * ChartSettings.ANIMATION_SPEED)) * ChartSettings.ANIMATION_AMPLITUDE
-        display.blit(tooltip_surface, (box_x, box_y + y_offset))
+        display.blit(date_surface, date_rect)
 
     def _get_price_at_x(self, x: int, prices: List[float]) -> Tuple[Optional[float], Optional[datetime]]:
         """
