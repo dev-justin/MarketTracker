@@ -94,26 +94,44 @@ class Display:
             points.append((x, y))
 
         if len(points) > 1:
-            # Create gradient surface for the chart area only
+            # Create gradient surface for the full height
+            gradient_height = self.height - self.chart_rect.y
             gradient_surface = pygame.Surface(
-                (self.chart_rect.width, self.chart_rect.height), 
+                (self.chart_rect.width, gradient_height), 
                 pygame.SRCALPHA
             )
             
-            # Adjust points for gradient surface coordinates (relative to chart area)
-            gradient_points = [(x - self.chart_rect.left, y - self.chart_rect.y) for x, y in points]
+            # Create gradient effect
+            for y in range(gradient_height):
+                alpha = max(0, 25 * (1 - y / gradient_height))  # Fade from 25 to 0
+                pygame.draw.line(
+                    gradient_surface,
+                    (0, 255, 0, int(alpha)),
+                    (0, y),
+                    (self.chart_rect.width, y)
+                )
             
-            # Add bottom corners to create polygon
-            gradient_points = gradient_points + [
-                (self.chart_rect.width, self.chart_rect.height),  # Bottom right
-                (0, self.chart_rect.height)                       # Bottom left
+            # Create mask surface for the chart area
+            mask_surface = pygame.Surface(
+                (self.chart_rect.width, gradient_height),
+                pygame.SRCALPHA
+            )
+            
+            # Adjust points for mask surface coordinates
+            mask_points = [(x - self.chart_rect.left, y - self.chart_rect.y) for x, y in points]
+            mask_points = mask_points + [
+                (self.chart_rect.width, gradient_height),  # Bottom right
+                (0, gradient_height)                       # Bottom left
             ]
             
-            # Draw gradient polygon with semi-transparent green
-            pygame.draw.polygon(gradient_surface, (0, 255, 0, 25), gradient_points)
+            # Draw the mask
+            pygame.draw.polygon(mask_surface, (255, 255, 255, 255), mask_points)
             
-            # Draw the gradient surface onto the screen at chart position
-            self.screen.blit(gradient_surface, self.chart_rect)
+            # Apply mask to gradient
+            gradient_surface.blit(mask_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+            
+            # Draw the gradient surface onto the screen
+            self.screen.blit(gradient_surface, (self.chart_rect.left, self.chart_rect.y))
             
             # Draw the main line on top
             pygame.draw.lines(self.screen, self.chart_color, False, points, 2)
