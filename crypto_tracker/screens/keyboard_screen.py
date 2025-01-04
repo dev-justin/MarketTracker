@@ -23,6 +23,16 @@ class KeyboardScreen(Screen):
         self.input_text: str = ""
         self.max_length: int = AppConfig.MAX_TICKER_LENGTH
         
+        # Input field dimensions
+        input_width = self.width - 100  # 50px padding on each side
+        input_height = 80
+        self.input_rect = pygame.Rect(
+            50,  # x position (50px from left)
+            50,  # y position (50px from top)
+            input_width,
+            input_height
+        )
+        
         # Keyboard layout (removed numbers)
         self.keys: list[list[str]] = KeyboardLayout.ROWS
         
