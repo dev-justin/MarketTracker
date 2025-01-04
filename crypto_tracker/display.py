@@ -20,8 +20,8 @@ class Display:
         # Double tap detection
         self.last_tap_time = 0
         self.double_tap_threshold = 0.3  # seconds between taps
-        self.tap_area_left = pygame.Rect(0, 0, self.width // 2, 180)  # Left half
-        self.tap_area_right = pygame.Rect(self.width // 2, 0, self.width // 2, 180)  # Right half
+        self.tap_area_left = pygame.Rect(0, 0, self.width // 2, 220)  # Extended to chart top
+        self.tap_area_right = pygame.Rect(self.width // 2, 0, self.width // 2, 220)  # Extended to chart top
         
         # Define touch margin for chart line
         self.chart_touch_margin = 10  # pixels
@@ -238,16 +238,19 @@ class Display:
         # Handle double tap in the top area
         if event.type == self.FINGERDOWN:
             current_time = time.time()
-            print(f"Tap detected at x: {x}, y: {y}, time: {current_time}")  # Debug output
+            print(f"Tap detected at x: {x}, y: {y}, time: {current_time}")
+            print(f"Tap area check - Left: {self.tap_area_left.collidepoint(x, y)}, Right: {self.tap_area_right.collidepoint(x, y)}")
+            print(f"Time since last tap: {current_time - self.last_tap_time}")
+            
             if current_time - self.last_tap_time < self.double_tap_threshold:
                 if self.tap_area_left.collidepoint(x, y):
-                    print("Double tap on left detected")  # Debug output
-                    # Double tap on left, switch to previous symbol
+                    print("Double tap on left detected")
                     self.current_symbol_index = (self.current_symbol_index - 1) % len(self.symbols)
+                    print(f"Switched to symbol: {self.symbols[self.current_symbol_index]}")
                 elif self.tap_area_right.collidepoint(x, y):
-                    print("Double tap on right detected")  # Debug output
-                    # Double tap on right, switch to next symbol
+                    print("Double tap on right detected")
                     self.current_symbol_index = (self.current_symbol_index + 1) % len(self.symbols)
+                    print(f"Switched to symbol: {self.symbols[self.current_symbol_index]}")
             self.last_tap_time = current_time
 
         # Handle chart touches
