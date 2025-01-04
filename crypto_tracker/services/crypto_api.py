@@ -117,9 +117,7 @@ class CryptoAPI:
 
     def get_crypto_prices(self, symbols):
         """Get current prices using Binance API"""
-        print(f"Fetching prices for symbols: {symbols}")
         if time.time() - self.cache_time < self.cache_duration:
-            print("Using cached prices")
             return self.cached_prices
 
         prices = {}
