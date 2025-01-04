@@ -69,7 +69,7 @@ class KeyboardScreen(Screen):
         buttons_y = self.keyboard_y + (len(self.keys) * (self.key_height + self.key_margin)) + self.button_margin
         
         # Cancel button (left)
-        self.cancel_rect = pygame.Rect(
+        self.cancel_button_rect = pygame.Rect(
             self.button_margin,
             buttons_y,
             self.button_width,
@@ -77,7 +77,7 @@ class KeyboardScreen(Screen):
         )
         
         # Done button (right)
-        self.done_rect = pygame.Rect(
+        self.done_button_rect = pygame.Rect(
             self.width - self.button_width - self.button_margin,
             buttons_y,
             self.button_width,
@@ -120,13 +120,13 @@ class KeyboardScreen(Screen):
                 break
         
         # Check for done button
-        if self.done_rect.collidepoint(x, y) and self.input_text:
+        if self.done_button_rect.collidepoint(x, y) and self.input_text:
             logger.info(f"Done pressed with input: {self.input_text}")
             self.callback(self.input_text)
             self.manager.switch_to(ScreenNames.SETTINGS.value)
         
         # Check for cancel button
-        elif self.cancel_rect.collidepoint(x, y):
+        elif self.cancel_button_rect.collidepoint(x, y):
             logger.info("Cancel pressed")
             self.manager.switch_to(ScreenNames.SETTINGS.value)
 
