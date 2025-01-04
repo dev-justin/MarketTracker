@@ -5,7 +5,8 @@ description = "A cryptocurrency price tracker for Raspberry Pi with display"
 requires-python = ">=3.8"
 dependencies = [
     "pygame",
-    "binance-connector"
+    "binance-connector",
+    "pyowm"
 ]
 
 [build-system]
