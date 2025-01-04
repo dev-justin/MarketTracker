@@ -174,62 +174,61 @@ class TickerScreen(Screen):
         self.touch_x = self.touch_price = self.touch_date = None
 
     def _draw_price(self, display: pygame.Surface, price: float) -> None:
-        """
-        Draw the current price.
-        
-        Args:
-            display: The pygame surface to draw on
-            price: The current price to display
-        """
-        price_text = self._create_text_surface(
+        """Draw the price in the center of the screen."""
+        # Draw main price
+        price_text = self._create_text(
             f"${price:,.2f}",
-            120,
-            AppConfig.GREEN
-        )
-        price_rect = price_text.get_rect(left=50, y=40)
-        display.blit(price_text, price_rect)
-
-    def _draw_symbol(self, display: pygame.Surface, symbol: str) -> None:
-        """
-        Draw the current symbol.
-        
-        Args:
-            display: The pygame surface to draw on
-            symbol: The symbol to display
-        """
-        symbol_text = self._create_text_surface(
-            symbol,
-            96,
+            'title-xl',
             AppConfig.WHITE
         )
-        symbol_rect = symbol_text.get_rect(left=50, y=120)
+        price_rect = price_text.get_rect(
+            center=(self.width//2, self.height//2)
+        )
+        display.blit(price_text, price_rect)
+        
+        # Draw symbol below price
+        symbol_text = self._create_text(
+            self.current_symbol,
+            'lg',
+            AppConfig.GRAY
+        )
+        symbol_rect = symbol_text.get_rect(
+            centerx=self.width//2,
+            top=price_rect.bottom + 20
+        )
         display.blit(symbol_text, symbol_rect)
+        
+        # Draw 24h change if available
+        if self.current_symbol in self.price_changes:
+            change = self.price_changes[self.current_symbol]
+            color = AppConfig.GREEN if change >= 0 else AppConfig.RED
+            change_text = self._create_text(
+                f"{change:+.2f}%",
+                'md',
+                color
+            )
+            change_rect = change_text.get_rect(
+                centerx=self.width//2,
+                top=symbol_rect.bottom + 10
+            )
+            display.blit(change_text, change_rect)
+
+    def _draw_symbol(self, display: pygame.Surface, symbol: str) -> None:
+        """Draw the symbol at the top of the screen."""
+        text = self._create_text(symbol, 'title-md', AppConfig.WHITE)
+        rect = text.get_rect(centerx=self.width//2, top=20)
+        display.blit(text, rect)
 
     def _draw_price_change(self, display: pygame.Surface, symbol: str) -> None:
-        """
-        Draw the 24-hour price change.
-        
-        Args:
-            display: The pygame surface to draw on
-            symbol: The current symbol
-        """
-        historical_prices = self.crypto_api.get_historical_prices(symbol)
-        if historical_prices and len(historical_prices) > 4:
-            current_price = historical_prices[-1]
-            price_24h_ago = historical_prices[-4]
-            change_percent = ((current_price - price_24h_ago) / price_24h_ago) * 100
+        """Draw the 24h price change percentage."""
+        if symbol not in self.price_changes:
+            return
             
-            change_color = AppConfig.GREEN if change_percent >= 0 else AppConfig.RED
-            change_text = (f"{change_percent:.2f}%" if change_percent >= 0 
-                         else f"({abs(change_percent):.2f}%)")
-            
-            change_surface = self._create_text_surface(
-                change_text,
-                72,
-                change_color
-            )
-            change_rect = change_surface.get_rect(right=self.width - 50, y=40)
-            display.blit(change_surface, change_rect)
+        change = self.price_changes[symbol]
+        color = AppConfig.GREEN if change >= 0 else AppConfig.RED
+        text = self._create_text(f"{change:+.2f}%", 'lg', color)
+        rect = text.get_rect(centerx=self.width//2, top=self.height//2 + 100)
+        display.blit(text, rect)
 
     def _draw_chart(self, display: pygame.Surface, prices: List[float]) -> None:
         """
@@ -452,3 +451,31 @@ class TickerScreen(Screen):
             self.current_symbol_index = (self.current_symbol_index + 1) % len(self.symbols)
             
         logger.info(f"Switched to symbol: {self.symbols[self.current_symbol_index]}") 
+
+    def _draw_touch_indicators(self, display: pygame.Surface) -> None:
+        """Draw touch indicators on the sides."""
+        # Draw left arrow if not first symbol
+        if self.symbol_index > 0:
+            text = self._create_text("<", 'title-lg', AppConfig.GRAY)
+            rect = text.get_rect(
+                left=20,
+                centery=self.height//2
+            )
+            display.blit(text, rect)
+        
+        # Draw right arrow if not last symbol
+        if self.symbol_index < len(self.symbols) - 1:
+            text = self._create_text(">", 'title-lg', AppConfig.GRAY)
+            rect = text.get_rect(
+                right=self.width - 20,
+                centery=self.height//2
+            )
+            display.blit(text, rect)
+        
+        # Draw up arrow for dashboard view
+        text = self._create_text("^", 'title-lg', AppConfig.GRAY)
+        rect = text.get_rect(
+            centerx=self.width//2,
+            top=20
+        )
+        display.blit(text, rect) 
