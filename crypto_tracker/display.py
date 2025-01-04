@@ -121,7 +121,7 @@ class Display:
         
         if 0 <= data_index < len(prices):
             price = prices[data_index]
-            date = datetime.now() - timedelta(days=7) + timedelta(hours=data_index)
+            date = datetime.now() - timedelta(days=7) + timedelta(hours=data_index * 6)
             return price, date
         return None, None
 

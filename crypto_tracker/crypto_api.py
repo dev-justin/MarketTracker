@@ -33,6 +33,7 @@ class CryptoAPI:
                 print(f"Fetched {len(self.historical_prices[symbol])} historical prices")
                 print(f"First date: {datetime.fromtimestamp(klines[0][0]/1000)}")
                 print(f"Last date: {datetime.fromtimestamp(klines[-1][0]/1000)}")
+                print(f"Historical prices: {self.historical_prices[symbol]}")
 
         except Exception as e:
             print(f"Error fetching historical data ({datetime.now()}): {e}")
