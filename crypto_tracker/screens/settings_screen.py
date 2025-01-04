@@ -22,10 +22,6 @@ class SettingsScreen(Screen):
         self.cell_padding = AppConfig.CELL_PADDING
         self.title_height = AppConfig.TITLE_HEIGHT
         
-        # Button tracking
-        self.edit_buttons = {}
-        self.delete_buttons = {}
-        
         # Calculate cell dimensions
         usable_height = self.height - self.title_height - AppConfig.BUTTON_AREA_HEIGHT
         self.cell_width = (self.width - (self.cell_padding * (self.grid_cols + 1))) // self.grid_cols
@@ -276,23 +272,29 @@ class SettingsScreen(Screen):
         text_rect = symbol_text.get_rect(center=cell_rect.center)
         display.blit(symbol_text, text_rect)
         
-        # Draw edit button
+        # Draw edit button (pencil icon)
+        edit_size = 24
         edit_rect = pygame.Rect(
-            cell_rect.right - 30,
-            cell_rect.top + 5,
-            20,
-            20
+            cell_rect.right - edit_size - 10,
+            cell_rect.top + 10,
+            edit_size,
+            edit_size
         )
-        pygame.draw.rect(display, AppConfig.EDIT_BUTTON_COLOR, edit_rect)
+        pencil_text = self._create_text("✎", 'md', AppConfig.EDIT_BUTTON_COLOR)
+        pencil_rect = pencil_text.get_rect(center=edit_rect.center)
+        display.blit(pencil_text, pencil_rect)
         
-        # Draw delete button
+        # Draw delete button (x icon)
+        delete_size = 24
         delete_rect = pygame.Rect(
-            cell_rect.right - 30,
-            cell_rect.bottom - 25,
-            20,
-            20
+            cell_rect.right - delete_size - 10,
+            cell_rect.bottom - delete_size - 10,
+            delete_size,
+            delete_size
         )
-        pygame.draw.rect(display, AppConfig.DELETE_BUTTON_COLOR, delete_rect)
+        x_text = self._create_text("×", 'md', AppConfig.DELETE_BUTTON_COLOR)
+        x_rect = x_text.get_rect(center=delete_rect.center)
+        display.blit(x_text, x_rect)
         
         # Store button positions for touch handling
         self.edit_buttons[symbol] = edit_rect
