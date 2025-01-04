@@ -67,11 +67,18 @@ class DashboardScreen(Screen):
                     logger.info(f"Fetched {len(self.news_items)} news items")
                     
                     # Load images for each news item
+                    headers = {
+                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                    }
+                    
                     for item in self.news_items:
                         if item['imageurl'] not in self.news_images:
                             try:
-                                image_response = urllib.request.urlopen(item['imageurl'])
-                                image_data = BytesIO(image_response.read())
+                                # Use requests instead of urllib
+                                image_response = requests.get(item['imageurl'], headers=headers)
+                                image_response.raise_for_status()  # Raise an error for bad status codes
+                                
+                                image_data = BytesIO(image_response.content)
                                 image = pygame.image.load(image_data)
                                 # Scale image to reasonable size (e.g., 200x120)
                                 image = pygame.transform.scale(image, (200, 120))
