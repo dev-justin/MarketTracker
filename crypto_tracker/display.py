@@ -40,6 +40,7 @@ class Display:
         self.BLACK = (0, 0, 0)
         self.WHITE = (255, 255, 255)
         self.GREEN = (0, 255, 0)
+        self.RED = (255, 0, 0)
         
         # Chart settings
         self.chart_rect = pygame.Rect(0, 180, self.width, 250)
