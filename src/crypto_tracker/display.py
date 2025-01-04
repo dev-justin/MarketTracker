@@ -151,26 +151,30 @@ class Display:
         if prices:
             symbol, price = next(iter(prices.items()))
             
-            # Load and draw logo
-            logo = self._get_logo(symbol)
-            if logo:
-                logo_rect = logo.get_rect(left=50, centery=70)  # Position logo vertically centered with text
-                self.screen.blit(logo, logo_rect)
-                symbol_x = logo_rect.right + 20  # Position text after logo
-            else:
-                symbol_x = 50  # Default position if no logo
+            # Left margin for text
+            text_x = 50
             
             # Draw symbol (larger and left-aligned)
             symbol_font = pygame.font.Font(None, 96)
             symbol_text = symbol_font.render(symbol, True, self.WHITE)
-            symbol_rect = symbol_text.get_rect(left=symbol_x, y=40)
+            symbol_rect = symbol_text.get_rect(left=text_x, y=40)
             self.screen.blit(symbol_text, symbol_rect)
             
             # Draw price (larger and left-aligned)
             price_font = pygame.font.Font(None, 120)
             price_text = price_font.render(f"${price:,.2f}", True, self.GREEN)
-            price_rect = price_text.get_rect(left=symbol_x, y=100)
+            price_rect = price_text.get_rect(left=text_x, y=100)
             self.screen.blit(price_text, price_rect)
+            
+            # Load and draw logo on the right
+            logo = self._get_logo(symbol)
+            if logo:
+                # Position logo on the right side, vertically centered with the text
+                logo_rect = logo.get_rect(
+                    right=self.width - 50,  # 50 pixels from right edge
+                    centery=(symbol_rect.centery + price_rect.centery) / 2  # Centered between symbol and price
+                )
+                self.screen.blit(logo, logo_rect)
             
             # Get historical prices and draw the chart
             historical_prices = self.crypto_api.get_historical_prices(symbol)
