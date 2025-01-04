@@ -1,53 +1,92 @@
+from typing import Dict, Type, Any, Optional
 import pygame
+from ..config.settings import AppConfig
+from ..constants import ScreenNames
+from ..exceptions import ScreenError
+from ..utils.logger import get_logger
 
-class Screen:
-    def __init__(self, screen_manager):
-        self.manager = screen_manager
-        self.screen = screen_manager.screen
-        self.width = screen_manager.width
-        self.height = screen_manager.height
-
-    def handle_event(self, event):
-        pass
-
-    def update(self, data=None):
-        pass
-
-    def draw(self):
-        pass
+logger = get_logger(__name__)
 
 class ScreenManager:
-    def __init__(self, screen, width, height):
+    """Manages screen transitions and state."""
+    
+    def __init__(self, screen: pygame.Surface, width: int, height: int) -> None:
+        """
+        Initialize the screen manager.
+        
+        Args:
+            screen: The pygame display surface
+            width: Screen width
+            height: Screen height
+        """
         self.screen = screen
         self.width = width
         self.height = height
-        self.current_screen = None
-        self.screens = {}
+        self.screens: Dict[str, Any] = {}
+        self.current_screen: Optional[str] = None
         
-        # Colors
-        self.BLACK = (0, 0, 0)
-        self.WHITE = (255, 255, 255)
-        self.GREEN = (0, 255, 0)
-        self.RED = (255, 0, 0)
-
-    def add_screen(self, name, screen_class, *args, **kwargs):
-        self.screens[name] = screen_class(self, *args, **kwargs)
-        if self.current_screen is None:
-            self.current_screen = self.screens[name]
-
-    def switch_to(self, screen_name):
-        if screen_name in self.screens:
-            self.current_screen = self.screens[screen_name]
-
-    def handle_event(self, event):
+        # Colors from config
+        self.BLACK = AppConfig.BLACK
+        self.WHITE = AppConfig.WHITE
+        self.GREEN = AppConfig.GREEN
+        self.RED = AppConfig.RED
+        
+    def add_screen(self, name: str, screen_class: Type, *args, **kwargs) -> None:
+        """
+        Add a new screen to the manager.
+        
+        Args:
+            name: Unique identifier for the screen
+            screen_class: The screen class to instantiate
+            *args: Positional arguments for the screen class
+            **kwargs: Keyword arguments for the screen class
+        
+        Raises:
+            ScreenError: If screen name already exists
+        """
+        if name in self.screens:
+            raise ScreenError(f"Screen '{name}' already exists")
+            
+        try:
+            screen_instance = screen_class(self, *args, **kwargs)
+            self.screens[name] = screen_instance
+            logger.info(f"Added screen: {name}")
+        except Exception as e:
+            raise ScreenError(f"Failed to create screen '{name}': {str(e)}")
+            
+    def switch_to(self, name: str) -> None:
+        """
+        Switch to a different screen.
+        
+        Args:
+            name: Name of the screen to switch to
+            
+        Raises:
+            ScreenError: If screen name doesn't exist
+        """
+        if name not in self.screens:
+            raise ScreenError(f"Screen '{name}' does not exist")
+            
+        self.current_screen = name
+        logger.info(f"Switched to screen: {name}")
+        
+    def handle_event(self, event: pygame.event.Event) -> None:
+        """
+        Handle events for the current screen.
+        
+        Args:
+            event: The pygame event to handle
+        """
         if self.current_screen:
-            self.current_screen.handle_event(event)
-
-    def update(self, data=None):
+            self.screens[self.current_screen].handle_event(event)
+            
+    def update(self, *args, **kwargs) -> None:
+        """Update the current screen."""
         if self.current_screen:
-            self.current_screen.update(data)
-
-    def draw(self):
+            self.screens[self.current_screen].update(*args, **kwargs)
+            
+    def draw(self) -> None:
+        """Draw the current screen."""
         if self.current_screen:
-            self.current_screen.draw()
+            self.screens[self.current_screen].draw()
             pygame.display.flip() 
