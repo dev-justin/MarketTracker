@@ -44,6 +44,7 @@ class SettingsScreen(Screen):
         # Action popup settings
         self.showing_action_popup = False
         self.selected_symbol_index = None
+        self.is_editing = False  # Track if we're editing an existing symbol
         
         # Action buttons
         action_width = 200
@@ -51,7 +52,7 @@ class SettingsScreen(Screen):
         padding = 20
         symbol_height = 40  # Height for symbol text
         popup_width = action_width + (padding * 2)
-        popup_height = symbol_height + (action_height * 3) + (padding * 5)  # Added space for symbol
+        popup_height = symbol_height + (action_height * 3) + (padding * 3)  # Reduced padding
         
         # Popup background
         self.action_popup_rect = pygame.Rect(
@@ -61,9 +62,9 @@ class SettingsScreen(Screen):
             popup_height
         )
         
-        # Action buttons - adjusted y positions to account for symbol text
+        # Action buttons - adjusted y positions with less padding
         button_x = (self.width - action_width) // 2
-        first_button_y = self.action_popup_rect.top + symbol_height + (padding * 2)  # Start after symbol text
+        first_button_y = self.action_popup_rect.top + symbol_height + padding  # Reduced padding
         
         self.edit_button_rect = pygame.Rect(
             button_x,
@@ -99,6 +100,12 @@ class SettingsScreen(Screen):
 
     def add_ticker(self, symbol):
         """Add a new ticker and update the ticker screen's symbols"""
+        if self.is_editing:
+            # Remove old symbol first
+            old_symbol = self.ticker_screen.symbols[self.selected_symbol_index]
+            self.crypto_api.remove_ticker(old_symbol)
+            self.is_editing = False
+            
         if self.crypto_api.add_ticker(symbol):
             self.ticker_screen.symbols = self.crypto_api.get_tracked_symbols()
 
@@ -113,8 +120,9 @@ class SettingsScreen(Screen):
             if self.showing_action_popup:
                 # Handle action buttons
                 if self.edit_button_rect.collidepoint(x, y):
-                    # TODO: Implement edit functionality
+                    self.is_editing = True
                     self.showing_action_popup = False
+                    self.manager.switch_to('keyboard')
                 elif self.delete_button_rect.collidepoint(x, y):
                     symbol = self.ticker_screen.symbols[self.selected_symbol_index]
                     if self.crypto_api.remove_ticker(symbol):
@@ -122,6 +130,7 @@ class SettingsScreen(Screen):
                     self.showing_action_popup = False
                 elif self.cancel_button_rect.collidepoint(x, y) or not self.action_popup_rect.collidepoint(x, y):
                     self.showing_action_popup = False
+                    self.is_editing = False
                 return
             
             # Check for back button press
