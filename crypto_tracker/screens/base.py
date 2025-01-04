@@ -16,7 +16,6 @@ class Screen:
             screen_manager: The screen manager instance
         """
         self.manager = screen_manager
-        self.screen = screen_manager.screen
         self.width = AppConfig.SCREEN_WIDTH
         self.height = AppConfig.SCREEN_HEIGHT
         
@@ -33,8 +32,13 @@ class Screen:
         """Update the screen state."""
         pass
         
-    def draw(self) -> None:
-        """Draw the screen contents."""
+    def draw(self, display: pygame.Surface) -> None:
+        """
+        Draw the screen contents.
+        
+        Args:
+            display: The pygame surface to draw on
+        """
         raise NotImplementedError("Screens must implement draw")
         
     def _scale_touch_input(self, event: pygame.event.Event) -> Tuple[int, int]:

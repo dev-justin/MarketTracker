@@ -130,20 +130,34 @@ class KeyboardScreen(Screen):
             logger.info("Cancel pressed")
             self.manager.switch_to(ScreenNames.SETTINGS.value)
 
-    def draw(self) -> None:
-        """Draw the screen contents."""
-        self.screen.fill(self.manager.BLACK)
-        
-        self._draw_input_field()
-        self._draw_keyboard()
-        self._draw_buttons()
+    def update(self, *args, **kwargs) -> None:
+        """Update the screen state."""
+        pass
 
-    def _draw_input_field(self) -> None:
-        """Draw the input field and current text."""
+    def draw(self, display: pygame.Surface) -> None:
+        """
+        Draw the screen contents.
+        
+        Args:
+            display: The pygame surface to draw on
+        """
+        display.fill(AppConfig.BLACK)
+        
+        self._draw_input_field(display)
+        self._draw_keyboard(display)
+        self._draw_buttons(display)
+
+    def _draw_input_field(self, display: pygame.Surface) -> None:
+        """
+        Draw the input field and current text.
+        
+        Args:
+            display: The pygame surface to draw on
+        """
         # Draw input field background
         pygame.draw.rect(
-            self.screen,
-            (30, 30, 30),
+            display,
+            AppConfig.INPUT_BG_COLOR,
             (50, 50, self.width - 100, 80),
             border_radius=10
         )
@@ -152,45 +166,68 @@ class KeyboardScreen(Screen):
             text_surface = self._create_text_surface(
                 self.input_text,
                 72,
-                self.manager.WHITE
+                AppConfig.WHITE
             )
             text_rect = text_surface.get_rect(center=(self.width // 2, 90))
-            self.screen.blit(text_surface, text_rect)
+            display.blit(text_surface, text_rect)
         else:
             # Draw placeholder
             placeholder = self._create_text_surface(
                 "Enter ticker symbol",
                 36,
-                (100, 100, 100)
+                AppConfig.PLACEHOLDER_COLOR
             )
             placeholder_rect = placeholder.get_rect(center=(self.width // 2, 90))
-            self.screen.blit(placeholder, placeholder_rect)
+            display.blit(placeholder, placeholder_rect)
 
-    def _draw_keyboard(self) -> None:
-        """Draw the keyboard keys."""
+    def _draw_keyboard(self, display: pygame.Surface) -> None:
+        """
+        Draw the keyboard keys.
+        
+        Args:
+            display: The pygame surface to draw on
+        """
         for key, rect in self.key_rects.items():
             # Draw key background
-            pygame.draw.rect(self.screen, (40, 40, 40), rect, border_radius=5)
-            pygame.draw.rect(self.screen, (60, 60, 60), rect, 2, border_radius=5)
+            pygame.draw.rect(display, AppConfig.KEY_BG_COLOR, rect, border_radius=5)
+            pygame.draw.rect(display, AppConfig.KEY_BORDER_COLOR, rect, 2, border_radius=5)
             
             # Draw key text
-            text_surface = self._create_text_surface(key, 36, self.manager.WHITE)
+            text_surface = self._create_text_surface(key, 36, AppConfig.WHITE)
             text_rect = text_surface.get_rect(center=rect.center)
-            self.screen.blit(text_surface, text_rect)
+            display.blit(text_surface, text_rect)
 
-    def _draw_buttons(self) -> None:
-        """Draw the Done and Cancel buttons."""
-        # Draw done button
-        if self.input_text:  # Only show as active if we have input
-            pygame.draw.rect(self.screen, (0, 100, 0), self.done_rect, border_radius=25)
-        else:
-            pygame.draw.rect(self.screen, (40, 40, 40), self.done_rect, border_radius=25)
-        done_text = self._create_text_surface("Done", 36, self.manager.WHITE)
-        done_rect = done_text.get_rect(center=self.done_rect.center)
-        self.screen.blit(done_text, done_rect)
+    def _draw_buttons(self, display: pygame.Surface) -> None:
+        """
+        Draw the Done and Cancel buttons.
         
-        # Draw cancel button
-        pygame.draw.rect(self.screen, (100, 0, 0), self.cancel_rect, border_radius=25)
-        cancel_text = self._create_text_surface("Cancel", 36, self.manager.WHITE)
-        cancel_rect = cancel_text.get_rect(center=self.cancel_rect.center)
-        self.screen.blit(cancel_text, cancel_rect) 
+        Args:
+            display: The pygame surface to draw on
+        """
+        # Draw Done button
+        done_color = (AppConfig.DONE_BUTTON_ACTIVE_COLOR if self.input_text 
+                     else AppConfig.DONE_BUTTON_INACTIVE_COLOR)
+        pygame.draw.rect(display, done_color, self.done_button_rect, border_radius=10)
+        done_text = self._create_text_surface("Done", 36, AppConfig.WHITE)
+        done_rect = done_text.get_rect(center=self.done_button_rect.center)
+        display.blit(done_text, done_rect)
+        
+        # Draw Cancel button
+        pygame.draw.rect(display, AppConfig.CANCEL_BUTTON_COLOR, self.cancel_button_rect, border_radius=10)
+        cancel_text = self._create_text_surface("Cancel", 36, AppConfig.WHITE)
+        cancel_rect = cancel_text.get_rect(center=self.cancel_button_rect.center)
+        display.blit(cancel_text, cancel_rect) 
+
+    def _handle_done(self) -> None:
+        """Handle the Done button press."""
+        if self.input_text:
+            logger.info(f"Keyboard input confirmed: {self.input_text}")
+            self.callback(self.input_text)
+            self.input_text = ""
+            self.manager.switch_screen(ScreenNames.SETTINGS.value)
+    
+    def _handle_cancel(self) -> None:
+        """Handle the Cancel button press."""
+        logger.info("Keyboard input cancelled")
+        self.input_text = ""
+        self.manager.switch_screen(ScreenNames.SETTINGS.value) 

@@ -37,9 +37,9 @@ class SettingsScreen(Screen):
         self.cell_height = (usable_height - (self.cell_padding * (self.num_rows + 1))) // self.num_rows
         
         # Colors
-        self.cell_bg_color = (30, 30, 30)  # Very light black/grey
-        self.cell_border_color = (45, 45, 45)  # Slightly brighter than background
-        self.cell_highlight_color = (0, 255, 0, 80)  # Very transparent green for hover effect
+        self.cell_bg_color = AppConfig.CELL_BG_COLOR
+        self.cell_border_color = AppConfig.CELL_BORDER_COLOR
+        self.cell_highlight_color = AppConfig.CELL_HIGHLIGHT_COLOR
         
         # Store cell rectangles for hit testing
         self.cell_rects: List[pygame.Rect] = []
@@ -203,7 +203,7 @@ class SettingsScreen(Screen):
         """
         if self.back_button.collidepoint(x, y):
             logger.info("Back button pressed")
-            self.manager.switch_to(ScreenNames.TICKER.value)
+            self.manager.switch_screen(ScreenNames.TICKER.value)
             return
         
         for i, rect in enumerate(self.cell_rects):
@@ -214,60 +214,73 @@ class SettingsScreen(Screen):
                     self.showing_action_popup = True
                 else:
                     logger.debug("Adding new symbol")
-                    self.manager.switch_to(ScreenNames.KEYBOARD.value)
+                    self.manager.switch_screen(ScreenNames.KEYBOARD.value)
                 break
 
-    def draw(self) -> None:
-        """Draw the screen contents."""
-        self.screen.fill(self.manager.BLACK)
+    def update(self, *args, **kwargs) -> None:
+        """Update the screen state."""
+        pass
+
+    def draw(self, display: pygame.Surface) -> None:
+        """
+        Draw the screen contents.
         
-        self._draw_title()
-        self._draw_grid()
-        self._draw_back_button()
+        Args:
+            display: The pygame surface to draw on
+        """
+        display.fill(AppConfig.BLACK)
         
+        # Draw grid
+        self._draw_grid(display)
+        
+        # Draw back button
+        pygame.draw.rect(display, AppConfig.CELL_BG_COLOR, self.back_button, border_radius=10)
+        pygame.draw.rect(display, AppConfig.CELL_BORDER_COLOR, self.back_button, 1, border_radius=10)
+        back_text = self._create_text_surface("Back", 36, AppConfig.WHITE)
+        back_rect = back_text.get_rect(center=self.back_button.center)
+        display.blit(back_text, back_rect)
+        
+        # Draw action popup if active
         if self.showing_action_popup:
-            self._draw_action_popup()
+            self._draw_action_popup(display)
 
-    def _draw_title(self) -> None:
-        """Draw the screen title."""
-        title_text = self._create_text_surface(
-            "Tracked Symbols",
-            48,
-            self.manager.WHITE
-        )
-        title_rect = title_text.get_rect(centerx=self.width//2, y=self.title_height//2)
-        self.screen.blit(title_text, title_rect)
-
-    def _draw_grid(self) -> None:
-        """Draw the grid of symbols."""
+    def _draw_grid(self, display: pygame.Surface) -> None:
+        """
+        Draw the grid of symbols.
+        
+        Args:
+            display: The pygame surface to draw on
+        """
         for i, cell_rect in enumerate(self.cell_rects):
             # Draw cell background
-            pygame.draw.rect(self.screen, self.cell_bg_color, cell_rect, border_radius=10)
+            pygame.draw.rect(display, AppConfig.CELL_BG_COLOR, cell_rect, border_radius=10)
             # Draw cell border
-            pygame.draw.rect(self.screen, self.cell_border_color, cell_rect, 1, border_radius=10)
+            pygame.draw.rect(display, AppConfig.CELL_BORDER_COLOR, cell_rect, 1, border_radius=10)
             
             if i < len(self.ticker_screen.symbols):
-                self._draw_symbol(self.ticker_screen.symbols[i], cell_rect)
+                self._draw_symbol(display, self.ticker_screen.symbols[i], cell_rect)
             else:
-                self._draw_plus_icon(cell_rect)
+                self._draw_plus_icon(display, cell_rect)
 
-    def _draw_symbol(self, symbol: str, cell_rect: pygame.Rect) -> None:
+    def _draw_symbol(self, display: pygame.Surface, symbol: str, cell_rect: pygame.Rect) -> None:
         """
         Draw a symbol in a cell.
         
         Args:
+            display: The pygame surface to draw on
             symbol: The symbol to draw
             cell_rect: The cell rectangle
         """
-        symbol_text = self._create_text_surface(symbol, 48, self.manager.WHITE)
+        symbol_text = self._create_text_surface(symbol, 48, AppConfig.WHITE)
         symbol_rect = symbol_text.get_rect(center=cell_rect.center)
-        self.screen.blit(symbol_text, symbol_rect)
+        display.blit(symbol_text, symbol_rect)
 
-    def _draw_plus_icon(self, cell_rect: pygame.Rect) -> None:
+    def _draw_plus_icon(self, display: pygame.Surface, cell_rect: pygame.Rect) -> None:
         """
         Draw a plus icon in an empty cell.
         
         Args:
+            display: The pygame surface to draw on
             cell_rect: The cell rectangle
         """
         plus_thickness = 2
@@ -275,7 +288,7 @@ class SettingsScreen(Screen):
         
         center_x = cell_rect.centerx
         center_y = cell_rect.centery
-        color = (60, 60, 60)
+        color = AppConfig.PLUS_ICON_COLOR
         
         horizontal_rect = pygame.Rect(
             center_x - plus_size//2,
@@ -283,7 +296,7 @@ class SettingsScreen(Screen):
             plus_size,
             plus_thickness
         )
-        pygame.draw.rect(self.screen, color, horizontal_rect, border_radius=1)
+        pygame.draw.rect(display, color, horizontal_rect, border_radius=1)
         
         vertical_rect = pygame.Rect(
             center_x - plus_thickness//2,
@@ -291,48 +304,45 @@ class SettingsScreen(Screen):
             plus_thickness,
             plus_size
         )
-        pygame.draw.rect(self.screen, color, vertical_rect, border_radius=1)
+        pygame.draw.rect(display, color, vertical_rect, border_radius=1)
 
-    def _draw_back_button(self) -> None:
-        """Draw the back button."""
-        pygame.draw.rect(self.screen, self.cell_bg_color, self.back_button, border_radius=25)
-        pygame.draw.rect(self.screen, self.cell_border_color, self.back_button, 1, border_radius=25)
-        back_text = self._create_text_surface("Back", 36, self.manager.WHITE)
-        back_rect = back_text.get_rect(center=self.back_button.center)
-        self.screen.blit(back_text, back_rect)
-
-    def _draw_action_popup(self) -> None:
-        """Draw the action popup."""
+    def _draw_action_popup(self, display: pygame.Surface) -> None:
+        """
+        Draw the action popup.
+        
+        Args:
+            display: The pygame surface to draw on
+        """
         # Draw semi-transparent background
         overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 200))
-        self.screen.blit(overlay, (0, 0))
+        overlay.fill(AppConfig.OVERLAY_COLOR)
+        display.blit(overlay, (0, 0))
         
         # Draw popup background
-        pygame.draw.rect(self.screen, (40, 40, 40), self.action_popup_rect, border_radius=15)
-        pygame.draw.rect(self.screen, (60, 60, 60), self.action_popup_rect, 1, border_radius=15)
+        pygame.draw.rect(display, AppConfig.POPUP_BG_COLOR, self.action_popup_rect, border_radius=15)
+        pygame.draw.rect(display, AppConfig.POPUP_BORDER_COLOR, self.action_popup_rect, 1, border_radius=15)
         
         # Draw symbol name
         symbol = self.ticker_screen.symbols[self.selected_symbol_index]
-        symbol_text = self._create_text_surface(symbol, 36, self.manager.WHITE)
+        symbol_text = self._create_text_surface(symbol, 36, AppConfig.WHITE)
         symbol_rect = symbol_text.get_rect(centerx=self.width//2, top=self.action_popup_rect.top + 10)
-        self.screen.blit(symbol_text, symbol_rect)
+        display.blit(symbol_text, symbol_rect)
         
         # Draw edit button
-        pygame.draw.rect(self.screen, (60, 60, 60), self.edit_button_rect, border_radius=10)
-        edit_text = self._create_text_surface("Edit", 36, self.manager.WHITE)
+        pygame.draw.rect(display, AppConfig.EDIT_BUTTON_COLOR, self.edit_button_rect, border_radius=10)
+        edit_text = self._create_text_surface("Edit", 36, AppConfig.WHITE)
         edit_rect = edit_text.get_rect(center=self.edit_button_rect.center)
-        self.screen.blit(edit_text, edit_rect)
+        display.blit(edit_text, edit_rect)
         
         # Draw delete button
-        pygame.draw.rect(self.screen, (180, 0, 0), self.delete_button_rect, border_radius=10)
-        delete_text = self._create_text_surface("Delete", 36, self.manager.WHITE)
+        pygame.draw.rect(display, AppConfig.DELETE_BUTTON_COLOR, self.delete_button_rect, border_radius=10)
+        delete_text = self._create_text_surface("Delete", 36, AppConfig.WHITE)
         delete_rect = delete_text.get_rect(center=self.delete_button_rect.center)
-        self.screen.blit(delete_text, delete_rect)
+        display.blit(delete_text, delete_rect)
         
         # Draw cancel button
-        pygame.draw.rect(self.screen, self.cell_bg_color, self.cancel_button_rect, border_radius=10)
-        pygame.draw.rect(self.screen, self.cell_border_color, self.cancel_button_rect, 1, border_radius=10)
-        cancel_text = self._create_text_surface("Cancel", 36, self.manager.WHITE)
+        pygame.draw.rect(display, AppConfig.CELL_BG_COLOR, self.cancel_button_rect, border_radius=10)
+        pygame.draw.rect(display, AppConfig.CELL_BORDER_COLOR, self.cancel_button_rect, 1, border_radius=10)
+        cancel_text = self._create_text_surface("Cancel", 36, AppConfig.WHITE)
         cancel_rect = cancel_text.get_rect(center=self.cancel_button_rect.center)
-        self.screen.blit(cancel_text, cancel_rect) 
+        display.blit(cancel_text, cancel_rect) 

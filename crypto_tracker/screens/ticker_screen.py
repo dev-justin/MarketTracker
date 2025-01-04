@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import time
 import math
 from ..config.settings import AppConfig
-from ..constants import EventTypes, ChartSettings
+from ..constants import EventTypes, ChartSettings, ScreenNames
 from ..utils.logger import get_logger
 from .base import Screen
 
@@ -44,7 +44,7 @@ class TickerScreen(Screen):
             self.width,
             AppConfig.CHART_HEIGHT
         )
-        self.chart_color = self.manager.GREEN
+        self.chart_color = AppConfig.GREEN
         self.chart_touch_margin = AppConfig.TOUCH_MARGIN
         
         # Touch state
@@ -62,36 +62,31 @@ class TickerScreen(Screen):
         Args:
             event: The pygame event to handle
         """
+        if event.type not in (EventTypes.FINGER_DOWN.value, EventTypes.FINGER_UP.value):
+            return
+            
         x, y = self._scale_touch_input(event)
-        logger.debug(f"Event type: {event.type}, x: {x}, y: {y}")
-
-        # Handle swipe up for settings screen
+        
+        # Handle swipe up to settings
         if event.type == EventTypes.FINGER_DOWN.value:
-            logger.debug(f"Finger down at y: {y}")
             self.swipe_start_y = y
+            logger.debug(f"Touch start at y={y}")
         elif event.type == EventTypes.FINGER_UP.value and self.swipe_start_y is not None:
             swipe_distance = self.swipe_start_y - y
-            logger.debug(f"Swipe distance: {swipe_distance}, threshold: {self.height * self.swipe_threshold}")
-            if swipe_distance > self.height * self.swipe_threshold:
-                logger.info("Switching to settings screen")
-                self.manager.switch_to('settings')
+            swipe_threshold = self.height * self.swipe_threshold
+            if swipe_distance > swipe_threshold:
+                logger.info("Swipe up detected, switching to settings")
+                self.manager.switch_screen(ScreenNames.SETTINGS.value)
             self.swipe_start_y = None
-
-        # Handle double tap for symbol switching
+        
+        # Handle double tap to switch symbols
         if event.type == EventTypes.FINGER_DOWN.value:
             current_time = time.time()
             if current_time - self.last_tap_time < self.double_tap_threshold:
                 logger.debug("Double tap detected")
-                if x < self.width // 2:
-                    logger.debug("Switching to previous symbol")
-                    self.current_symbol_index = (self.current_symbol_index - 1) % len(self.symbols)
-                else:
-                    logger.debug("Switching to next symbol")
-                    self.current_symbol_index = (self.current_symbol_index + 1) % len(self.symbols)
-                self.last_tap_time = current_time
-            else:
-                self.last_tap_time = current_time
-
+                self._switch_symbol()
+            self.last_tap_time = current_time
+        
         # Handle chart touches
         if event.type == EventTypes.FINGER_DOWN.value and self.chart_rect.collidepoint(x, y):
             self._handle_chart_touch(x, y)
@@ -107,9 +102,14 @@ class TickerScreen(Screen):
         """
         self.current_prices = prices
 
-    def draw(self) -> None:
-        """Draw the screen contents."""
-        self.screen.fill(self.manager.BLACK)
+    def draw(self, display: pygame.Surface) -> None:
+        """
+        Draw the screen contents.
+        
+        Args:
+            display: The pygame surface to draw on
+        """
+        display.fill(AppConfig.BLACK)
         
         if not self.current_prices:
             return
@@ -120,17 +120,17 @@ class TickerScreen(Screen):
         if price is None:
             return
 
-        self._draw_price(price)
-        self._draw_symbol(current_symbol)
-        self._draw_price_change(current_symbol)
+        self._draw_price(display, price)
+        self._draw_symbol(display, current_symbol)
+        self._draw_price_change(display, current_symbol)
         
         # Draw chart
         historical_prices = self.crypto_api.get_historical_prices(current_symbol)
         if historical_prices:
-            self._draw_chart(historical_prices)
+            self._draw_chart(display, historical_prices)
             if all([self.touch_active, self.touch_x is not None, 
                    self.touch_price is not None, self.touch_date is not None]):
-                self._draw_touch_indicator(self.touch_x, self.touch_price, self.touch_date)
+                self._draw_touch_indicator(display, self.touch_x, self.touch_price, self.touch_date)
 
     def get_current_symbol(self) -> str:
         """Get the currently selected symbol."""
@@ -169,41 +169,44 @@ class TickerScreen(Screen):
         self.touch_active = False
         self.touch_x = self.touch_price = self.touch_date = None
 
-    def _draw_price(self, price: float) -> None:
+    def _draw_price(self, display: pygame.Surface, price: float) -> None:
         """
         Draw the current price.
         
         Args:
+            display: The pygame surface to draw on
             price: The current price to display
         """
         price_text = self._create_text_surface(
             f"${price:,.2f}",
             120,
-            self.manager.GREEN
+            AppConfig.GREEN
         )
         price_rect = price_text.get_rect(left=50, y=40)
-        self.screen.blit(price_text, price_rect)
+        display.blit(price_text, price_rect)
 
-    def _draw_symbol(self, symbol: str) -> None:
+    def _draw_symbol(self, display: pygame.Surface, symbol: str) -> None:
         """
         Draw the current symbol.
         
         Args:
+            display: The pygame surface to draw on
             symbol: The symbol to display
         """
         symbol_text = self._create_text_surface(
             symbol,
             96,
-            self.manager.WHITE
+            AppConfig.WHITE
         )
         symbol_rect = symbol_text.get_rect(left=50, y=120)
-        self.screen.blit(symbol_text, symbol_rect)
+        display.blit(symbol_text, symbol_rect)
 
-    def _draw_price_change(self, symbol: str) -> None:
+    def _draw_price_change(self, display: pygame.Surface, symbol: str) -> None:
         """
         Draw the 24-hour price change.
         
         Args:
+            display: The pygame surface to draw on
             symbol: The current symbol
         """
         historical_prices = self.crypto_api.get_historical_prices(symbol)
@@ -212,7 +215,7 @@ class TickerScreen(Screen):
             price_24h_ago = historical_prices[-4]
             change_percent = ((current_price - price_24h_ago) / price_24h_ago) * 100
             
-            change_color = self.manager.GREEN if change_percent >= 0 else self.manager.RED
+            change_color = AppConfig.GREEN if change_percent >= 0 else AppConfig.RED
             change_text = (f"{change_percent:.2f}%" if change_percent >= 0 
                          else f"({abs(change_percent):.2f}%)")
             
@@ -222,13 +225,14 @@ class TickerScreen(Screen):
                 change_color
             )
             change_rect = change_surface.get_rect(right=self.width - 50, y=40)
-            self.screen.blit(change_surface, change_rect)
+            display.blit(change_surface, change_rect)
 
-    def _draw_chart(self, prices: List[float]) -> None:
+    def _draw_chart(self, display: pygame.Surface, prices: List[float]) -> None:
         """
         Draw the price chart.
         
         Args:
+            display: The pygame surface to draw on
             prices: List of historical prices
         """
         if not prices or len(prices) < 2:
@@ -239,9 +243,9 @@ class TickerScreen(Screen):
         price_range = max_price - min_price or max_price * 0.1
 
         points = self._calculate_chart_points(prices, min_price, price_range)
-        self._draw_chart_gradient(points)
+        self._draw_chart_gradient(display, points)
         pygame.draw.lines(
-            self.screen,
+            display,
             self.chart_color,
             False,
             points,
@@ -272,11 +276,12 @@ class TickerScreen(Screen):
             points.append((x, y))
         return points
 
-    def _draw_chart_gradient(self, points: List[Tuple[float, float]]) -> None:
+    def _draw_chart_gradient(self, display: pygame.Surface, points: List[Tuple[float, float]]) -> None:
         """
         Draw the gradient under the chart line.
         
         Args:
+            display: The pygame surface to draw on
             points: List of chart line points
         """
         gradient_height = self.height - self.chart_rect.y
@@ -307,13 +312,14 @@ class TickerScreen(Screen):
         
         pygame.draw.polygon(mask_surface, (255, 255, 255, 255), mask_points)
         gradient_surface.blit(mask_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
-        self.screen.blit(gradient_surface, (self.chart_rect.left, self.chart_rect.y))
+        display.blit(gradient_surface, (self.chart_rect.left, self.chart_rect.y))
 
-    def _draw_touch_indicator(self, x: int, price: float, date: datetime) -> None:
+    def _draw_touch_indicator(self, display: pygame.Surface, x: int, price: float, date: datetime) -> None:
         """
         Draw the touch indicator and tooltip.
         
         Args:
+            display: The pygame surface to draw on
             x: Touch x coordinate
             price: Price at touch point
             date: Date at touch point
@@ -323,14 +329,15 @@ class TickerScreen(Screen):
 
         historical_prices = self.crypto_api.get_historical_prices(self.get_current_symbol())
         if historical_prices:
-            self._draw_touch_dot(x, price, historical_prices)
-            self._draw_touch_tooltip(x, price, date)
+            self._draw_touch_dot(display, x, price, historical_prices)
+            self._draw_touch_tooltip(display, x, price, date)
 
-    def _draw_touch_dot(self, x: int, price: float, historical_prices: List[float]) -> None:
+    def _draw_touch_dot(self, display: pygame.Surface, x: int, price: float, historical_prices: List[float]) -> None:
         """
         Draw the touch indicator dot.
         
         Args:
+            display: The pygame surface to draw on
             x: Touch x coordinate
             price: Price at touch point
             historical_prices: List of historical prices
@@ -341,23 +348,24 @@ class TickerScreen(Screen):
         line_y = self.chart_rect.bottom - ((price - min_price) * self.chart_rect.height / price_range)
 
         pygame.draw.circle(
-            self.screen,
+            display,
             (255, 255, 255, 128),
             (x, line_y),
             ChartSettings.DOT_RADIUS + 2
         )
         pygame.draw.circle(
-            self.screen,
-            self.manager.GREEN,
+            display,
+            AppConfig.GREEN,
             (x, line_y),
             ChartSettings.DOT_RADIUS
         )
 
-    def _draw_touch_tooltip(self, x: int, price: float, date: datetime) -> None:
+    def _draw_touch_tooltip(self, display: pygame.Surface, x: int, price: float, date: datetime) -> None:
         """
         Draw the touch indicator tooltip.
         
         Args:
+            display: The pygame surface to draw on
             x: Touch x coordinate
             price: Price at touch point
             date: Date at touch point
@@ -365,8 +373,8 @@ class TickerScreen(Screen):
         price_text = f"${price:,.2f}"
         date_text = date.strftime("%b %-d %-I:%M %p")
         
-        price_surface = self._create_text_surface(price_text, 32, self.manager.GREEN)
-        date_surface = self._create_text_surface(date_text, 32, self.manager.WHITE)
+        price_surface = self._create_text_surface(price_text, 32, AppConfig.GREEN)
+        date_surface = self._create_text_surface(date_text, 32, AppConfig.WHITE)
 
         padding = ChartSettings.TOOLTIP_PADDING
         box_width = max(price_surface.get_width(), date_surface.get_width()) + padding * 2
@@ -401,7 +409,7 @@ class TickerScreen(Screen):
         )
 
         y_offset = abs(math.sin(time.time() * ChartSettings.ANIMATION_SPEED)) * ChartSettings.ANIMATION_AMPLITUDE
-        self.screen.blit(tooltip_surface, (box_x, box_y + y_offset))
+        display.blit(tooltip_surface, (box_x, box_y + y_offset))
 
     def _get_price_at_x(self, x: int, prices: List[float]) -> Tuple[Optional[float], Optional[datetime]]:
         """
