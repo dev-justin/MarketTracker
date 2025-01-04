@@ -4,9 +4,10 @@ from crypto_tracker.crypto_api import CryptoAPI
 from crypto_tracker.display import Display
 
 def main():
-    # Initialize display and API
-    display = Display()
+    # Initialize API first
     crypto_api = CryptoAPI()
+    # Pass API to display
+    display = Display(crypto_api)
     
     try:
         while True:

@@ -5,7 +5,8 @@ from pathlib import Path
 from datetime import datetime, timedelta
 
 class Display:
-    def __init__(self):
+    def __init__(self, crypto_api):
+        self.crypto_api = crypto_api
         # Set up XDG_RUNTIME_DIR if running with sudo
         if os.geteuid() == 0:  # Check if running as root/sudo
             uid = int(os.environ.get('SUDO_UID', 1000))
@@ -129,8 +130,10 @@ class Display:
             price_rect = price_text.get_rect(centerx=self.width//2, y=100)
             self.screen.blit(price_text, price_rect)
             
-            # Draw the chart
-            self._draw_chart(price)
+            # Get historical prices and draw the chart
+            historical_prices = self.crypto_api.get_historical_prices(symbol)
+            if historical_prices:
+                self._draw_chart(historical_prices)
         
         # Update the display
         pygame.display.flip()
