@@ -37,10 +37,11 @@ class AppConfig:
     # Font settings
     FONT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'assets', 'fonts')
     FONT_PATHS = {
-        'regular': os.path.join(FONT_DIR, 'SF-Pro-Display-Regular.otf'),
-        'medium': os.path.join(FONT_DIR, 'SF-Pro-Display-Medium.otf'),
-        'bold': os.path.join(FONT_DIR, 'SF-Pro-Display-Bold.otf'),
-        'semibold': os.path.join(FONT_DIR, 'SF-Pro-Display-Semibold.otf')
+        'light': os.path.join(FONT_DIR, 'Ubuntu-Light.ttf'),
+        'regular': os.path.join(FONT_DIR, 'Ubuntu-Regular.ttf'),
+        'medium': os.path.join(FONT_DIR, 'Ubuntu-Medium.ttf'),
+        'bold': os.path.join(FONT_DIR, 'Ubuntu-Bold.ttf'),
+        'semibold': os.path.join(FONT_DIR, 'Ubuntu-Medium.ttf')
     }
     
     # Font sizes

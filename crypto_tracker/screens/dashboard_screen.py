@@ -41,7 +41,7 @@ class DashboardScreen(Screen):
         # Load custom fonts
         try:
             # Create fonts using settings
-            self.date_font = pygame.font.Font(AppConfig.FONT_PATHS['LightItalic'], AppConfig.FONT_SIZES['date'])
+            self.date_font = pygame.font.Font(AppConfig.FONT_PATHS['light'], AppConfig.FONT_SIZES['date'])
             self.time_font = pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['time'])
             self.coin_font = pygame.font.Font(AppConfig.FONT_PATHS['semibold'], AppConfig.FONT_SIZES['coin_name'])
             self.price_font = pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['price'])
