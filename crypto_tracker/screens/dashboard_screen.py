@@ -62,8 +62,9 @@ class DashboardScreen(Screen):
                 response = requests.get(url)
                 data = response.json()
                 
-                if data['Response'] == 'Success':
+                if 'Data' in data:
                     self.news_items = data['Data'][:3]  # Get top 3 news items
+                    logger.info(f"Fetched {len(self.news_items)} news items")
                     
                     # Load images for each news item
                     for item in self.news_items:
@@ -75,13 +76,14 @@ class DashboardScreen(Screen):
                                 # Scale image to reasonable size (e.g., 200x120)
                                 image = pygame.transform.scale(image, (200, 120))
                                 self.news_images[item['imageurl']] = image
+                                logger.info(f"Loaded image for news item: {item['title'][:30]}...")
                             except Exception as e:
                                 logger.error(f"Error loading news image: {str(e)}")
                     
                     self.last_news_update = current_time
                     logger.info("News data updated successfully")
                 else:
-                    logger.error("Failed to fetch news data")
+                    logger.error(f"Unexpected API response structure: {data.keys()}")
             except Exception as e:
                 logger.error(f"Error updating news: {str(e)}")
     
