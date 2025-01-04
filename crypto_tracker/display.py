@@ -214,17 +214,17 @@ class Display:
         if prices:
             symbol, price = next(iter(prices.items()))
             
-            # Draw symbol
-            symbol_font = pygame.font.Font(None, 96)
-            symbol_text = symbol_font.render(symbol, True, self.WHITE)
-            symbol_rect = symbol_text.get_rect(left=50, y=40)
-            self.screen.blit(symbol_text, symbol_rect)
-            
-            # Draw price
+            # Draw price (on top)
             price_font = pygame.font.Font(None, 120)
             price_text = price_font.render(f"${price:,.2f}", True, self.GREEN)
-            price_rect = price_text.get_rect(left=50, y=100)
+            price_rect = price_text.get_rect(left=50, y=40)  # Move price to top
             self.screen.blit(price_text, price_rect)
+            
+            # Draw symbol (below price)
+            symbol_font = pygame.font.Font(None, 96)
+            symbol_text = symbol_font.render(symbol, True, self.WHITE)
+            symbol_rect = symbol_text.get_rect(left=50, y=140)  # Adjust y position for symbol
+            self.screen.blit(symbol_text, symbol_rect)
             
             # Calculate 24-hour change
             historical_prices = self.crypto_api.get_historical_prices(symbol)
