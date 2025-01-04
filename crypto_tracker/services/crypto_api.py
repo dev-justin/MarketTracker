@@ -10,7 +10,7 @@ class CryptoAPI:
         self.client = Spot()
         self.cached_prices = {}
         self.cache_time = 0
-        self.cache_duration = 10
+        self.cache_duration = 10 # seconds
         self.config_file = os.path.join(os.path.dirname(__file__), '..', 'data', 'tickers.json')
         print(f"Config file path: {self.config_file}")
         self.symbol_mapping = self._load_tickers()

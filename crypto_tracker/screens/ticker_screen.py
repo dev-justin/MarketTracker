@@ -79,12 +79,16 @@ class TickerScreen(Screen):
                 self.manager.switch_screen(ScreenNames.SETTINGS.value)
             self.swipe_start_y = None
         
-        # Handle double tap to switch symbols
+        # Handle double tap to switch symbols or view
         if event.type == EventTypes.FINGER_DOWN.value:
             current_time = time.time()
             if current_time - self.last_tap_time < self.double_tap_threshold:
                 logger.debug("Double tap detected")
-                self._switch_symbol()
+                if y < self.height // 3:  # Top third of screen switches to wallstreet view
+                    logger.info("Switching to wallstreet view")
+                    self.manager.switch_screen(ScreenNames.WALLSTREET.value)
+                else:  # Bottom two-thirds switches symbols
+                    self._switch_symbol()
             self.last_tap_time = current_time
         
         # Handle chart touches
