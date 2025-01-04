@@ -11,6 +11,14 @@ def main():
     
     try:
         while True:
+            # Process events first
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_q:
+                        return
+            
             # Get crypto prices (just BTC for now)
             prices = crypto_api.get_crypto_prices(['BTC'])
             
@@ -22,6 +30,8 @@ def main():
             time.sleep(5)
             
     except KeyboardInterrupt:
+        display.cleanup()
+    finally:
         display.cleanup()
 
 if __name__ == "__main__":

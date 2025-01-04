@@ -251,6 +251,28 @@ class Display:
             (box_x + padding, box_y + price_surface.get_height() + padding))
 
     def update(self, prices):
+        # Process all events before drawing
+        events = pygame.event.get()
+        for event in pygame.event.get():
+            print(f"Event detected: {event.type}")  # Debug print
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                print(f"Touch DOWN at position: {event.pos}")  # Debug print
+                self.touch_active = True
+                self.touch_x = event.pos[0]
+                self.touch_price, self.touch_date = self._get_price_at_x(
+                    event.pos[0], self.crypto_api.get_historical_prices('BTC'))
+            elif event.type == pygame.MOUSEBUTTONUP:
+                print(f"Touch UP at position: {event.pos}")  # Debug print
+                self.touch_active = False
+                self.touch_x = None
+                self.touch_price = None
+                self.touch_date = None
+            elif event.type == pygame.MOUSEMOTION and self.touch_active:
+                print(f"Touch MOTION at position: {event.pos}")  # Debug print
+                self.touch_x = event.pos[0]
+                self.touch_price, self.touch_date = self._get_price_at_x(
+                    event.pos[0], self.crypto_api.get_historical_prices('BTC'))
+
         # Clear the screen
         self.screen.fill(self.BLACK)
         
@@ -276,10 +298,9 @@ class Display:
             # Load and draw logo on the right
             logo = self._get_logo(symbol)
             if logo:
-                # Position logo on the right side, aligned with symbol
                 logo_rect = logo.get_rect(
-                    right=self.width - 50,  # 50 pixels from right edge
-                    centery=symbol_rect.centery  # Centered with symbol
+                    right=self.width - 50,
+                    centery=symbol_rect.centery
                 )
                 self.screen.blit(logo, logo_rect)
             
@@ -288,25 +309,9 @@ class Display:
             if historical_prices:
                 self._draw_chart(historical_prices)
                 
-                # Handle touch events
-                for event in pygame.event.get():
-                    if event.type == pygame.MOUSEBUTTONDOWN:
-                        self.touch_active = True
-                        self.touch_x = event.pos[0]
-                        self.touch_price, self.touch_date = self._get_price_at_x(
-                            event.pos[0], historical_prices)
-                    elif event.type == pygame.MOUSEBUTTONUP:
-                        self.touch_active = False
-                        self.touch_x = None
-                        self.touch_price = None
-                        self.touch_date = None
-                    elif event.type == pygame.MOUSEMOTION and self.touch_active:
-                        self.touch_x = event.pos[0]
-                        self.touch_price, self.touch_date = self._get_price_at_x(
-                            event.pos[0], historical_prices)
-
                 # Draw touch indicator if active
                 if self.touch_active and self.touch_price and self.touch_date:
+                    print(f"Drawing indicator at x={self.touch_x} for price=${self.touch_price:,.2f}")  # Debug print
                     self._draw_touch_indicator(self.touch_x, self.touch_price, self.touch_date)
 
         # Update the display
