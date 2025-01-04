@@ -16,16 +16,9 @@ logger = get_logger(__name__)
 class DashboardScreen(Screen):
     """Screen for displaying a dashboard of cryptocurrency prices and market information."""
     
-    def __init__(self, screen_manager, crypto_api) -> None:
-        """
-        Initialize the dashboard screen.
-        
-        Args:
-            screen_manager: The screen manager instance
-            crypto_api: The crypto API service instance
-        """
+    def __init__(self, screen_manager) -> None:
+        """Initialize the dashboard screen."""
         super().__init__(screen_manager)
-        self.crypto_api = crypto_api
         
         # Get local timezone
         self.local_tz = pytz.timezone('America/Vancouver')
@@ -59,9 +52,6 @@ class DashboardScreen(Screen):
         self.current_prices = None
         self.price_changes = {}
         self.ticker_items = []
-        
-        # Initialize icon manager
-        self.icon_manager = IconManager()
         
         logger.info("DashboardScreen initialized")
     
