@@ -207,9 +207,11 @@ class DashboardScreen(Screen):
         display.blit(time_text, time_rect)
         
         # Draw tickers in a vertical list
-        start_y = time_rect.bottom + self.padding * 3
-        card_height = 150  # Fixed height for each ticker card
-        card_spacing = 20  # Space between cards
+        start_y = time_rect.bottom + self.padding * 2  # Reduced padding
+        card_height = 100  # Reduced from 150
+        card_spacing = 10  # Reduced from 20
+        chart_width = 150  # Width of the small chart
+        chart_height = 40  # Height of the small chart
         
         for i, item in enumerate(self.ticker_items):
             # Calculate card position
@@ -225,7 +227,7 @@ class DashboardScreen(Screen):
             
             # Get and draw coin icon
             icon = self.icon_manager.get_icon(item['symbol'])
-            icon_x = card_rect.left + 30
+            icon_x = card_rect.left + 20  # Reduced padding
             icon_y = card_rect.top + (card_height - AppConfig.ICON_SIZE) // 2
             
             if icon:
@@ -240,7 +242,7 @@ class DashboardScreen(Screen):
             
             name_rect = name_text.get_rect(
                 left=text_left,
-                centery=icon_y + AppConfig.ICON_SIZE//2 - 10
+                centery=icon_y + AppConfig.ICON_SIZE//2 - 15
             )
             symbol_rect = symbol_text.get_rect(
                 left=text_left,
@@ -256,7 +258,7 @@ class DashboardScreen(Screen):
             
             price_rect = price_text.get_rect(
                 right=card_rect.right - 30,
-                centery=icon_y + AppConfig.ICON_SIZE//2 - 10
+                centery=icon_y + AppConfig.ICON_SIZE//2 - 15
             )
             change_rect = change_text.get_rect(
                 right=card_rect.right - 30,
@@ -264,4 +266,34 @@ class DashboardScreen(Screen):
             )
             
             display.blit(price_text, price_rect)
-            display.blit(change_text, change_rect) 
+            display.blit(change_text, change_rect)
+            
+            # Draw small line chart
+            historical_prices = self.crypto_api.get_historical_prices(item['symbol'])
+            if historical_prices and len(historical_prices) > 24:  # Ensure we have enough data points
+                # Calculate chart position
+                chart_rect = pygame.Rect(
+                    card_rect.centerx - chart_width//2,
+                    card_rect.bottom - chart_height - 10,
+                    chart_width,
+                    chart_height
+                )
+                
+                # Get last 24 prices for the chart
+                prices = historical_prices[-24:]
+                min_price = min(prices)
+                max_price = max(prices)
+                price_range = max_price - min_price
+                
+                if price_range > 0:  # Avoid division by zero
+                    # Draw the line chart
+                    points = []
+                    for j, price in enumerate(prices):
+                        x = chart_rect.left + (j * chart_rect.width // (len(prices) - 1))
+                        y = chart_rect.bottom - ((price - min_price) / price_range * chart_rect.height)
+                        points.append((x, y))
+                    
+                    # Draw line with appropriate color based on price trend
+                    line_color = AppConfig.GREEN if prices[-1] >= prices[0] else AppConfig.RED
+                    if len(points) > 1:
+                        pygame.draw.lines(display, line_color, False, points, 2) 
