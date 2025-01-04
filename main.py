@@ -29,7 +29,8 @@ def main():
                 screen_manager.handle_event(event)
         
         # Update prices and screen
-        prices = crypto_api.get_crypto_prices()
+        tracked_symbols = crypto_api.get_tracked_symbols()
+        prices = crypto_api.get_crypto_prices(tracked_symbols)
         screen_manager.update(prices)
         
         # Draw screen
