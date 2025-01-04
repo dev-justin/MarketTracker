@@ -17,7 +17,9 @@ class Display:
         self.symbols = ['BTC', 'ETH']
         self.current_symbol_index = 0
         self.swipe_start_x = None
-        self.swipe_threshold = 100  # Minimum swipe distance to trigger change
+        self.swipe_start_time = None
+        self.swipe_threshold = 50  # Reduced swipe distance for sensitivity
+        self.min_swipe_speed = 0.5  # Minimum speed in pixels per second
 
     def _setup_runtime_dir(self):
         if os.geteuid() == 0:
@@ -210,6 +212,7 @@ class Display:
 
         if event.type == self.FINGERDOWN:
             self.swipe_start_x = x
+            self.swipe_start_time = time.time()
             # Handle chart touch
             if self.chart_rect.collidepoint(x, y):
                 self.touch_active = True
@@ -219,9 +222,12 @@ class Display:
         
         elif event.type == self.FINGERUP:
             if self.swipe_start_x is not None:
-                # Calculate swipe distance
+                # Calculate swipe distance and speed
                 swipe_distance = x - self.swipe_start_x
-                if abs(swipe_distance) > self.swipe_threshold:
+                swipe_time = time.time() - self.swipe_start_time
+                swipe_speed = abs(swipe_distance) / swipe_time if swipe_time > 0 else 0
+
+                if abs(swipe_distance) > self.swipe_threshold and swipe_speed > self.min_swipe_speed:
                     # Swipe right
                     if swipe_distance > 0 and self.current_symbol_index > 0:
                         self.current_symbol_index -= 1
@@ -230,6 +236,7 @@ class Display:
                         self.current_symbol_index += 1
             
             self.swipe_start_x = None
+            self.swipe_start_time = None
             self.touch_active = False
             self.touch_x = self.touch_price = self.touch_date = None
 
