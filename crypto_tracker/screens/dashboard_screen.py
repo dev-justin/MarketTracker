@@ -207,11 +207,11 @@ class DashboardScreen(Screen):
         display.blit(time_text, time_rect)
         
         # Draw tickers in a vertical list
-        start_y = time_rect.bottom + self.padding * 2  # Reduced padding
-        card_height = 100  # Reduced from 150
-        card_spacing = 10  # Reduced from 20
-        chart_width = 150  # Width of the small chart
-        chart_height = 40  # Height of the small chart
+        start_y = time_rect.bottom + self.padding * 2
+        card_height = 80  # Further reduced height
+        card_spacing = 10
+        mini_chart_width = 60  # Small chart width
+        mini_chart_height = 20  # Small chart height
         
         for i, item in enumerate(self.ticker_items):
             # Calculate card position
@@ -222,12 +222,12 @@ class DashboardScreen(Screen):
                 card_height
             )
             
-            # Draw card background (slightly lighter than gradient)
+            # Draw card background
             pygame.draw.rect(display, (30, 35, 42), card_rect, border_radius=15)
             
             # Get and draw coin icon
             icon = self.icon_manager.get_icon(item['symbol'])
-            icon_x = card_rect.left + 20  # Reduced padding
+            icon_x = card_rect.left + 20
             icon_y = card_rect.top + (card_height - AppConfig.ICON_SIZE) // 2
             
             if icon:
@@ -242,7 +242,7 @@ class DashboardScreen(Screen):
             
             name_rect = name_text.get_rect(
                 left=text_left,
-                centery=icon_y + AppConfig.ICON_SIZE//2 - 15
+                centery=card_rect.centery - 10
             )
             symbol_rect = symbol_text.get_rect(
                 left=text_left,
@@ -256,27 +256,30 @@ class DashboardScreen(Screen):
             price_text = self._create_price_text(item['price'], AppConfig.WHITE)
             change_text = self._create_label_text(item['change'], item['color'])
             
+            # Position price at the right
             price_rect = price_text.get_rect(
                 right=card_rect.right - 30,
-                centery=icon_y + AppConfig.ICON_SIZE//2 - 15
+                centery=card_rect.centery - 10
             )
+            
+            # Position change percentage below price
             change_rect = change_text.get_rect(
-                right=card_rect.right - 30,
-                top=price_rect.bottom + 5
+                right=card_rect.right - 100,  # Leave space for mini chart
+                centery=price_rect.centery + 25
             )
             
             display.blit(price_text, price_rect)
             display.blit(change_text, change_rect)
             
-            # Draw small line chart
+            # Draw mini line chart next to change percentage
             historical_prices = self.crypto_api.get_historical_prices(item['symbol'])
-            if historical_prices and len(historical_prices) > 24:  # Ensure we have enough data points
-                # Calculate chart position
+            if historical_prices and len(historical_prices) > 24:
+                # Calculate mini chart position
                 chart_rect = pygame.Rect(
-                    card_rect.centerx - chart_width//2,
-                    card_rect.bottom - chart_height - 10,
-                    chart_width,
-                    chart_height
+                    change_rect.right + 10,  # Position right after change text
+                    change_rect.centery - mini_chart_height//2,  # Center vertically with change text
+                    mini_chart_width,
+                    mini_chart_height
                 )
                 
                 # Get last 24 prices for the chart
@@ -285,7 +288,7 @@ class DashboardScreen(Screen):
                 max_price = max(prices)
                 price_range = max_price - min_price
                 
-                if price_range > 0:  # Avoid division by zero
+                if price_range > 0:
                     # Draw the line chart
                     points = []
                     for j, price in enumerate(prices):
@@ -296,4 +299,4 @@ class DashboardScreen(Screen):
                     # Draw line with appropriate color based on price trend
                     line_color = AppConfig.GREEN if prices[-1] >= prices[0] else AppConfig.RED
                     if len(points) > 1:
-                        pygame.draw.lines(display, line_color, False, points, 2) 
+                        pygame.draw.lines(display, line_color, False, points, 1)  # Thinner line for mini chart 
