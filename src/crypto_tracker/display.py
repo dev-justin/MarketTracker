@@ -68,6 +68,12 @@ class Display:
         self.logo_path = Path("assets/logos")  # Directory to store downloaded logos
         self.logo_path.mkdir(parents=True, exist_ok=True)
 
+        # Add touch interaction settings
+        self.touch_active = False
+        self.touch_price = None
+        self.touch_date = None
+        self.touch_x = None
+
     def _draw_chart(self, prices):
         if not prices:
             return
@@ -186,6 +192,64 @@ class Display:
             print(f"Error loading logo for {symbol}: {e}")
             return None
 
+    def _get_price_at_x(self, x, prices):
+        """Get price and date for the touched x position"""
+        if not prices:
+            return None, None
+
+        # Convert x position to index in price data
+        chart_x = x - self.chart_rect.left
+        data_index = int(chart_x * len(prices) / self.chart_rect.width)
+        
+        # Ensure index is within bounds
+        if 0 <= data_index < len(prices):
+            price = prices[data_index]
+            # Calculate date (7 days ago + index hours)
+            date = datetime.now() - timedelta(days=7) + timedelta(hours=data_index)
+            return price, date
+        return None, None
+
+    def _draw_touch_indicator(self, x, price, date):
+        """Draw vertical line and price/date information at touch position"""
+        if x < self.chart_rect.left or x > self.chart_rect.right:
+            return
+
+        # Draw vertical line
+        pygame.draw.line(self.screen, self.WHITE, 
+            (x, self.chart_rect.top),
+            (x, self.chart_rect.bottom),
+            1)
+
+        # Format price and date
+        price_text = f"${price:,.2f}"
+        date_text = date.strftime("%b %d %H:%M")
+
+        # Create text surfaces
+        info_font = pygame.font.Font(None, 36)
+        price_surface = info_font.render(price_text, True, self.WHITE)
+        date_surface = info_font.render(date_text, True, self.WHITE)
+
+        # Position text boxes
+        padding = 10
+        box_width = max(price_surface.get_width(), date_surface.get_width()) + padding * 2
+        box_height = price_surface.get_height() + date_surface.get_height() + padding * 2
+
+        # Determine box position (avoid going off screen)
+        box_x = min(max(x - box_width/2, 0), self.width - box_width)
+        box_y = self.chart_rect.top - box_height - padding
+
+        # Draw background box
+        pygame.draw.rect(self.screen, (40, 40, 40), 
+            (box_x, box_y, box_width, box_height))
+        pygame.draw.rect(self.screen, self.WHITE, 
+            (box_x, box_y, box_width, box_height), 1)
+
+        # Draw text
+        self.screen.blit(price_surface, 
+            (box_x + padding, box_y + padding))
+        self.screen.blit(date_surface, 
+            (box_x + padding, box_y + price_surface.get_height() + padding))
+
     def update(self, prices):
         # Clear the screen
         self.screen.fill(self.BLACK)
@@ -223,7 +287,28 @@ class Display:
             historical_prices = self.crypto_api.get_historical_prices(symbol)
             if historical_prices:
                 self._draw_chart(historical_prices)
-        
+                
+                # Handle touch events
+                for event in pygame.event.get():
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        self.touch_active = True
+                        self.touch_x = event.pos[0]
+                        self.touch_price, self.touch_date = self._get_price_at_x(
+                            event.pos[0], historical_prices)
+                    elif event.type == pygame.MOUSEBUTTONUP:
+                        self.touch_active = False
+                        self.touch_x = None
+                        self.touch_price = None
+                        self.touch_date = None
+                    elif event.type == pygame.MOUSEMOTION and self.touch_active:
+                        self.touch_x = event.pos[0]
+                        self.touch_price, self.touch_date = self._get_price_at_x(
+                            event.pos[0], historical_prices)
+
+                # Draw touch indicator if active
+                if self.touch_active and self.touch_price and self.touch_date:
+                    self._draw_touch_indicator(self.touch_x, self.touch_price, self.touch_date)
+
         # Update the display
         pygame.display.flip()
 
