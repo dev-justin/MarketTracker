@@ -1,9 +1,21 @@
 import pygame
 import os
 import platform
+from pathlib import Path
 
 class Display:
     def __init__(self):
+        # Set up XDG_RUNTIME_DIR if running with sudo
+        if os.geteuid() == 0:  # Check if running as root/sudo
+            uid = int(os.environ.get('SUDO_UID', 1000))
+            runtime_dir = f"/run/user/{uid}"
+            os.environ['XDG_RUNTIME_DIR'] = runtime_dir
+            
+            # Create directory if it doesn't exist
+            Path(runtime_dir).mkdir(parents=True, exist_ok=True)
+            os.chmod(runtime_dir, 0o700)
+            os.chown(runtime_dir, uid, uid)
+
         # Initialize pygame
         pygame.init()
         
