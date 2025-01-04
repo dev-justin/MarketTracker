@@ -40,10 +40,20 @@ class ScreenManager:
         pygame.font.init()
         pygame.mouse.set_visible(False)
     
-    def _init_display(self):
-        """Initialize the display surface."""
-        self.display = pygame.display.set_mode((AppConfig.SCREEN_WIDTH, AppConfig.SCREEN_HEIGHT))
-        pygame.display.set_caption('Crypto Tracker')
+    def _init_display(self) -> None:
+        """Initialize the pygame display."""
+        pygame.init()
+        pygame.display.init()
+        
+        # Set up the display
+        self.display = pygame.display.set_mode((AppConfig.DISPLAY_WIDTH, AppConfig.DISPLAY_HEIGHT))
+        pygame.display.set_caption("Crypto Tracker")
+        
+        # Initialize the clock
+        self.clock = pygame.time.Clock()
+        
+        # Set up screens
+        self._init_screens()
     
     def _init_screens(self):
         """Initialize all application screens."""
