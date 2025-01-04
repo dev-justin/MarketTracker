@@ -1,22 +1,23 @@
 import time
 import pygame
-from crypto_tracker.crypto_api import get_crypto_prices
+from crypto_tracker.crypto_api import CryptoAPI
 from crypto_tracker.display import Display
 
 def main():
-    # Initialize display
+    # Initialize display and API
     display = Display()
+    crypto_api = CryptoAPI()
     
     try:
         while True:
             # Get crypto prices
-            prices = get_crypto_prices(['BTC', 'ETH', 'DOGE'])
+            prices = crypto_api.get_crypto_prices(['BTC', 'ETH', 'DOGE'])
             
             # Update display
             display.update(prices)
             
-            # Wait for 1 minute before next update
-            time.sleep(60)
+            # Wait for 5 seconds before next update
+            time.sleep(5)
             
     except KeyboardInterrupt:
         display.cleanup()
