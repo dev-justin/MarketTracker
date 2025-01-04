@@ -61,7 +61,6 @@ class DashboardScreen(Screen):
         self.owm = None
         self.weather_mgr = None
         api_key = os.getenv('OWM_API_KEY')
-        print(f"API key: {api_key}")
         
         if api_key:
             try:
@@ -83,17 +82,22 @@ class DashboardScreen(Screen):
         current_time = time.time()
         if (current_time - self.last_weather_update) >= self.weather_update_interval:
             try:
-                # Get weather for current location (San Francisco as default)
-                observation = self.weather_mgr.weather_at_place('San Francisco,US')
-                weather = observation.weather
-                
-                self.weather_data = {
-                    'temp': round(weather.temperature('celsius')['temp']),
-                    'status': weather.status,
-                    'detailed': weather.detailed_status
-                }
-                self.last_weather_update = current_time
-                logger.info("Weather data updated successfully")
+                # Get local weather using IP geolocation
+                reg = self.owm.city_id_registry()
+                list_of_locations = reg.locations_for('Vancouver', country='CA')  # Default to Toronto if geolocation fails
+                if list_of_locations:
+                    observation = self.weather_mgr.weather_at_place(f"{list_of_locations[0].name},{list_of_locations[0].country}")
+                    weather = observation.weather
+                    
+                    self.weather_data = {
+                        'temp': round(weather.temperature('celsius')['temp']),
+                        'status': weather.status,
+                        'detailed': weather.detailed_status
+                    }
+                    self.last_weather_update = current_time
+                    logger.info(f"Weather data updated successfully for {list_of_locations[0].name}")
+                else:
+                    logger.error("Could not find location data")
             except Exception as e:
                 logger.error(f"Error updating weather: {str(e)}")
     
