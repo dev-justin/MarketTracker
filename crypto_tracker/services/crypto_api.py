@@ -1,178 +1,154 @@
-from binance.spot import Spot
+from pycoingecko import CoinGeckoAPI
 import time
 from datetime import datetime, timedelta
-import json
-import os
+from typing import Dict, List, Optional
+import requests
+
+from ..utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 class CryptoAPI:
+    """Service for interacting with cryptocurrency APIs."""
+    
+    # Mapping of common symbols to CoinGecko IDs
+    COINGECKO_IDS = {
+        'BTC': 'bitcoin',
+        'ETH': 'ethereum',
+        'SOL': 'solana',
+        'DOGE': 'dogecoin',
+        'XRP': 'ripple',
+        'ADA': 'cardano',
+        'DOT': 'polkadot',
+        'MATIC': 'matic-network',
+        'LINK': 'chainlink',
+        'AVAX': 'avalanche-2'
+    }
+    
     def __init__(self):
-        print("Initializing CryptoAPI...")
-        self.client = Spot()
-        self.cached_prices = {}
+        """Initialize the crypto API service."""
+        logger.info("Initializing CryptoAPI...")
+        self.client = CoinGeckoAPI()
+        self.cached_prices: Dict[str, Dict] = {}
         self.cache_time = 0
-        self.cache_duration = 10 # seconds
-        self.config_file = os.path.join(os.path.dirname(__file__), '..', 'data', 'tickers.json')
-        print(f"Config file path: {self.config_file}")
-        self.symbol_mapping = self._load_tickers()
-        print(f"Loaded tickers: {self.symbol_mapping}")
-        self.historical_prices = {}
-        self._init_historical_data()
-
-    def _load_tickers(self):
-        print("Loading tickers from file...")
-        # Create data directory if it doesn't exist
-        os.makedirs(os.path.dirname(self.config_file), exist_ok=True)
-        
-        # Default tickers
-        default_mapping = {
-            'BTC': 'BTCUSDT',
-            'ETH': 'ETHUSDT'
-        }
-        
+        self.cache_duration = 10  # seconds
+        logger.info("CryptoAPI initialized")
+    
+    def verify_symbol(self, symbol: str) -> bool:
+        """Verify if a symbol exists on CoinGecko."""
         try:
-            if os.path.exists(self.config_file):
-                print(f"Found existing tickers file")
-                with open(self.config_file, 'r') as f:
-                    loaded_mapping = json.load(f)
-                    print(f"Loaded tickers: {loaded_mapping}")
-                    return loaded_mapping
-            else:
-                print("No tickers file found, creating with defaults")
-                self._save_tickers(default_mapping)
-                return default_mapping
-        except Exception as e:
-            print(f"Error loading tickers: {e}")
-            return default_mapping
-
-    def _save_tickers(self, mapping):
-        try:
-            with open(self.config_file, 'w') as f:
-                json.dump(mapping, f, indent=4)
-        except Exception as e:
-            print(f"Error saving tickers: {e}")
-
-    def add_ticker(self, symbol):
-        """Add a new ticker to track"""
-        symbol = symbol.upper()
-        print(f"Attempting to add ticker: {symbol}")
-        if symbol not in self.symbol_mapping:
-            binance_symbol = f"{symbol}USDT"
-            
-            # Verify the symbol exists on Binance
-            try:
-                print(f"Verifying {binance_symbol} exists on Binance")
-                self.client.ticker_price(symbol=binance_symbol)
-                self.symbol_mapping[symbol] = binance_symbol
-                self._save_tickers(self.symbol_mapping)
-                print(f"Successfully added {symbol}")
-                # Initialize historical data for new symbol
-                self._init_historical_data_for_symbol(symbol)
-                return True
-            except Exception as e:
-                print(f"Error adding ticker {symbol}: {e}")
+            coingecko_id = self.COINGECKO_IDS.get(symbol)
+            if not coingecko_id:
                 return False
-        print(f"Ticker {symbol} already exists")
-        return False
-
-    def remove_ticker(self, symbol):
-        """Remove a ticker from tracking"""
-        symbol = symbol.upper()
-        if symbol in self.symbol_mapping:
-            del self.symbol_mapping[symbol]
-            if symbol in self.historical_prices:
-                del self.historical_prices[symbol]
-            self._save_tickers(self.symbol_mapping)
-            return True
-        return False
-
-    def get_tracked_symbols(self):
-        """Get list of currently tracked symbols"""
-        return list(self.symbol_mapping.keys())
-
-    def _init_historical_data_for_symbol(self, symbol):
-        """Fetch historical data for a single symbol"""
-        print(f"Fetching historical data for {symbol}")
-        try:
-            end_time = int(time.time() * 1000)
-            start_time = end_time - (7 * 24 * 60 * 60 * 1000)
             
-            binance_symbol = self.symbol_mapping[symbol]
-            klines = self.client.klines(
-                symbol=binance_symbol,
-                interval='6h',
-                startTime=start_time,
-                endTime=end_time,
-                limit=28
-            )
-            self.historical_prices[symbol] = [float(k[4]) for k in klines]
-            print(f"Got {len(self.historical_prices[symbol])} historical prices for {symbol}")
+            # Try to get the coin info
+            coin_data = self.client.get_coin_by_id(coingecko_id)
+            logger.debug(f"Verified coin data: {coin_data}")
+            return True
         except Exception as e:
-            print(f"Error fetching historical data for {symbol} ({datetime.now()}): {e}")
-
-    def _init_historical_data(self):
-        """Fetch 7 days of 6-hour historical data for all symbols"""
-        print("Initializing historical data for all symbols")
-        for symbol in self.symbol_mapping:
-            self._init_historical_data_for_symbol(symbol)
-
-    def get_crypto_prices(self, symbols):
-        """Get current prices using Binance API"""
+            logger.error(f"Error verifying symbol {symbol}: {e}")
+            return False
+    
+    def get_current_prices(self, symbols: List[str]) -> Dict[str, Dict]:
+        """
+        Get current prices and metadata for multiple symbols.
+        Returns a dictionary with symbol keys and values containing:
+        - price: current price in USD
+        - change_24h: 24h price change percentage
+        - image: URL to the coin's image
+        """
         if time.time() - self.cache_time < self.cache_duration:
             return self.cached_prices
 
         prices = {}
         try:
-            print("Fetching fresh prices from Binance")
-            tickers = self.client.ticker_price()
-            print("\nRaw data from Binance:")
-            for ticker in tickers:
-                print(f"Symbol: {ticker['symbol']}, Price: {ticker['price']}")
-            print("\nProcessing data for tracked symbols:")
+            # Get list of CoinGecko IDs for our symbols
+            coingecko_ids = [
+                self.COINGECKO_IDS.get(symbol) 
+                for symbol in symbols 
+                if symbol in self.COINGECKO_IDS
+            ]
             
-            ticker_dict = {t['symbol']: float(t['price']) for t in tickers}
+            if not coingecko_ids:
+                return {}
             
-            for symbol in symbols:
-                binance_symbol = self.symbol_mapping.get(symbol)
-                if binance_symbol in ticker_dict:
-                    price = ticker_dict[binance_symbol]
-                    prices[symbol] = price
-                    print(f"Price for {symbol} ({binance_symbol}): ${price:,.2f}")
-                    
-                    # Only update historical prices if we've entered a new 6-hour interval
-                    current_hour = datetime.now().hour
-                    if current_hour % 6 == 0 and symbol in self.historical_prices:
-                        last_price_time = self.cache_time
-                        last_price_hour = datetime.fromtimestamp(last_price_time).hour
-                        if last_price_hour % 6 != 0:  # Only append if we haven't already for this interval
-                            print(f"Adding new historical price for {symbol}")
-                            self.historical_prices[symbol].append(price)
-                            self.historical_prices[symbol] = self.historical_prices[symbol][-28:]
+            logger.info("Fetching fresh data from CoinGecko")
+            # Get market data for all coins at once
+            market_data = self.client.get_coins_markets(
+                vs_currency='usd',
+                ids=coingecko_ids,
+                order='market_cap_desc',
+                per_page=100,
+                page=1,
+                sparkline=False,
+                price_change_percentage='24h'
+            )
+            
+            logger.debug("\nRaw data from CoinGecko:")
+            for coin in market_data:
+                logger.debug(f"Coin data: {coin}")
+            
+            # Process the data
+            for coin in market_data:
+                # Find the symbol for this coin
+                symbol = next(
+                    (s for s, cg_id in self.COINGECKO_IDS.items() 
+                     if cg_id == coin['id']),
+                    None
+                )
+                if symbol:
+                    prices[symbol] = {
+                        'price': coin['current_price'],
+                        'change_24h': coin['price_change_percentage_24h'],
+                        'image': coin['image']
+                    }
+                    logger.info(
+                        f"Price for {symbol}: ${coin['current_price']:,.2f} "
+                        f"({coin['price_change_percentage_24h']:+.2f}%)"
+                    )
             
             self.cached_prices = prices
             self.cache_time = time.time()
             
         except Exception as e:
-            print(f"Error fetching prices ({datetime.now()}): {e}")
+            logger.error(f"Error fetching prices ({datetime.now()}): {e}")
             return self.cached_prices if self.cached_prices else {}
             
         return prices
-
-    def get_historical_prices(self, symbol):
-        """Get historical price data for a symbol"""
-        return self.historical_prices.get(symbol, []) 
-
+    
+    def get_historical_prices(self, symbol: str, days: int = 7) -> List[float]:
+        """Get historical price data for a symbol."""
+        try:
+            coingecko_id = self.COINGECKO_IDS.get(symbol)
+            if not coingecko_id:
+                return []
+            
+            # Get market chart data
+            chart_data = self.client.get_coin_market_chart_by_id(
+                id=coingecko_id,
+                vs_currency='usd',
+                days=days
+            )
+            
+            # Extract just the prices
+            prices = [price[1] for price in chart_data['prices']]
+            logger.info(f"Got {len(prices)} historical prices for {symbol}")
+            logger.debug(f"Raw historical data: {chart_data}")
+            return prices
+            
+        except Exception as e:
+            logger.error(f"Error fetching historical data for {symbol}: {e}")
+            return []
+    
     def get_coin_name(self, symbol: str) -> str:
         """Get the full name of a coin from its symbol."""
-        coin_names = {
-            'BTC': 'Bitcoin',
-            'ETH': 'Ethereum',
-            'SOL': 'Solana',
-            'DOGE': 'Dogecoin',
-            'XRP': 'Ripple',
-            'ADA': 'Cardano',
-            'DOT': 'Polkadot',
-            'MATIC': 'Polygon',
-            'LINK': 'Chainlink',
-            'AVAX': 'Avalanche'
-        }
-        return coin_names.get(symbol, symbol) 
+        try:
+            coingecko_id = self.COINGECKO_IDS.get(symbol)
+            if not coingecko_id:
+                return symbol
+            
+            coin_data = self.client.get_coin_by_id(coingecko_id)
+            return coin_data['name']
+        except Exception as e:
+            logger.error(f"Error fetching coin name for {symbol}: {e}")
+            return symbol 
