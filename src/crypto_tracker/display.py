@@ -1,16 +1,30 @@
 import pygame
 import os
+import platform
 
 class Display:
     def __init__(self):
         # Initialize pygame
         pygame.init()
         
+        # Set up the display for Raspberry Pi
+        os.putenv('SDL_VIDEODRIVER', 'fbcon')  # Tell SDL to use the framebuffer
+        os.putenv('SDL_FBDEV', '/dev/fb0')     # Set the framebuffer device
+        
         # Set up the display
         # Using your display's resolution
         self.width = 800
         self.height = 480
-        self.screen = pygame.display.set_mode((self.width, self.height))
+        
+        # Initialize the display with no window manager
+        if platform.machine() == 'armv7l':  # Check if we're on Raspberry Pi
+            self.screen = pygame.display.set_mode(
+                (self.width, self.height),
+                pygame.FULLSCREEN | pygame.NOFRAME | pygame.HWSURFACE
+            )
+        else:
+            self.screen = pygame.display.set_mode((self.width, self.height))
+            
         pygame.display.set_caption("Crypto Tracker")
         
         # Set up fonts
