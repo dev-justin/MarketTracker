@@ -15,7 +15,7 @@ class CryptoAPI:
         self._init_historical_data()
 
     def _init_historical_data(self):
-        """Fetch 7 days of hourly historical data"""
+        """Fetch 7 days of 3-hour historical data"""
         try:
             end_time = int(time.time() * 1000)
             start_time = end_time - (7 * 24 * 60 * 60 * 1000)
@@ -24,10 +24,10 @@ class CryptoAPI:
                 binance_symbol = self.symbol_mapping[symbol]
                 klines = self.client.klines(
                     symbol=binance_symbol,
-                    interval='1h',
+                    interval='3h',
                     startTime=start_time,
                     endTime=end_time,
-                    limit=168
+                    limit=56
                 )
                 self.historical_prices[symbol] = [float(k[4]) for k in klines]
 
@@ -53,7 +53,7 @@ class CryptoAPI:
                     
                     if symbol in self.historical_prices:
                         self.historical_prices[symbol].append(price)
-                        self.historical_prices[symbol] = self.historical_prices[symbol][-168:]
+                        self.historical_prices[symbol] = self.historical_prices[symbol][-56:]
             
             self.cached_prices = prices
             self.cache_time = time.time()
