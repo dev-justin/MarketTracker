@@ -40,20 +40,13 @@ class Display:
         
         # Add screens to manager
         self.screen_manager.add_screen('ticker', TickerScreen, self.crypto_api)
-        
-        # Get the ticker screen instance to pass to settings
         ticker_screen = self.screen_manager.screens['ticker']
         
-        # Add settings screen
         self.screen_manager.add_screen('settings', SettingsScreen, ticker_screen)
-        
-        # Get settings screen instance for keyboard callback
         settings_screen = self.screen_manager.screens['settings']
         
-        # Add keyboard screen
         self.screen_manager.add_screen('keyboard', KeyboardScreen, settings_screen.add_ticker)
         
-        # Set initial screen
         self.screen_manager.switch_to('ticker')
 
     def handle_event(self, event):

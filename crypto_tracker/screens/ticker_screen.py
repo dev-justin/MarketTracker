@@ -17,9 +17,9 @@ class TickerScreen(Screen):
         self.last_tap_time = 0
         self.double_tap_threshold = 0.3  # seconds between taps
         
-        # Triple tap detection
-        self.triple_tap_last_time = 0
-        self.triple_tap_second_time = 0
+        # Swipe detection
+        self.swipe_start_y = None
+        self.swipe_threshold = 0.15  # Minimum distance as percentage of screen height
         
         # Chart settings
         self.chart_rect = pygame.Rect(0, 220, self.width, 250)
@@ -39,19 +39,14 @@ class TickerScreen(Screen):
         x = int(event.x * self.width)
         y = int(event.y * self.height)
 
-        # Triple tap to switch to settings screen
+        # Handle swipe up for settings screen
         if event.type == pygame.FINGERDOWN:
-            current_time = time.time()
-            if current_time - self.triple_tap_last_time < self.double_tap_threshold:
-                if current_time - self.triple_tap_second_time < self.double_tap_threshold:
-                    self.manager.switch_to('settings')
-                    self.triple_tap_second_time = 0
-                    self.triple_tap_last_time = 0
-                else:
-                    self.triple_tap_second_time = current_time
-            else:
-                self.triple_tap_second_time = 0
-            self.triple_tap_last_time = current_time
+            self.swipe_start_y = y
+        elif event.type == pygame.FINGERUP and self.swipe_start_y is not None:
+            swipe_distance = self.swipe_start_y - y
+            if swipe_distance > self.height * self.swipe_threshold:
+                self.manager.switch_to('settings')
+            self.swipe_start_y = None
 
         # Handle double tap for symbol switching
         if event.type == pygame.FINGERDOWN:
