@@ -10,21 +10,18 @@ class SettingsScreen(Screen):
         
         # Grid settings
         self.grid_size = 3
-        self.cell_padding = 30
+        self.cell_padding = 40  # Increased padding
         
-        # Calculate usable space (excluding title and button areas)
-        title_height = 100
-        button_area_height = 80
-        usable_height = self.height - title_height - button_area_height
+        # Calculate usable space
+        self.title_height = 100
+        self.button_area_height = 80
+        usable_height = self.height - self.title_height - self.button_area_height
         
         # Calculate cell dimensions to fill space evenly
+        # Make cells taller by using a 3x2 grid layout (3 columns, 2 rows)
+        self.num_rows = 2
         self.cell_width = (self.width - (self.cell_padding * (self.grid_size + 1))) // self.grid_size
-        self.cell_height = (usable_height - (self.cell_padding * (self.grid_size + 1))) // self.grid_size
-        
-        # Triple tap detection
-        self.triple_tap_last_time = 0
-        self.triple_tap_second_time = 0
-        self.double_tap_threshold = 0.3
+        self.cell_height = (usable_height - (self.cell_padding * (self.num_rows + 1))) // self.num_rows
         
         # Store cell rectangles for hit testing
         self.cell_rects = []
@@ -42,9 +39,10 @@ class SettingsScreen(Screen):
 
     def _create_cell_rects(self):
         start_x = self.cell_padding
-        start_y = 100  # Below title
+        start_y = self.title_height + self.cell_padding  # Start below title
         
-        for row in range(self.grid_size):
+        # Create a 3x2 grid of cells
+        for row in range(self.num_rows):
             for col in range(self.grid_size):
                 x = start_x + col * (self.cell_width + self.cell_padding)
                 y = start_y + row * (self.cell_height + self.cell_padding)
@@ -109,39 +107,24 @@ class SettingsScreen(Screen):
         # Draw title
         title_font = pygame.font.Font(None, 72)
         title_text = title_font.render("Tracked Symbols", True, self.manager.WHITE)
-        title_rect = title_text.get_rect(centerx=self.width//2, y=20)
+        title_rect = title_text.get_rect(centerx=self.width//2, y=self.title_height//2)
         self.screen.blit(title_text, title_rect)
         
-        # Calculate starting position for grid (below title)
-        start_x = self.cell_padding
-        start_y = 100  # Below title
-        
         # Draw grid
-        for row in range(self.grid_size):
-            for col in range(self.grid_size):
-                # Calculate cell position
-                x = start_x + col * (self.cell_width + self.cell_padding)
-                y = start_y + row * (self.cell_height + self.cell_padding)
-                
-                # Create cell rect
-                cell_rect = pygame.Rect(x, y, self.cell_width, self.cell_height)
-                
-                # Calculate index in symbols list
-                index = row * self.grid_size + col
-                
-                # Draw cell border only (no background) with thin green line
-                pygame.draw.rect(self.screen, (0, 255, 0, 128), cell_rect, 1, border_radius=10)
-                
-                # If we have a symbol for this cell, draw it
-                if index < len(self.ticker_screen.symbols):
-                    symbol = self.ticker_screen.symbols[index]
-                    symbol_font = pygame.font.Font(None, 72)
-                    symbol_text = symbol_font.render(symbol, True, self.manager.WHITE)
-                    symbol_rect = symbol_text.get_rect(center=cell_rect.center)
-                    self.screen.blit(symbol_text, symbol_rect)
-                else:
-                    # Draw plus icon for empty cells
-                    self._draw_plus_icon(cell_rect)
+        for i, cell_rect in enumerate(self.cell_rects):
+            # Draw cell border only (no background) with thin green line
+            pygame.draw.rect(self.screen, (0, 255, 0, 128), cell_rect, 1, border_radius=10)
+            
+            # If we have a symbol for this cell, draw it
+            if i < len(self.ticker_screen.symbols):
+                symbol = self.ticker_screen.symbols[i]
+                symbol_font = pygame.font.Font(None, 72)
+                symbol_text = symbol_font.render(symbol, True, self.manager.WHITE)
+                symbol_rect = symbol_text.get_rect(center=cell_rect.center)
+                self.screen.blit(symbol_text, symbol_rect)
+            else:
+                # Draw plus icon for empty cells
+                self._draw_plus_icon(cell_rect)
         
         # Draw back button
         pygame.draw.rect(self.screen, (0, 255, 0, 128), self.back_button, 1, border_radius=25)
