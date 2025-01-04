@@ -206,8 +206,7 @@ class DashboardScreen(Screen):
         card_height = 80
         card_spacing = 10
         card_width = (self.width - (self.padding * 3)) // 2  # 3 paddings: left, middle, right
-        mini_chart_width = 50
-        mini_chart_height = 20
+        arrow_size = 12  # Size of the arrow indicator
         
         for i, item in enumerate(self.ticker_items):
             # Calculate grid position
@@ -252,7 +251,7 @@ class DashboardScreen(Screen):
             display.blit(name_text, name_rect)
             display.blit(symbol_text, symbol_rect)
             
-            # Draw price, mini chart, and change percentage
+            # Draw price and change percentage with arrow
             price_text = self._create_price_text(item['price'], AppConfig.WHITE)
             change_text = self._create_label_text(item['change'], item['color'])
             
@@ -262,47 +261,34 @@ class DashboardScreen(Screen):
                 centery=card_rect.centery - 10
             )
             
-            # Draw mini line chart
-            historical_prices = self.crypto_api.get_historical_prices(item['symbol'])
-            if historical_prices and len(historical_prices) > 24:
-                # Calculate mini chart position
-                chart_rect = pygame.Rect(
-                    price_rect.right - 160,  # Position chart with space for change text
-                    price_rect.centery + 25 - mini_chart_height//2,
-                    mini_chart_width,
-                    mini_chart_height
-                )
-                
-                # Get last 24 prices for the chart
-                prices = historical_prices[-24:]
-                min_price = min(prices)
-                max_price = max(prices)
-                price_range = max_price - min_price
-                
-                if price_range > 0:
-                    # Draw the line chart
-                    points = []
-                    for j, price in enumerate(prices):
-                        x = chart_rect.left + (j * chart_rect.width // (len(prices) - 1))
-                        y = chart_rect.bottom - ((price - min_price) / price_range * chart_rect.height)
-                        points.append((x, y))
-                    
-                    # Draw line with appropriate color based on price trend
-                    line_color = AppConfig.GREEN if prices[-1] >= prices[0] else AppConfig.RED
-                    if len(points) > 1:
-                        pygame.draw.lines(display, line_color, False, points, 1)
-                
-                # Position change percentage after chart
-                change_rect = change_text.get_rect(
-                    left=chart_rect.right + 10,
-                    centery=chart_rect.centery
-                )
+            # Draw arrow and change percentage
+            is_positive = item['color'] == AppConfig.GREEN
+            arrow_x = price_rect.right - 100  # Position arrow
+            arrow_y = price_rect.centery + 25
+            
+            # Draw arrow
+            if is_positive:
+                # Draw up arrow
+                points = [
+                    (arrow_x + arrow_size//2, arrow_y - arrow_size//2),  # Top point
+                    (arrow_x, arrow_y + arrow_size//2),  # Bottom left
+                    (arrow_x + arrow_size, arrow_y + arrow_size//2)  # Bottom right
+                ]
             else:
-                # Fallback position if no chart
-                change_rect = change_text.get_rect(
-                    right=card_rect.right - 15,
-                    centery=price_rect.centery + 25
-                )
+                # Draw down arrow
+                points = [
+                    (arrow_x, arrow_y - arrow_size//2),  # Top left
+                    (arrow_x + arrow_size, arrow_y - arrow_size//2),  # Top right
+                    (arrow_x + arrow_size//2, arrow_y + arrow_size//2)  # Bottom point
+                ]
+            
+            pygame.draw.polygon(display, item['color'], points)
+            
+            # Position change percentage after arrow
+            change_rect = change_text.get_rect(
+                left=arrow_x + arrow_size + 10,
+                centery=arrow_y
+            )
             
             display.blit(price_text, price_rect)
             display.blit(change_text, change_rect) 

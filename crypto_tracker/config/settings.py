@@ -58,8 +58,8 @@ class AppConfig:
     FONT_SIZES = {
         'time': 70,
         'date': 36,
-        'coin_name': 32,
-        'price': 32,
+        'coin_name': 28,
+        'price': 20,
         'label': 24
     }
     
