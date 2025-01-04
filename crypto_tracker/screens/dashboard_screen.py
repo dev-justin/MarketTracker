@@ -61,6 +61,7 @@ class DashboardScreen(Screen):
         self.owm = None
         self.weather_mgr = None
         api_key = os.getenv('OWM_API_KEY')
+        print(f"API key: {api_key}")
         
         if api_key:
             try:
