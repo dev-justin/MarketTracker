@@ -12,9 +12,10 @@ class SettingsScreen(Screen):
         self.grid_size = 3
         self.cell_padding = 30
         
-        # Calculate usable space (excluding title area)
+        # Calculate usable space (excluding title and button areas)
         title_height = 100
-        usable_height = self.height - title_height
+        button_area_height = 80
+        usable_height = self.height - title_height - button_area_height
         
         # Calculate cell dimensions to fill space evenly
         self.cell_width = (self.width - (self.cell_padding * (self.grid_size + 1))) // self.grid_size
@@ -28,6 +29,16 @@ class SettingsScreen(Screen):
         # Store cell rectangles for hit testing
         self.cell_rects = []
         self._create_cell_rects()
+        
+        # Create back button
+        button_width = 120
+        button_height = 50
+        self.back_button = pygame.Rect(
+            (self.width - button_width) // 2,
+            self.height - button_height - 20,
+            button_width,
+            button_height
+        )
 
     def _create_cell_rects(self):
         start_x = self.cell_padding
@@ -51,19 +62,11 @@ class SettingsScreen(Screen):
         x = int(event.x * self.width)
         y = int(event.y * self.height)
 
-        # Triple tap to return to ticker screen
         if event.type == pygame.FINGERDOWN:
-            current_time = time.time()
-            if current_time - self.triple_tap_last_time < self.double_tap_threshold:
-                if current_time - self.triple_tap_second_time < self.double_tap_threshold:
-                    self.manager.switch_to('ticker')
-                    self.triple_tap_second_time = 0
-                    self.triple_tap_last_time = 0
-                else:
-                    self.triple_tap_second_time = current_time
-            else:
-                self.triple_tap_second_time = 0
-            self.triple_tap_last_time = current_time
+            # Check for back button press
+            if self.back_button.collidepoint(x, y):
+                self.manager.switch_to('ticker')
+                return
             
             # Check for clicks on empty cells
             for i, rect in enumerate(self.cell_rects):
@@ -72,12 +75,15 @@ class SettingsScreen(Screen):
 
     def _draw_plus_icon(self, cell_rect):
         # Calculate plus dimensions
-        plus_thickness = 6
-        plus_size = min(cell_rect.width, cell_rect.height) // 3
+        plus_thickness = 3  # Thinner lines for more modern look
+        plus_size = min(cell_rect.width, cell_rect.height) // 4  # Slightly smaller
         
         # Calculate center position
         center_x = cell_rect.centerx
         center_y = cell_rect.centery
+        
+        # Draw plus in green to match the theme
+        color = (0, 255, 0, 128)  # Semi-transparent green
         
         # Draw horizontal line
         horizontal_rect = pygame.Rect(
@@ -86,7 +92,7 @@ class SettingsScreen(Screen):
             plus_size,
             plus_thickness
         )
-        pygame.draw.rect(self.screen, (60, 60, 60), horizontal_rect, border_radius=2)
+        pygame.draw.rect(self.screen, color, horizontal_rect, border_radius=2)
         
         # Draw vertical line
         vertical_rect = pygame.Rect(
@@ -95,7 +101,7 @@ class SettingsScreen(Screen):
             plus_thickness,
             plus_size
         )
-        pygame.draw.rect(self.screen, (60, 60, 60), vertical_rect, border_radius=2)
+        pygame.draw.rect(self.screen, color, vertical_rect, border_radius=2)
 
     def draw(self):
         self.screen.fill(self.manager.BLACK)
@@ -123,10 +129,8 @@ class SettingsScreen(Screen):
                 # Calculate index in symbols list
                 index = row * self.grid_size + col
                 
-                # Draw cell background with rounded corners
-                pygame.draw.rect(self.screen, (20, 20, 20), cell_rect, border_radius=10)
-                # Draw cell border with rounded corners
-                pygame.draw.rect(self.screen, (40, 40, 40), cell_rect, 2, border_radius=10)
+                # Draw cell border only (no background) with thin green line
+                pygame.draw.rect(self.screen, (0, 255, 0, 128), cell_rect, 1, border_radius=10)
                 
                 # If we have a symbol for this cell, draw it
                 if index < len(self.ticker_screen.symbols):
@@ -137,4 +141,10 @@ class SettingsScreen(Screen):
                     self.screen.blit(symbol_text, symbol_rect)
                 else:
                     # Draw plus icon for empty cells
-                    self._draw_plus_icon(cell_rect) 
+                    self._draw_plus_icon(cell_rect)
+        
+        # Draw back button
+        pygame.draw.rect(self.screen, (0, 255, 0, 128), self.back_button, 1, border_radius=25)
+        back_text = pygame.font.Font(None, 36).render("Back", True, (0, 255, 0))
+        back_rect = back_text.get_rect(center=self.back_button.center)
+        self.screen.blit(back_text, back_rect) 
