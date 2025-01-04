@@ -9,7 +9,8 @@ def main():
     
     try:
         while True:
-            prices = crypto_api.get_crypto_prices(['BTC'])
+            # Get crypto prices for all symbols
+            prices = crypto_api.get_crypto_prices(['BTC', 'ETH'])
             
             # Process events
             for event in pygame.event.get():

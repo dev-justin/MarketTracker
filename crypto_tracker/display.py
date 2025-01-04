@@ -12,6 +12,12 @@ class Display:
         self._init_pygame()
         self._init_display()
         self._init_touch()
+        
+        # Add symbol management
+        self.symbols = ['BTC', 'ETH']
+        self.current_symbol_index = 0
+        self.swipe_start_x = None
+        self.swipe_threshold = 100  # Minimum swipe distance to trigger change
 
     def _setup_runtime_dir(self):
         if os.geteuid() == 0:
@@ -192,6 +198,9 @@ class Display:
         y_offset = abs(math.sin(time.time() * 2)) * 2  # Subtle float effect
         self.screen.blit(tooltip_surface, (box_x, box_y + y_offset))
 
+    def get_current_symbol(self):
+        return self.symbols[self.current_symbol_index]
+
     def handle_event(self, event):
         if not hasattr(event, 'x') or not hasattr(event, 'y'):
             return
@@ -199,13 +208,28 @@ class Display:
         x = int(event.x * self.width)
         y = int(event.y * self.height)
 
-        # Only handle touch down events within chart area
-        if event.type == self.FINGERDOWN and self.chart_rect.collidepoint(x, y):
-            self.touch_active = True
-            self.touch_x = x
-            historical_prices = self.crypto_api.get_historical_prices('BTC')
-            self.touch_price, self.touch_date = self._get_price_at_x(x, historical_prices)
+        if event.type == self.FINGERDOWN:
+            self.swipe_start_x = x
+            # Handle chart touch
+            if self.chart_rect.collidepoint(x, y):
+                self.touch_active = True
+                self.touch_x = x
+                historical_prices = self.crypto_api.get_historical_prices(self.get_current_symbol())
+                self.touch_price, self.touch_date = self._get_price_at_x(x, historical_prices)
+        
         elif event.type == self.FINGERUP:
+            if self.swipe_start_x is not None:
+                # Calculate swipe distance
+                swipe_distance = x - self.swipe_start_x
+                if abs(swipe_distance) > self.swipe_threshold:
+                    # Swipe right
+                    if swipe_distance > 0 and self.current_symbol_index > 0:
+                        self.current_symbol_index -= 1
+                    # Swipe left
+                    elif swipe_distance < 0 and self.current_symbol_index < len(self.symbols) - 1:
+                        self.current_symbol_index += 1
+            
+            self.swipe_start_x = None
             self.touch_active = False
             self.touch_x = self.touch_price = self.touch_date = None
 
@@ -213,8 +237,12 @@ class Display:
         self.screen.fill(self.BLACK)
         
         if prices:
-            symbol, price = next(iter(prices.items()))
+            current_symbol = self.get_current_symbol()
+            price = prices.get(current_symbol)
             
+            if price is None:
+                return
+
             # Draw price (on top)
             price_font = pygame.font.Font(None, 120)
             price_text = price_font.render(f"${price:,.2f}", True, self.GREEN)
@@ -223,12 +251,12 @@ class Display:
             
             # Draw symbol (below price)
             symbol_font = pygame.font.Font(None, 96)
-            symbol_text = symbol_font.render(symbol, True, self.WHITE)
+            symbol_text = symbol_font.render(current_symbol, True, self.WHITE)
             symbol_rect = symbol_text.get_rect(left=50, y=120)
             self.screen.blit(symbol_text, symbol_rect)
             
             # Calculate 24-hour change
-            historical_prices = self.crypto_api.get_historical_prices(symbol)
+            historical_prices = self.crypto_api.get_historical_prices(current_symbol)
             if historical_prices and len(historical_prices) > 4:  # Ensure we have enough data
                 current_price = historical_prices[-1]
                 # Get the price 24 hours ago (4 intervals of 6 hours = 24 hours)

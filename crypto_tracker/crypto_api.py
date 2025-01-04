@@ -9,7 +9,8 @@ class CryptoAPI:
         self.cache_time = 0
         self.cache_duration = 10
         self.symbol_mapping = {
-            'BTC': 'BTCUSDT'
+            'BTC': 'BTCUSDT',
+            'ETH': 'ETHUSDT'
         }
         self.historical_prices = {}
         self._init_historical_data()
