@@ -197,15 +197,28 @@ class Display:
         x = int(event.x * self.width)
         y = int(event.y * self.height)
 
-        # Handle all touch events the same way for consistent behavior
-        if event.type in (self.FINGERDOWN, self.FINGERMOTION):
-            self.touch_active = True
-            self.touch_x = x
-            historical_prices = self.crypto_api.get_historical_prices('BTC')
-            self.touch_price, self.touch_date = self._get_price_at_x(x, historical_prices)
-        elif event.type == self.FINGERUP:
+        # Check if touch is within chart area
+        if self.chart_rect.collidepoint(x, y):
+            if event.type == self.FINGERDOWN:
+                self.touch_active = True
+            elif event.type == self.FINGERMOTION:
+                # Always update position and price while dragging
+                if self.touch_active:
+                    self.touch_x = x
+                    historical_prices = self.crypto_api.get_historical_prices('BTC')
+                    self.touch_price, self.touch_date = self._get_price_at_x(x, historical_prices)
+            elif event.type == self.FINGERUP:
+                self.touch_active = False
+                self.touch_x = self.touch_price = self.touch_date = None
+        else:
+            # Touch outside chart area
             self.touch_active = False
             self.touch_x = self.touch_price = self.touch_date = None
+
+        # If touch is active, ensure we have price data
+        if self.touch_active and not self.touch_price:
+            historical_prices = self.crypto_api.get_historical_prices('BTC')
+            self.touch_price, self.touch_date = self._get_price_at_x(x, historical_prices)
 
     def update(self, prices):
         self.screen.fill(self.BLACK)
