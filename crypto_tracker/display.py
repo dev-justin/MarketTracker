@@ -22,6 +22,9 @@ class Display:
         self.double_tap_threshold = 0.3  # seconds between taps
         self.tap_area_left = pygame.Rect(0, 0, self.width // 2, 180)  # Left half
         self.tap_area_right = pygame.Rect(self.width // 2, 0, self.width // 2, 180)  # Right half
+        
+        # Define touch margin for chart line
+        self.chart_touch_margin = 10  # pixels
 
     def _setup_runtime_dir(self):
         if os.geteuid() == 0:
@@ -225,15 +228,28 @@ class Display:
             self.last_tap_time = current_time
 
         # Handle chart touches
-        if self.chart_rect.collidepoint(x, y):
-            if event.type == self.FINGERDOWN:
-                self.touch_active = True
-                self.touch_x = x
-                historical_prices = self.crypto_api.get_historical_prices(self.get_current_symbol())
-                self.touch_price, self.touch_date = self._get_price_at_x(x, historical_prices)
-            elif event.type == self.FINGERUP:
-                self.touch_active = False
-                self.touch_x = self.touch_price = self.touch_date = None
+        if event.type == self.FINGERDOWN and self.chart_rect.collidepoint(x, y):
+            historical_prices = self.crypto_api.get_historical_prices(self.get_current_symbol())
+            if historical_prices:
+                # Calculate the y position of the chart line at the touch x
+                chart_x = x - self.chart_rect.left
+                data_index = int(chart_x * len(historical_prices) / self.chart_rect.width)
+                if 0 <= data_index < len(historical_prices):
+                    price = historical_prices[data_index]
+                    min_price = min(historical_prices)
+                    max_price = max(historical_prices)
+                    price_range = max_price - min_price or max_price * 0.1
+                    line_y = self.chart_rect.bottom - ((price - min_price) * self.chart_rect.height / price_range)
+
+                    # Check if touch is within margin of the line
+                    if abs(y - line_y) <= self.chart_touch_margin:
+                        self.touch_active = True
+                        self.touch_x = x
+                        self.touch_price, self.touch_date = self._get_price_at_x(x, historical_prices)
+
+        elif event.type == self.FINGERUP:
+            self.touch_active = False
+            self.touch_x = self.touch_price = self.touch_date = None
 
     def update(self, prices):
         self.screen.fill(self.BLACK)
