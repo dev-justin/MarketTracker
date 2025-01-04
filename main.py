@@ -1,7 +1,7 @@
 import time
 import pygame
 from crypto_tracker.services.crypto_api import CryptoAPI
-from crypto_tracker.services.display import Display
+from crypto_tracker.services.screen_manager import ScreenManager
 from crypto_tracker.constants import EventTypes
 from crypto_tracker.utils.logger import get_logger
 from crypto_tracker.exceptions import CryptoTrackerError
@@ -13,7 +13,7 @@ def main() -> None:
     try:
         logger.info("Starting CryptoTracker application")
         crypto_api = CryptoAPI()
-        display = Display(crypto_api)
+        screen_manager = ScreenManager(crypto_api)
         prices = None
         
         while True:
@@ -31,7 +31,7 @@ def main() -> None:
                     EventTypes.FINGER_MOTION.value
                 ):
                     logger.debug(f"Touch event: {event}")
-                    display.handle_event(event)
+                    screen_manager.handle_event(event)
             
             # Try to get new prices for all tracked symbols
             try:
@@ -43,8 +43,8 @@ def main() -> None:
                 logger.error(f"Error fetching prices: {e}")
             
             # Update and draw regardless of whether we got new prices
-            display.update(prices)
-            display.draw()
+            screen_manager.update(prices)
+            screen_manager.draw()
             
             time.sleep(0.1)
             
@@ -56,7 +56,7 @@ def main() -> None:
         logger.error(f"Unexpected error: {e}")
     finally:
         logger.info("Cleaning up application")
-        display.cleanup()
+        screen_manager.cleanup()
 
 if __name__ == "__main__":
     main() 
