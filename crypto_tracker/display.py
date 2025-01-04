@@ -237,7 +237,9 @@ class Display:
                 
                 # Draw 24-hour change
                 change_color = self.GREEN if change_percent >= 0 else self.RED
-                change_text = f"{change_percent:+.2f}%"
+                # Format: positive without brackets, negative with brackets
+                change_text = (f"{change_percent:.2f}%" if change_percent >= 0 
+                             else f"({abs(change_percent):.2f}%)")
                 change_font = pygame.font.Font(None, 72)
                 change_surface = change_font.render(change_text, True, change_color)
                 change_rect = change_surface.get_rect(right=self.width - 50, y=40)
