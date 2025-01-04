@@ -45,6 +45,10 @@ class DashboardScreen(Screen):
         # Create fonts
         self.date_font = pygame.font.Font(None, self.date_font_size)  # Use default font (not bold)
         
+        # Background gradient colors (dark to light)
+        self.gradient_top = (0, 0, 0)  # Black
+        self.gradient_bottom = (40, 40, 40)  # Dark gray
+        
         # Touch handling
         self.swipe_start_y: Optional[int] = None
         self.swipe_threshold: float = AppConfig.SWIPE_THRESHOLD
@@ -118,6 +122,20 @@ class DashboardScreen(Screen):
         """Create text surface using the non-bold date font."""
         return self.date_font.render(text, True, color)
     
+    def _create_gradient_background(self, surface: pygame.Surface) -> None:
+        """Create a vertical gradient background."""
+        height = surface.get_height()
+        for y in range(height):
+            # Calculate color for this line
+            factor = y / height
+            r = self.gradient_top[0] + (self.gradient_bottom[0] - self.gradient_top[0]) * factor
+            g = self.gradient_top[1] + (self.gradient_bottom[1] - self.gradient_top[1]) * factor
+            b = self.gradient_top[2] + (self.gradient_bottom[2] - self.gradient_top[2]) * factor
+            color = (int(r), int(g), int(b))
+            
+            # Draw a line of the calculated color
+            pygame.draw.line(surface, color, (0, y), (surface.get_width(), y))
+    
     def draw(self, display: pygame.Surface) -> None:
         """
         Draw the screen contents.
@@ -125,13 +143,14 @@ class DashboardScreen(Screen):
         Args:
             display: The pygame surface to draw on
         """
-        display.fill(AppConfig.BLACK)
+        # Create gradient background
+        self._create_gradient_background(display)
         
         if not self.ticker_items:
             return
         
         # Draw current date at top in smaller, non-bold font
-        current_date = datetime.now(self.local_tz).strftime("%a, %b %-d")  # Format: Sat, Jan 4
+        current_date = datetime.now(self.local_tz).strftime("%A, %b %-d")  # Format: Saturday, Jan 4
         date_text = self._create_date_text(current_date, AppConfig.WHITE)
         date_rect = date_text.get_rect(centerx=self.width//2, top=self.padding)
         display.blit(date_text, date_rect)
