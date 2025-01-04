@@ -20,8 +20,6 @@ class Display:
         # Double tap detection
         self.last_tap_time = 0
         self.double_tap_threshold = 0.3  # seconds between taps
-        self.tap_area_left = pygame.Rect(0, 0, self.width // 2, 220)  # Extended to chart top
-        self.tap_area_right = pygame.Rect(self.width // 2, 0, self.width // 2, 220)  # Extended to chart top
         
         # Define touch margin for chart line
         self.chart_touch_margin = 10  # pixels
@@ -71,60 +69,6 @@ class Display:
         self.FINGERDOWN = 1793
         self.FINGERUP = 1794
         self.FINGERMOTION = 1792
-
-    def _draw_chart(self, prices):
-        if not prices or len(prices) < 2:
-            return
-
-        pygame.draw.rect(self.screen, self.BLACK, self.chart_rect)
-
-        min_price = min(prices)
-        max_price = max(prices)
-        price_range = max_price - min_price or max_price * 0.1
-
-        if price_range == 0:
-            price_range = max_price * 0.1
-            min_price = max_price - price_range
-            max_price = max_price + price_range
-
-        points = []
-        for i, price in enumerate(prices):
-            x = self.chart_rect.left + (i * self.chart_rect.width / (len(prices) - 1))
-            y = self.chart_rect.bottom - ((price - min_price) * self.chart_rect.height / price_range)
-            points.append((x, y))
-
-        # Draw gradient
-        gradient_height = self.height - self.chart_rect.y
-        gradient_surface = pygame.Surface(
-            (self.chart_rect.width, gradient_height), 
-            pygame.SRCALPHA
-        )
-        
-        for y in range(gradient_height):
-            alpha = max(0, 25 * (1 - y / gradient_height))
-            pygame.draw.line(
-                gradient_surface,
-                (0, 255, 0, int(alpha)),
-                (0, y),
-                (self.chart_rect.width, y)
-            )
-        
-        mask_surface = pygame.Surface(
-            (self.chart_rect.width, gradient_height),
-            pygame.SRCALPHA
-        )
-        
-        mask_points = [(x - self.chart_rect.left, y - self.chart_rect.y) for x, y in points]
-        mask_points += [
-            (self.chart_rect.width, gradient_height),
-            (0, gradient_height)
-        ]
-        
-        pygame.draw.polygon(mask_surface, (255, 255, 255, 255), mask_points)
-        gradient_surface.blit(mask_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
-        self.screen.blit(gradient_surface, (self.chart_rect.left, self.chart_rect.y))
-        
-        pygame.draw.lines(self.screen, self.chart_color, False, points, 2)
 
     def _get_price_at_x(self, x, prices):
         if not prices:
@@ -238,19 +182,12 @@ class Display:
         # Handle double tap anywhere on the left or right side
         if event.type == self.FINGERDOWN:
             current_time = time.time()
-            print(f"Tap detected at x: {x}, y: {y}, time: {current_time}")
-            print(f"Tap area check - Left: {self.tap_area_left.collidepoint(x, y)}, Right: {self.tap_area_right.collidepoint(x, y)}")
-            print(f"Time since last tap: {current_time - self.last_tap_time}")
             
             if current_time - self.last_tap_time < self.double_tap_threshold:
                 if x < self.width // 2:
-                    print("Double tap on left detected")
                     self.current_symbol_index = (self.current_symbol_index - 1) % len(self.symbols)
-                    print(f"Switched to symbol: {self.symbols[self.current_symbol_index]}")
                 else:
-                    print("Double tap on right detected")
                     self.current_symbol_index = (self.current_symbol_index + 1) % len(self.symbols)
-                    print(f"Switched to symbol: {self.symbols[self.current_symbol_index]}")
             self.last_tap_time = current_time
 
         # Handle chart touches
