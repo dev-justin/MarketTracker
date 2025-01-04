@@ -34,6 +34,9 @@ class TickerScreen(Screen):
         self.last_tap_time: float = 0
         self.double_tap_threshold: float = AppConfig.DOUBLE_TAP_THRESHOLD
         
+        # Touch tracking
+        self.last_touch_x: Optional[int] = None
+        
         # Swipe detection
         self.swipe_start_y: Optional[int] = None
         self.swipe_threshold: float = AppConfig.SWIPE_THRESHOLD
@@ -67,6 +70,7 @@ class TickerScreen(Screen):
             return
             
         x, y = self._scale_touch_input(event)
+        self.last_touch_x = x  # Store last touch position
         
         # Handle swipe up to settings
         if event.type == EventTypes.FINGER_DOWN.value:
@@ -441,18 +445,17 @@ class TickerScreen(Screen):
 
     def _switch_symbol(self) -> None:
         """Switch to the next or previous symbol based on touch position."""
-        if not self.symbols:
+        if not self.symbols or self.last_touch_x is None:
             return
             
-        x, y = self._scale_touch_input(pygame.event.Event(0))  # Create dummy event for scaling
-        if x < self.width // 2:
+        if self.last_touch_x < self.width // 2:
             logger.debug("Switching to previous symbol")
             self.current_symbol_index = (self.current_symbol_index - 1) % len(self.symbols)
         else:
             logger.debug("Switching to next symbol")
             self.current_symbol_index = (self.current_symbol_index + 1) % len(self.symbols)
             
-        logger.info(f"Switched to symbol: {self.symbols[self.current_symbol_index]}") 
+        logger.info(f"Switched to symbol: {self.symbols[self.current_symbol_index]}")
 
     def _draw_touch_indicators(self, display: pygame.Surface) -> None:
         """Draw touch indicators on the sides."""
