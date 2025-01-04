@@ -53,18 +53,27 @@ class DashboardScreen(Screen):
         config_dict['language'] = 'en'
         
         # Get API key from environment variable
+        self.owm = None
+        self.weather_mgr = None
         api_key = os.getenv('OWM_API_KEY')
-        if not api_key:
-            logger.error("OpenWeatherMap API key not found in environment variables")
-            return
-            
-        self.owm = OWM(api_key, config_dict)
-        self.weather_mgr = self.owm.weather_manager()
+        
+        if api_key:
+            try:
+                self.owm = OWM(api_key, config_dict)
+                self.weather_mgr = self.owm.weather_manager()
+                logger.info("Weather manager initialized successfully")
+            except Exception as e:
+                logger.error(f"Failed to initialize weather manager: {str(e)}")
+        else:
+            logger.warning("OpenWeatherMap API key not found in environment variables")
         
         logger.info("DashboardScreen initialized")
         
     def _update_weather(self) -> None:
         """Update the weather data using PyOWM."""
+        if not self.weather_mgr:
+            return
+            
         current_time = time.time()
         if (current_time - self.last_weather_update) >= self.weather_update_interval:
             try:
