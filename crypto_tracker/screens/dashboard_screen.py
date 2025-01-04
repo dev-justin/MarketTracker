@@ -26,9 +26,8 @@ class DashboardScreen(Screen):
         self.crypto_api = crypto_api
         
         # Get local timezone
-        self.local_tz = pytz.timezone('America/Vancouver')  # Default to Vancouver
+        self.local_tz = pytz.timezone('America/Vancouver')
         try:
-            # Try to get system timezone
             with open('/etc/timezone') as f:
                 system_tz = f.read().strip()
                 self.local_tz = pytz.timezone(system_tz)
@@ -37,28 +36,33 @@ class DashboardScreen(Screen):
             logger.warning("Could not detect system timezone, using default: America/Vancouver")
         
         # Display settings
-        self.time_font_size = 96  # Larger font for time
-        self.date_font_size = 48  # Smaller font for date
-        self.ticker_font_size = 72
+        self.time_font_size = 96
+        self.date_font_size = 48
+        self.coin_name_size = 36  # Size for coin names
+        self.price_size = 48      # Size for prices
+        self.label_size = 24      # Size for labels like "BUY/SELL"
         self.padding = 20
         
         # Create fonts
-        self.date_font = pygame.font.Font(None, self.date_font_size)  # Use default font (not bold)
+        self.date_font = pygame.font.Font(None, self.date_font_size)
+        self.coin_font = pygame.font.Font(None, self.coin_name_size)
+        self.price_font = pygame.font.Font(None, self.price_size)
+        self.label_font = pygame.font.Font(None, self.label_size)
         
-        # Background gradient colors (dark to light)
-        self.gradient_top = (0, 0, 0)  # Black
-        self.gradient_bottom = (40, 40, 40)  # Dark gray
+        # Background gradient colors
+        self.gradient_top = (13, 17, 23)     # Dark navy
+        self.gradient_bottom = (22, 27, 34)  # Slightly lighter navy
         
         # Touch handling
-        self.swipe_start_y: Optional[int] = None
-        self.swipe_threshold: float = AppConfig.SWIPE_THRESHOLD
-        self.last_tap_time: float = 0
-        self.double_tap_threshold: float = AppConfig.DOUBLE_TAP_THRESHOLD
+        self.swipe_start_y = None
+        self.swipe_threshold = AppConfig.SWIPE_THRESHOLD
+        self.last_tap_time = 0
+        self.double_tap_threshold = AppConfig.DOUBLE_TAP_THRESHOLD
         
         # Price data
-        self.current_prices: Optional[Dict[str, float]] = None
-        self.price_changes: Dict[str, float] = {}
-        self.ticker_items: List[Dict] = []
+        self.current_prices = None
+        self.price_changes = {}
+        self.ticker_items = []
         
         logger.info("DashboardScreen initialized")
     
@@ -136,6 +140,18 @@ class DashboardScreen(Screen):
             # Draw a line of the calculated color
             pygame.draw.line(surface, color, (0, y), (surface.get_width(), y))
     
+    def _create_price_text(self, text: str, color: tuple) -> pygame.Surface:
+        """Create text surface using the price font."""
+        return self.price_font.render(text, True, color)
+    
+    def _create_coin_text(self, text: str, color: tuple) -> pygame.Surface:
+        """Create text surface using the coin font."""
+        return self.coin_font.render(text, True, color)
+    
+    def _create_label_text(self, text: str, color: tuple) -> pygame.Surface:
+        """Create text surface using the label font."""
+        return self.label_font.render(text, True, color)
+    
     def draw(self, display: pygame.Surface) -> None:
         """
         Draw the screen contents.
@@ -143,52 +159,66 @@ class DashboardScreen(Screen):
         Args:
             display: The pygame surface to draw on
         """
-        # Create gradient background
         self._create_gradient_background(display)
         
         if not self.ticker_items:
             return
         
-        # Draw current date at top in smaller, non-bold font
-        current_date = datetime.now(self.local_tz).strftime("%A, %b %-d")  # Format: Saturday, Jan 4
+        # Draw date and time at top
+        current_date = datetime.now(self.local_tz).strftime("%A, %b %-d")
         date_text = self._create_date_text(current_date, AppConfig.WHITE)
         date_rect = date_text.get_rect(centerx=self.width//2, top=self.padding)
         display.blit(date_text, date_rect)
         
-        # Draw current time in large font below date (remove leading zero from hour)
         current_time = datetime.now(self.local_tz).strftime("%I:%M %p").lstrip("0")
         time_text = self._create_text_surface(current_time, self.time_font_size, AppConfig.WHITE)
         time_rect = time_text.get_rect(centerx=self.width//2, top=date_rect.bottom + 10)
         display.blit(time_text, time_rect)
         
-        # Draw tickers in a grid
-        grid_top = time_rect.bottom + self.padding * 2
-        grid_left = self.padding
-        row_height = self.ticker_font_size + self.padding
-        col_width = (self.width - (self.padding * 3)) // 2
+        # Draw tickers in a vertical list
+        start_y = time_rect.bottom + self.padding * 3
+        card_height = 150  # Fixed height for each ticker card
+        card_spacing = 20  # Space between cards
         
-        # Draw ticker items
         for i, item in enumerate(self.ticker_items):
-            row = i // 2
-            col = i % 2
-            x = grid_left + (col * (col_width + self.padding))
-            y = grid_top + (row * row_height)
+            # Calculate card position
+            card_rect = pygame.Rect(
+                self.padding,
+                start_y + (i * (card_height + card_spacing)),
+                self.width - (self.padding * 2),
+                card_height
+            )
             
-            # Draw ticker box
-            box_rect = pygame.Rect(x, y, col_width, row_height)
-            pygame.draw.rect(display, AppConfig.CELL_BORDER_COLOR, box_rect, 1, border_radius=5)
+            # Draw card background (slightly lighter than gradient)
+            pygame.draw.rect(display, (30, 35, 42), card_rect, border_radius=15)
             
-            # Draw symbol and price
-            symbol_text = self._create_text_surface(item['symbol'], self.ticker_font_size, AppConfig.WHITE)
-            price_text = self._create_text_surface(item['price'], self.ticker_font_size, AppConfig.WHITE)
-            change_text = self._create_text_surface(item['change'], self.ticker_font_size//2, item['color'])
+            # Draw coin name and pair
+            coin_name = self._create_coin_text(item['symbol'], AppConfig.WHITE)
+            pair_label = self._create_label_text(f"{item['symbol']}/USD", (128, 128, 128))
             
-            # Position texts
-            symbol_rect = symbol_text.get_rect(left=x + 10, centery=y + row_height//2)
-            price_rect = price_text.get_rect(right=x + col_width - 10, centery=y + row_height//2)
-            change_rect = change_text.get_rect(centerx=price_rect.centerx, top=price_rect.bottom + 5)
+            coin_rect = coin_name.get_rect(left=card_rect.left + 30, top=card_rect.top + 20)
+            pair_rect = pair_label.get_rect(left=card_rect.left + 30, top=coin_rect.bottom + 5)
             
-            # Draw texts
-            display.blit(symbol_text, symbol_rect)
-            display.blit(price_text, price_rect)
-            display.blit(change_text, change_rect) 
+            display.blit(coin_name, coin_rect)
+            display.blit(pair_label, pair_rect)
+            
+            # Draw buy price
+            buy_price = self._create_price_text(item['price'], AppConfig.WHITE)
+            buy_label = self._create_label_text("BUY", (128, 128, 128))
+            
+            buy_rect = buy_price.get_rect(right=card_rect.right - 30, top=card_rect.top + 20)
+            buy_label_rect = buy_label.get_rect(right=card_rect.right - 30, top=buy_rect.bottom + 5)
+            
+            display.blit(buy_price, buy_rect)
+            display.blit(buy_label, buy_label_rect)
+            
+            # Draw sell price (slightly lower than buy price)
+            sell_price = float(item['price'].replace('$', '').replace(',', '')) * 0.98  # 2% lower
+            sell_text = self._create_price_text(f"${sell_price:,.2f}", (128, 128, 128))
+            sell_label = self._create_label_text("SELL", (128, 128, 128))
+            
+            sell_rect = sell_text.get_rect(right=card_rect.right - 30, top=buy_label_rect.bottom + 15)
+            sell_label_rect = sell_label.get_rect(right=card_rect.right - 30, top=sell_rect.bottom + 5)
+            
+            display.blit(sell_text, sell_rect)
+            display.blit(sell_label, sell_label_rect) 
