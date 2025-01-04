@@ -58,9 +58,9 @@ class AppConfig:
     FONT_SIZES = {
         'time': 70,
         'date': 36,
-        'coin_name': 28,
-        'price': 20,
-        'label': 24
+        'coin_name': 24,
+        'price': 32,
+        'label': 18
     }
     
     # Touch settings

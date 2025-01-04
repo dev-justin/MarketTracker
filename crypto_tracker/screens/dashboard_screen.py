@@ -9,6 +9,7 @@ from ..utils.logger import get_logger
 from .base import Screen
 import time
 from ..utils.icon_manager import IconManager
+import math
 
 logger = get_logger(__name__)
 
@@ -38,6 +39,11 @@ class DashboardScreen(Screen):
         
         # Display settings
         self.padding = 20
+        
+        # Animation settings
+        self.coin_rotation = {}  # Store rotation angle for each coin
+        self.rotation_speed = 5  # Degrees per frame
+        self.flip_coins = set()  # Set of coins currently flipping
         
         # Load custom fonts
         try:
@@ -117,10 +123,28 @@ class DashboardScreen(Screen):
         Args:
             prices: Dictionary of current prices
         """
+        # Update coin rotations
+        for symbol in self.flip_coins.copy():
+            if symbol not in self.coin_rotation:
+                self.coin_rotation[symbol] = 0
+            
+            self.coin_rotation[symbol] += self.rotation_speed
+            if self.coin_rotation[symbol] >= 360:
+                self.coin_rotation[symbol] = 0
+                self.flip_coins.remove(symbol)
+        
+        # Update prices
         self.current_prices = prices
         if prices:
+            old_prices = {item['symbol']: float(item['price'].replace('$', '').replace(',', '')) 
+                         for item in self.ticker_items} if self.ticker_items else {}
+            
             self.ticker_items = []
             for symbol in prices:
+                # Start coin flip animation if price changed significantly
+                if symbol in old_prices and abs((prices[symbol] - old_prices[symbol]) / old_prices[symbol]) > 0.001:
+                    self.flip_coins.add(symbol)
+                
                 historical_prices = self.crypto_api.get_historical_prices(symbol)
                 if historical_prices and len(historical_prices) > 4:
                     current_price = historical_prices[-1]
@@ -205,8 +229,8 @@ class DashboardScreen(Screen):
         start_y = time_rect.bottom + self.padding * 2
         card_height = 80
         card_spacing = 10
-        card_width = (self.width - (self.padding * 3)) // 2  # 3 paddings: left, middle, right
-        arrow_size = 12  # Size of the arrow indicator
+        card_width = (self.width - (self.padding * 3)) // 2
+        arrow_size = 12
         
         for i, item in enumerate(self.ticker_items):
             # Calculate grid position
@@ -224,24 +248,38 @@ class DashboardScreen(Screen):
             # Draw card background
             pygame.draw.rect(display, (30, 35, 42), card_rect, border_radius=15)
             
-            # Get and draw coin icon
+            # Get and draw coin icon with rotation if flipping
             icon = self.icon_manager.get_icon(item['symbol'])
-            icon_x = card_rect.left + 15
-            icon_y = card_rect.top + (card_height - AppConfig.ICON_SIZE) // 2
-            
             if icon:
-                display.blit(icon, (icon_x, icon_y))
+                icon_x = card_rect.left + 15
+                icon_y = card_rect.centery - AppConfig.ICON_SIZE // 2
+                
+                if item['symbol'] in self.flip_coins:
+                    # Scale icon width based on rotation angle
+                    angle = self.coin_rotation[item['symbol']]
+                    scale_factor = abs(math.cos(math.radians(angle)))
+                    scaled_width = int(AppConfig.ICON_SIZE * scale_factor)
+                    if scaled_width > 0:
+                        scaled_icon = pygame.transform.scale(icon, (scaled_width, AppConfig.ICON_SIZE))
+                        # Center the scaled icon
+                        scaled_x = icon_x + (AppConfig.ICON_SIZE - scaled_width) // 2
+                        display.blit(scaled_icon, (scaled_x, icon_y))
+                else:
+                    display.blit(icon, (icon_x, icon_y))
+                
                 text_left = icon_x + AppConfig.ICON_SIZE + 10
             else:
-                text_left = icon_x
+                text_left = card_rect.left + 15
             
-            # Draw coin name and symbol
+            # Draw coin name and symbol vertically centered
             name_text = self._create_coin_text(item['name'], AppConfig.WHITE)
             symbol_text = self._create_label_text(item['symbol'], (128, 128, 128))
             
+            # Stack name and symbol vertically in the center
+            total_height = name_text.get_height() + 5 + symbol_text.get_height()
             name_rect = name_text.get_rect(
                 left=text_left,
-                centery=card_rect.centery - 10
+                top=card_rect.centery - total_height // 2
             )
             symbol_rect = symbol_text.get_rect(
                 left=text_left,
@@ -258,28 +296,26 @@ class DashboardScreen(Screen):
             # Position price at the right
             price_rect = price_text.get_rect(
                 right=card_rect.right - 15,
-                centery=card_rect.centery - 10
+                centery=card_rect.centery - 12
             )
             
             # Draw arrow and change percentage
             is_positive = item['color'] == AppConfig.GREEN
-            arrow_x = price_rect.right - 100  # Position arrow
+            arrow_x = price_rect.right - 65
             arrow_y = price_rect.centery + 25
             
             # Draw arrow
             if is_positive:
-                # Draw up arrow
                 points = [
-                    (arrow_x + arrow_size//2, arrow_y - arrow_size//2),  # Top point
-                    (arrow_x, arrow_y + arrow_size//2),  # Bottom left
-                    (arrow_x + arrow_size, arrow_y + arrow_size//2)  # Bottom right
+                    (arrow_x + arrow_size//2, arrow_y - arrow_size//2),
+                    (arrow_x, arrow_y + arrow_size//2),
+                    (arrow_x + arrow_size, arrow_y + arrow_size//2)
                 ]
             else:
-                # Draw down arrow
                 points = [
-                    (arrow_x, arrow_y - arrow_size//2),  # Top left
-                    (arrow_x + arrow_size, arrow_y - arrow_size//2),  # Top right
-                    (arrow_x + arrow_size//2, arrow_y + arrow_size//2)  # Bottom point
+                    (arrow_x, arrow_y - arrow_size//2),
+                    (arrow_x + arrow_size, arrow_y - arrow_size//2),
+                    (arrow_x + arrow_size//2, arrow_y + arrow_size//2)
                 ]
             
             pygame.draw.polygon(display, item['color'], points)
