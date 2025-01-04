@@ -4,7 +4,7 @@ import requests
 import pygame
 from typing import Dict, Optional
 from ..config.settings import AppConfig
-from ..utils.logger import get_logger
+from .logger import get_logger
 
 logger = get_logger(__name__)
 
