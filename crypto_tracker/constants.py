@@ -7,9 +7,9 @@ class ScreenNames(Enum):
     WALLSTREET = 'wallstreet'
 
 class EventTypes(Enum):
-    FINGER_DOWN = 1024
-    FINGER_UP = 1025
-    FINGER_MOTION = 1026
+    FINGER_DOWN = 1792
+    FINGER_UP = 1793
+    FINGER_MOTION = 1794
 
 class ChartSettings:
     LINE_WIDTH = 2
