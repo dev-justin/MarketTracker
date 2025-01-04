@@ -11,30 +11,47 @@ class SettingsScreen(Screen):
     """Screen for managing tracked symbols and application settings."""
     
     def __init__(self, screen_manager, ticker_screen) -> None:
-        """
-        Initialize the settings screen.
-        
-        Args:
-            screen_manager: The screen manager instance
-            ticker_screen: The ticker screen instance for symbol management
-        """
+        """Initialize the settings screen."""
         super().__init__(screen_manager)
         self.ticker_screen = ticker_screen
-        self.crypto_api = ticker_screen.crypto_api
         
         # Grid settings
-        self.grid_size: int = AppConfig.GRID_SIZE
-        self.cell_padding: int = AppConfig.CELL_PADDING
+        self.grid_rows = AppConfig.GRID_ROWS
+        self.grid_cols = AppConfig.GRID_COLS
+        self.cell_padding = AppConfig.CELL_PADDING
         
-        # Calculate usable space
-        self.title_height: int = AppConfig.TITLE_HEIGHT
-        self.button_area_height: int = AppConfig.BUTTON_AREA_HEIGHT
-        usable_height = self.height - self.title_height - self.button_area_height
+        # Calculate cell dimensions
+        self.cell_width = (self.width - (self.cell_padding * (self.grid_cols + 1))) // self.grid_cols
+        self.cell_height = (self.height - (self.cell_padding * (self.grid_rows + 1))) // self.grid_rows
         
-        # Calculate cell dimensions to fill space evenly
-        self.num_rows: int = AppConfig.GRID_SIZE  # Same as columns for square grid
-        self.cell_width = (self.width - (self.cell_padding * (self.grid_size + 1))) // self.grid_size
-        self.cell_height = (usable_height - (self.cell_padding * (self.num_rows + 1))) // self.num_rows
+        # Popup settings
+        self.action_width = 250
+        self.padding = 30
+        self.button_spacing = self.padding
+        self.symbol_button_spacing = self.padding * 0.7
+        
+        # Calculate popup dimensions
+        self.popup_height = (
+            self.padding * 2 +  # Top and bottom padding
+            self.cell_height +  # Symbol height
+            self.symbol_button_spacing +  # Space between symbol and first button
+            (self.button_spacing * 2) +  # Space between buttons
+            (self.cell_height * 3)  # Height for three buttons
+        )
+        
+        # Calculate positions for popup elements
+        self.popup_y = (self.height - self.popup_height) // 2
+        self.first_button_y = (
+            self.popup_y +
+            self.padding +
+            self.cell_height +
+            self.symbol_button_spacing
+        )
+        
+        # Touch handling
+        self.selected_cell = None
+        self.popup_visible = False
+        self.selected_symbol = None
         
         # Colors
         self.cell_bg_color = AppConfig.CELL_BG_COLOR
