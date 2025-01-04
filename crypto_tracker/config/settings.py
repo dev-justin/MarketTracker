@@ -73,8 +73,14 @@ class AppConfig:
     TOUCH_MARGIN = 10
     
     # Chart settings
-    CHART_HEIGHT = 250
-    CHART_Y_POSITION = 220
+    CHART_MARGIN = 60
+    CHART_BOTTOM_MARGIN = 40
+    CHART_Y_POSITION = 300
+    CHART_HEIGHT = 300
+    CHART_BG_COLOR = (20, 20, 20)
+    CHART_GRID_COLOR = (40, 40, 40)
+    CHART_LINE_COLOR = (0, 255, 0)
+    CHART_LABEL_COLOR = (128, 128, 128)
     
     # Grid settings
     GRID_ROWS = 4
