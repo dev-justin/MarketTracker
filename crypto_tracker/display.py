@@ -19,6 +19,7 @@ class Display:
         
         # Double tap detection
         self.last_tap_time = 0
+        self.second_tap_time = 0  # Initialize second_tap_time
         self.double_tap_threshold = 0.3  # seconds between taps
         
         # Define touch margin for chart line
