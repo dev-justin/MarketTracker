@@ -19,7 +19,7 @@ class Display:
         self.swipe_start_x = None
         self.swipe_start_time = None
         self.swipe_threshold = 50  # Reduced swipe distance for sensitivity
-        self.min_swipe_speed = 0.5  # Minimum speed in pixels per second
+        self.min_swipe_speed = 0.2  # Minimum speed in pixels per second
 
     def _setup_runtime_dir(self):
         if os.geteuid() == 0:
