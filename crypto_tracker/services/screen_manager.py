@@ -37,6 +37,7 @@ class ScreenManager:
         """Initialize pygame and its modules."""
         pygame.init()
         pygame.font.init()
+        pygame.mouse.set_visible(False)
     
     def _init_display(self):
         """Initialize the display surface."""
