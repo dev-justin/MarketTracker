@@ -51,8 +51,10 @@ class Display:
         self.RED = (255, 0, 0)
 
         # Add chart settings
-        self.chart_rect = pygame.Rect(50, 180, 700, 250)  # x, y, width, height
-        self.chart_color = self.GREEN  # Changed to green
+        chart_height = 250
+        chart_y = 180
+        self.chart_rect = pygame.Rect(0, chart_y, self.width, chart_height)  # Full width
+        self.chart_color = self.GREEN
         self.chart_data = []
         self.max_data_points = 168  # 7 days worth of hourly points
 
