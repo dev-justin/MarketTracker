@@ -195,7 +195,9 @@ class Display:
                 # Check for third tap
                 if hasattr(self, 'second_tap_time') and current_time - self.second_tap_time < self.double_tap_threshold:
                     self.show_settings = not self.show_settings
-                self.second_tap_time = current_time
+                    self.second_tap_time = None  # Reset after toggling
+                else:
+                    self.second_tap_time = current_time
             self.last_tap_time = current_time
 
         # Only process other events if not in settings
@@ -209,7 +211,9 @@ class Display:
                         self.current_symbol_index = (self.current_symbol_index - 1) % len(self.symbols)
                     else:
                         self.current_symbol_index = (self.current_symbol_index + 1) % len(self.symbols)
-                self.last_tap_time = current_time
+                    self.last_tap_time = 0  # Reset to prevent immediate re-trigger
+                else:
+                    self.last_tap_time = current_time
 
             # Handle chart touches
             if event.type == self.FINGERDOWN and self.chart_rect.collidepoint(x, y):
