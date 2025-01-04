@@ -10,8 +10,8 @@ def main():
     
     try:
         while True:
-            # Get crypto prices
-            prices = crypto_api.get_crypto_prices(['BTC', 'ETH', 'DOGE'])
+            # Get crypto prices (just BTC for now)
+            prices = crypto_api.get_crypto_prices(['BTC'])
             
             # Update display
             display.update(prices)
