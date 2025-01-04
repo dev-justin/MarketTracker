@@ -56,25 +56,17 @@ class Display:
         self.chart_data = []
         self.max_data_points = 168  # 7 days worth of hourly points
 
-    def _draw_chart(self, price):
-        if price is None:
+    def _draw_chart(self, prices):
+        if not prices:
             return
 
         # Draw chart background
         pygame.draw.rect(self.screen, (20, 20, 20), self.chart_rect)
         pygame.draw.rect(self.screen, (40, 40, 40), self.chart_rect, 1)
 
-        # Add new price point
-        self.chart_data.append(price)
-        if len(self.chart_data) > self.max_data_points:
-            self.chart_data.pop(0)
-
-        if len(self.chart_data) < 2:
-            return
-
         # Calculate min and max for scaling
-        min_price = min(self.chart_data)
-        max_price = max(self.chart_data)
+        min_price = min(prices)
+        max_price = max(prices)
         price_range = max_price - min_price
 
         # Handle case where all prices are the same
@@ -93,15 +85,15 @@ class Display:
 
         # Draw the chart line
         points = []
-        for i, point_price in enumerate(self.chart_data):
-            x = self.chart_rect.left + (i * self.chart_rect.width / (self.max_data_points - 1))
-            y = self.chart_rect.bottom - ((point_price - min_price) * self.chart_rect.height / price_range)
+        for i, price in enumerate(prices):
+            x = self.chart_rect.left + (i * self.chart_rect.width / (len(prices) - 1))
+            y = self.chart_rect.bottom - ((price - min_price) * self.chart_rect.height / price_range)
             points.append((x, y))
 
         if len(points) > 1:
             pygame.draw.lines(self.screen, self.chart_color, False, points, 2)
 
-        # Draw time labels (optional)
+        # Draw time labels
         time_font = pygame.font.Font(None, 20)
         for i in range(4):
             x = self.chart_rect.left + (i * self.chart_rect.width / 3)
