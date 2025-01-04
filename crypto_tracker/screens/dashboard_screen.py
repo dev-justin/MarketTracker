@@ -309,6 +309,9 @@ class DashboardScreen(Screen):
             arrow_x = change_rect.left - arrow_size - 10
             arrow_y = change_rect.centery
             
+            # Determine if price change is positive
+            is_positive = item['color'] == AppConfig.GREEN
+            
             # Draw arrow
             if is_positive:
                 points = [
