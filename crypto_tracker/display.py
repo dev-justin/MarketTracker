@@ -241,8 +241,8 @@ class Display:
                     price_range = max_price - min_price or max_price * 0.1
                     line_y = self.chart_rect.bottom - ((price - min_price) * self.chart_rect.height / price_range)
 
-                    # Check if touch is within margin of the line
-                    if abs(y - line_y) <= self.chart_touch_margin:
+                    # Check if touch is within margin of the line OR below the line
+                    if abs(y - line_y) <= self.chart_touch_margin or y > line_y:
                         self.touch_active = True
                         self.touch_x = x
                         self.touch_price, self.touch_date = self._get_price_at_x(x, historical_prices)
