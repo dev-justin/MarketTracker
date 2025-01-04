@@ -169,10 +169,10 @@ class Display:
             # Load and draw logo on the right
             logo = self._get_logo(symbol)
             if logo:
-                # Position logo on the right side, vertically centered with the text
+                # Position logo on the right side, aligned with symbol
                 logo_rect = logo.get_rect(
                     right=self.width - 50,  # 50 pixels from right edge
-                    centery=(symbol_rect.centery + price_rect.centery) / 2  # Centered between symbol and price
+                    centery=symbol_rect.centery  # Centered with symbol
                 )
                 self.screen.blit(logo, logo_rect)
             
