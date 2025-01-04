@@ -38,13 +38,18 @@ class TickerScreen(Screen):
 
         x = int(event.x * self.width)
         y = int(event.y * self.height)
+        
+        print(f"Event type: {event.type}, x: {x}, y: {y}")
 
         # Handle swipe up for settings screen
         if event.type == pygame.FINGERDOWN:
+            print(f"Finger down at y: {y}")
             self.swipe_start_y = y
         elif event.type == pygame.FINGERUP and self.swipe_start_y is not None:
             swipe_distance = self.swipe_start_y - y
+            print(f"Finger up at y: {y}, swipe distance: {swipe_distance}, threshold: {self.height * self.swipe_threshold}")
             if swipe_distance > self.height * self.swipe_threshold:
+                print("Switching to settings screen")
                 self.manager.switch_to('settings')
             self.swipe_start_y = None
 
@@ -52,9 +57,12 @@ class TickerScreen(Screen):
         if event.type == pygame.FINGERDOWN:
             current_time = time.time()
             if current_time - self.last_tap_time < self.double_tap_threshold:
+                print("Double tap detected")
                 if x < self.width // 2:
+                    print("Switching to previous symbol")
                     self.current_symbol_index = (self.current_symbol_index - 1) % len(self.symbols)
                 else:
+                    print("Switching to next symbol")
                     self.current_symbol_index = (self.current_symbol_index + 1) % len(self.symbols)
                 self.last_tap_time = current_time
             else:
@@ -62,6 +70,7 @@ class TickerScreen(Screen):
 
         # Handle chart touches
         if event.type == pygame.FINGERDOWN and self.chart_rect.collidepoint(x, y):
+            print(f"Chart touch at x: {x}, y: {y}")
             historical_prices = self.crypto_api.get_historical_prices(self.get_current_symbol())
             if historical_prices:
                 chart_x = x - self.chart_rect.left
@@ -74,11 +83,14 @@ class TickerScreen(Screen):
                     line_y = self.chart_rect.bottom - ((price - min_price) * self.chart_rect.height / price_range)
 
                     if abs(y - line_y) <= self.chart_touch_margin or y > line_y:
+                        print(f"Touch indicator activated at price: {price}")
                         self.touch_active = True
                         self.touch_x = x
                         self.touch_price, self.touch_date = self._get_price_at_x(x, historical_prices)
 
         elif event.type == pygame.FINGERUP:
+            if self.touch_active:
+                print("Touch indicator deactivated")
             self.touch_active = False
             self.touch_x = self.touch_price = self.touch_date = None
 
