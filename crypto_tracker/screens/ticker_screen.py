@@ -28,6 +28,7 @@ class TickerScreen(Screen):
         self.symbols: List[str] = crypto_api.get_tracked_symbols()
         self.current_symbol_index: int = 0
         self.current_prices: Optional[Dict[str, float]] = None
+        self.price_changes: Dict[str, float] = {}
         
         # Double tap detection
         self.last_tap_time: float = 0
@@ -188,7 +189,7 @@ class TickerScreen(Screen):
         
         # Draw symbol below price
         symbol_text = self._create_text(
-            self.current_symbol,
+            self.get_current_symbol(),
             'lg',
             AppConfig.GRAY
         )
@@ -199,8 +200,9 @@ class TickerScreen(Screen):
         display.blit(symbol_text, symbol_rect)
         
         # Draw 24h change if available
-        if self.current_symbol in self.price_changes:
-            change = self.price_changes[self.current_symbol]
+        current_symbol = self.get_current_symbol()
+        if current_symbol in self.price_changes:
+            change = self.price_changes[current_symbol]
             color = AppConfig.GREEN if change >= 0 else AppConfig.RED
             change_text = self._create_text(
                 f"{change:+.2f}%",
@@ -455,7 +457,7 @@ class TickerScreen(Screen):
     def _draw_touch_indicators(self, display: pygame.Surface) -> None:
         """Draw touch indicators on the sides."""
         # Draw left arrow if not first symbol
-        if self.symbol_index > 0:
+        if self.current_symbol_index > 0:
             text = self._create_text("<", 'title-lg', AppConfig.GRAY)
             rect = text.get_rect(
                 left=20,
@@ -464,7 +466,7 @@ class TickerScreen(Screen):
             display.blit(text, rect)
         
         # Draw right arrow if not last symbol
-        if self.symbol_index < len(self.symbols) - 1:
+        if self.current_symbol_index < len(self.symbols) - 1:
             text = self._create_text(">", 'title-lg', AppConfig.GRAY)
             rect = text.get_rect(
                 right=self.width - 20,
