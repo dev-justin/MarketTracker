@@ -127,10 +127,25 @@ class DashboardScreen(Screen):
                     price_24h_ago = historical_prices[-4]
                     change_percent = ((current_price - price_24h_ago) / price_24h_ago) * 100
                     
+                    # Map symbols to full names
+                    full_names = {
+                        'BTC': 'Bitcoin',
+                        'ETH': 'Ethereum',
+                        'LTC': 'Litecoin',
+                        'DOGE': 'Dogecoin',
+                        'XRP': 'Ripple',
+                        'ADA': 'Cardano',
+                        'DOT': 'Polkadot',
+                        'SOL': 'Solana',
+                        'MATIC': 'Polygon',
+                        'LINK': 'Chainlink'
+                    }
+                    
                     self.ticker_items.append({
                         'symbol': symbol,
+                        'name': full_names.get(symbol, symbol),
                         'price': f"${prices[symbol]:,.2f}",
-                        'change': f"{change_percent:+.2f}%" if change_percent >= 0 else f"{change_percent:.2f}%",
+                        'change': f"{change_percent:+.2f}%",
                         'color': AppConfig.GREEN if change_percent >= 0 else AppConfig.RED
                     })
     
@@ -211,41 +226,42 @@ class DashboardScreen(Screen):
             # Get and draw coin icon
             icon = self.icon_manager.get_icon(item['symbol'])
             icon_x = card_rect.left + 30
-            icon_y = card_rect.top + 20
+            icon_y = card_rect.top + (card_height - AppConfig.ICON_SIZE) // 2
             
             if icon:
                 display.blit(icon, (icon_x, icon_y))
-                text_left = icon_x + AppConfig.ICON_SIZE + 15  # Add some spacing after icon
+                text_left = icon_x + AppConfig.ICON_SIZE + 15
             else:
                 text_left = icon_x
             
-            # Draw coin name and pair
-            coin_name = self._create_coin_text(item['symbol'], AppConfig.WHITE)
-            pair_label = self._create_label_text(f"{item['symbol']}/USD", (128, 128, 128))
+            # Draw coin name and symbol
+            name_text = self._create_coin_text(item['name'], AppConfig.WHITE)
+            symbol_text = self._create_label_text(item['symbol'], (128, 128, 128))
             
-            coin_rect = coin_name.get_rect(left=text_left, centery=icon_y + AppConfig.ICON_SIZE//2)
-            pair_rect = pair_label.get_rect(left=text_left, top=coin_rect.bottom + 5)
+            name_rect = name_text.get_rect(
+                left=text_left,
+                centery=icon_y + AppConfig.ICON_SIZE//2 - 10
+            )
+            symbol_rect = symbol_text.get_rect(
+                left=text_left,
+                top=name_rect.bottom + 5
+            )
             
-            display.blit(coin_name, coin_rect)
-            display.blit(pair_label, pair_rect)
+            display.blit(name_text, name_rect)
+            display.blit(symbol_text, symbol_rect)
             
-            # Draw buy price
-            buy_price = self._create_price_text(item['price'], AppConfig.WHITE)
-            buy_label = self._create_label_text("BUY", (128, 128, 128))
+            # Draw price and change percentage
+            price_text = self._create_price_text(item['price'], AppConfig.WHITE)
+            change_text = self._create_label_text(item['change'], item['color'])
             
-            buy_rect = buy_price.get_rect(right=card_rect.right - 30, top=card_rect.top + 20)
-            buy_label_rect = buy_label.get_rect(right=card_rect.right - 30, top=buy_rect.bottom + 5)
+            price_rect = price_text.get_rect(
+                right=card_rect.right - 30,
+                centery=icon_y + AppConfig.ICON_SIZE//2 - 10
+            )
+            change_rect = change_text.get_rect(
+                right=card_rect.right - 30,
+                top=price_rect.bottom + 5
+            )
             
-            display.blit(buy_price, buy_rect)
-            display.blit(buy_label, buy_label_rect)
-            
-            # Draw sell price (slightly lower than buy price)
-            sell_price = float(item['price'].replace('$', '').replace(',', '')) * 0.98  # 2% lower
-            sell_text = self._create_price_text(f"${sell_price:,.2f}", (128, 128, 128))
-            sell_label = self._create_label_text("SELL", (128, 128, 128))
-            
-            sell_rect = sell_text.get_rect(right=card_rect.right - 30, top=buy_label_rect.bottom + 15)
-            sell_label_rect = sell_label.get_rect(right=card_rect.right - 30, top=sell_rect.bottom + 5)
-            
-            display.blit(sell_text, sell_rect)
-            display.blit(sell_label, sell_label_rect) 
+            display.blit(price_text, price_rect)
+            display.blit(change_text, change_rect) 
