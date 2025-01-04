@@ -1,9 +1,9 @@
 import pygame
 import os
-import platform
 from pathlib import Path
-import requests
 from datetime import datetime, timedelta
+import math
+import time
 
 class Display:
     def __init__(self, crypto_api):
@@ -129,29 +129,66 @@ class Display:
         if x < self.chart_rect.left or x > self.chart_rect.right:
             return
 
-        pygame.draw.line(self.screen, self.WHITE, 
-            (x, self.chart_rect.top),
-            (x, self.chart_rect.bottom),
-            1)
+        # Draw vertical line with gradient alpha
+        line_surface = pygame.Surface((1, self.chart_rect.height), pygame.SRCALPHA)
+        for y in range(self.chart_rect.height):
+            alpha = 255 * (1 - y / self.chart_rect.height)
+            pygame.draw.line(
+                line_surface,
+                (*self.WHITE[:3], int(alpha)),
+                (0, y),
+                (0, y)
+            )
+        self.screen.blit(line_surface, (x, self.chart_rect.top))
 
-        info_font = pygame.font.Font(None, 36)
-        price_surface = info_font.render(f"${price:,.2f}", True, self.WHITE)
-        date_surface = info_font.render(date.strftime("%b %d %H:%M"), True, self.WHITE)
+        # Create tooltip content
+        info_font = pygame.font.Font(None, 32)
+        price_text = f"${price:,.2f}"
+        date_text = date.strftime("%b %d %H:%M")
+        
+        price_surface = info_font.render(price_text, True, self.GREEN)
+        date_surface = info_font.render(date_text, True, self.WHITE)
 
-        padding = 10
+        # Calculate tooltip dimensions
+        padding = 15
         box_width = max(price_surface.get_width(), date_surface.get_width()) + padding * 2
         box_height = price_surface.get_height() + date_surface.get_height() + padding * 2
-        box_x = min(max(x - box_width/2, 0), self.width - box_width)
-        box_y = self.chart_rect.top - box_height - padding
 
-        pygame.draw.rect(self.screen, (40, 40, 40), 
-            (box_x, box_y, box_width, box_height))
-        pygame.draw.rect(self.screen, self.WHITE, 
-            (box_x, box_y, box_width, box_height), 1)
+        # Position tooltip
+        box_x = min(max(x - box_width/2, padding), self.width - box_width - padding)
+        box_y = self.chart_rect.top - box_height - 20
 
-        self.screen.blit(price_surface, (box_x + padding, box_y + padding))
-        self.screen.blit(date_surface, 
-            (box_x + padding, box_y + price_surface.get_height() + padding))
+        # Draw tooltip background with rounded corners
+        tooltip_surface = pygame.Surface((box_width, box_height), pygame.SRCALPHA)
+        pygame.draw.rect(
+            tooltip_surface,
+            (40, 40, 40, 230),  # Semi-transparent dark background
+            (0, 0, box_width, box_height),
+            border_radius=8
+        )
+
+        # Add subtle border glow
+        pygame.draw.rect(
+            tooltip_surface,
+            (60, 60, 60, 128),
+            (0, 0, box_width, box_height),
+            width=1,
+            border_radius=8
+        )
+
+        # Position and draw text
+        tooltip_surface.blit(
+            price_surface,
+            (padding, padding)
+        )
+        tooltip_surface.blit(
+            date_surface,
+            (padding, padding + price_surface.get_height() + 5)
+        )
+
+        # Draw tooltip with a slight vertical animation based on touch position
+        y_offset = abs(math.sin(time.time() * 2)) * 2  # Subtle float effect
+        self.screen.blit(tooltip_surface, (box_x, box_y + y_offset))
 
     def handle_event(self, event):
         if not hasattr(event, 'x') or not hasattr(event, 'y'):
