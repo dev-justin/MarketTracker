@@ -296,13 +296,21 @@ class DashboardScreen(Screen):
             # Position price at the right
             price_rect = price_text.get_rect(
                 right=card_rect.right - 15,
-                centery=card_rect.centery - 12
+                centery=card_rect.centery - 10
             )
             
             # Draw arrow and change percentage
             is_positive = item['color'] == AppConfig.GREEN
-            arrow_x = price_rect.right - 65
-            arrow_y = price_rect.centery + 25
+            
+            # Position change percentage right-aligned with price
+            change_rect = change_text.get_rect(
+                right=price_rect.right,
+                centery=price_rect.centery + 25
+            )
+            
+            # Position arrow to the left of change text
+            arrow_x = change_rect.left - arrow_size - 10
+            arrow_y = change_rect.centery
             
             # Draw arrow
             if is_positive:
@@ -319,12 +327,6 @@ class DashboardScreen(Screen):
                 ]
             
             pygame.draw.polygon(display, item['color'], points)
-            
-            # Position change percentage after arrow
-            change_rect = change_text.get_rect(
-                left=arrow_x + arrow_size + 10,
-                centery=arrow_y
-            )
             
             display.blit(price_text, price_rect)
             display.blit(change_text, change_rect) 
