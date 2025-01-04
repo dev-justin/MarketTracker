@@ -9,19 +9,23 @@ class SettingsScreen(Screen):
         self.crypto_api = ticker_screen.crypto_api
         
         # Grid settings
-        self.grid_size = 3
-        self.cell_padding = 40  # Increased padding
+        self.grid_size = 3  # 3 columns
+        self.cell_padding = 25  # Slightly reduced padding for 3 rows
         
         # Calculate usable space
-        self.title_height = 100
+        self.title_height = 80  # Reduced title height
         self.button_area_height = 80
         usable_height = self.height - self.title_height - self.button_area_height
         
         # Calculate cell dimensions to fill space evenly
-        # Make cells taller by using a 3x2 grid layout (3 columns, 2 rows)
-        self.num_rows = 2
+        self.num_rows = 3  # Changed to 3 rows
         self.cell_width = (self.width - (self.cell_padding * (self.grid_size + 1))) // self.grid_size
         self.cell_height = (usable_height - (self.cell_padding * (self.num_rows + 1))) // self.num_rows
+        
+        # Colors
+        self.cell_bg_color = (30, 30, 30)  # Very light black/grey
+        self.cell_border_color = (45, 45, 45)  # Slightly brighter than background
+        self.cell_highlight_color = (0, 255, 0, 80)  # Very transparent green for hover effect
         
         # Store cell rectangles for hit testing
         self.cell_rects = []
@@ -73,15 +77,15 @@ class SettingsScreen(Screen):
 
     def _draw_plus_icon(self, cell_rect):
         # Calculate plus dimensions
-        plus_thickness = 3  # Thinner lines for more modern look
-        plus_size = min(cell_rect.width, cell_rect.height) // 4  # Slightly smaller
+        plus_thickness = 2  # Even thinner lines
+        plus_size = min(cell_rect.width, cell_rect.height) // 5  # Smaller plus icon
         
         # Calculate center position
         center_x = cell_rect.centerx
         center_y = cell_rect.centery
         
-        # Draw plus in green to match the theme
-        color = (0, 255, 0, 128)  # Semi-transparent green
+        # Draw plus in a slightly brighter color than the border
+        color = (60, 60, 60)
         
         # Draw horizontal line
         horizontal_rect = pygame.Rect(
@@ -90,7 +94,7 @@ class SettingsScreen(Screen):
             plus_size,
             plus_thickness
         )
-        pygame.draw.rect(self.screen, color, horizontal_rect, border_radius=2)
+        pygame.draw.rect(self.screen, color, horizontal_rect, border_radius=1)
         
         # Draw vertical line
         vertical_rect = pygame.Rect(
@@ -99,26 +103,28 @@ class SettingsScreen(Screen):
             plus_thickness,
             plus_size
         )
-        pygame.draw.rect(self.screen, color, vertical_rect, border_radius=2)
+        pygame.draw.rect(self.screen, color, vertical_rect, border_radius=1)
 
     def draw(self):
         self.screen.fill(self.manager.BLACK)
         
-        # Draw title
-        title_font = pygame.font.Font(None, 72)
+        # Draw title (smaller)
+        title_font = pygame.font.Font(None, 48)  # Reduced from 72
         title_text = title_font.render("Tracked Symbols", True, self.manager.WHITE)
         title_rect = title_text.get_rect(centerx=self.width//2, y=self.title_height//2)
         self.screen.blit(title_text, title_rect)
         
         # Draw grid
         for i, cell_rect in enumerate(self.cell_rects):
-            # Draw cell border only (no background) with thin green line
-            pygame.draw.rect(self.screen, (0, 255, 0, 128), cell_rect, 1, border_radius=10)
+            # Draw cell background
+            pygame.draw.rect(self.screen, self.cell_bg_color, cell_rect, border_radius=10)
+            # Draw cell border
+            pygame.draw.rect(self.screen, self.cell_border_color, cell_rect, 1, border_radius=10)
             
             # If we have a symbol for this cell, draw it
             if i < len(self.ticker_screen.symbols):
                 symbol = self.ticker_screen.symbols[i]
-                symbol_font = pygame.font.Font(None, 72)
+                symbol_font = pygame.font.Font(None, 48)  # Reduced from 72
                 symbol_text = symbol_font.render(symbol, True, self.manager.WHITE)
                 symbol_rect = symbol_text.get_rect(center=cell_rect.center)
                 self.screen.blit(symbol_text, symbol_rect)
@@ -127,7 +133,8 @@ class SettingsScreen(Screen):
                 self._draw_plus_icon(cell_rect)
         
         # Draw back button
-        pygame.draw.rect(self.screen, (0, 255, 0, 128), self.back_button, 1, border_radius=25)
-        back_text = pygame.font.Font(None, 36).render("Back", True, (0, 255, 0))
+        pygame.draw.rect(self.screen, self.cell_bg_color, self.back_button, border_radius=25)
+        pygame.draw.rect(self.screen, self.cell_border_color, self.back_button, 1, border_radius=25)
+        back_text = pygame.font.Font(None, 36).render("Back", True, self.manager.WHITE)
         back_rect = back_text.get_rect(center=self.back_button.center)
         self.screen.blit(back_text, back_rect) 
