@@ -59,7 +59,7 @@ class AppConfig:
         'time': 70,
         'date': 36,
         'coin_name': 24,
-        'price': 28,
+        'price': 24,
         'label': 20
     }
     
