@@ -25,6 +25,15 @@ class AppConfig:
     EDIT_BUTTON_COLOR = (60, 60, 60)
     DELETE_BUTTON_COLOR = (180, 0, 0)
     
+    # Input colors
+    INPUT_BG_COLOR = (30, 30, 30)
+    PLACEHOLDER_COLOR = (100, 100, 100)
+    KEY_BG_COLOR = (40, 40, 40)
+    KEY_BORDER_COLOR = (60, 60, 60)
+    DONE_BUTTON_ACTIVE_COLOR = (0, 100, 0)
+    DONE_BUTTON_INACTIVE_COLOR = (40, 40, 40)
+    CANCEL_BUTTON_COLOR = (100, 0, 0)
+    
     # Font settings
     FONT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'assets', 'fonts')
     FONT_PATHS = {
@@ -66,4 +75,10 @@ class AppConfig:
     
     # Keyboard settings
     KEY_SIZE = 60
-    KEY_SPACING = 10 
+    KEY_SPACING = 10
+    MAX_TICKER_LENGTH = 5
+    KEY_MARGIN = 10
+    KEY_HEIGHT = 60
+    BUTTON_HEIGHT = 50
+    BUTTON_WIDTH = 120
+    BUTTON_MARGIN = 40 
