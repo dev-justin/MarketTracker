@@ -2,14 +2,14 @@ from typing import Dict, Optional, List
 import pygame
 import os
 from datetime import datetime
-from pyowm import OWM
-from pyowm.utils.config import get_default_config
-from dotenv import load_dotenv
+import requests
 from ..config.settings import AppConfig
 from ..constants import EventTypes, ScreenNames
 from ..utils.logger import get_logger
 from .base import Screen
 import time
+import urllib.request
+from io import BytesIO
 
 logger = get_logger(__name__)
 
@@ -31,6 +31,7 @@ class DashboardScreen(Screen):
         self.header_font_size = 48
         self.ticker_font_size = 72
         self.date_font_size = 36
+        self.news_font_size = 24
         self.padding = 20
         
         # Touch handling
@@ -44,63 +45,45 @@ class DashboardScreen(Screen):
         self.price_changes: Dict[str, float] = {}
         self.ticker_items: List[Dict] = []
         
-        # Weather data
-        self.weather_data: Optional[Dict] = None
-        self.last_weather_update: float = 0
-        self.weather_update_interval: float = 300  # Update every 5 minutes
-        
-        # Initialize weather manager
-        config_dict = get_default_config()
-        config_dict['language'] = 'en'
-        
-        # Load environment variables from .env file
-        env_path = os.path.join(os.path.dirname(__file__), '..', '..', '.env')
-        load_dotenv(env_path)
-        
-        # Get API key from environment variable
-        self.owm = None
-        self.weather_mgr = None
-        api_key = os.getenv('OWM_API_KEY')
-        
-        if api_key:
-            try:
-                self.owm = OWM(api_key, config_dict)
-                self.weather_mgr = self.owm.weather_manager()
-                logger.info("Weather manager initialized successfully")
-            except Exception as e:
-                logger.error(f"Failed to initialize weather manager: {str(e)}")
-        else:
-            logger.warning(f"OpenWeatherMap API key not found in environment variables. Checked path: {env_path}")
+        # News data
+        self.news_items: List[Dict] = []
+        self.news_images: Dict[str, pygame.Surface] = {}
+        self.last_news_update: float = 0
+        self.news_update_interval: float = 300  # Update every 5 minutes
         
         logger.info("DashboardScreen initialized")
-        
-    def _update_weather(self) -> None:
-        """Update the weather data using PyOWM."""
-        if not self.weather_mgr:
-            return
-            
+    
+    def _update_news(self) -> None:
+        """Fetch latest crypto news from CryptoCompare."""
         current_time = time.time()
-        if (current_time - self.last_weather_update) >= self.weather_update_interval:
+        if (current_time - self.last_news_update) >= self.news_update_interval:
             try:
-                # Get local weather using IP geolocation
-                reg = self.owm.city_id_registry()
-                print(f"Registry: {reg}")
-                list_of_locations = reg.locations_for('Vancouver', country='CA')  # Default to Toronto if geolocation fails
-                if list_of_locations:
-                    observation = self.weather_mgr.weather_at_place(f"{list_of_locations[0].name},{list_of_locations[0].country}")
-                    weather = observation.weather
+                url = "https://min-api.cryptocompare.com/data/v2/news/?lang=EN&sortOrder=popular"
+                response = requests.get(url)
+                data = response.json()
+                
+                if data['Response'] == 'Success':
+                    self.news_items = data['Data'][:3]  # Get top 3 news items
                     
-                    self.weather_data = {
-                        'temp': round(weather.temperature('celsius')['temp']),
-                        'status': weather.status,
-                        'detailed': weather.detailed_status
-                    }
-                    self.last_weather_update = current_time
-                    logger.info(f"Weather data updated successfully for {list_of_locations[0].name}")
+                    # Load images for each news item
+                    for item in self.news_items:
+                        if item['imageurl'] not in self.news_images:
+                            try:
+                                image_response = urllib.request.urlopen(item['imageurl'])
+                                image_data = BytesIO(image_response.read())
+                                image = pygame.image.load(image_data)
+                                # Scale image to reasonable size (e.g., 200x120)
+                                image = pygame.transform.scale(image, (200, 120))
+                                self.news_images[item['imageurl']] = image
+                            except Exception as e:
+                                logger.error(f"Error loading news image: {str(e)}")
+                    
+                    self.last_news_update = current_time
+                    logger.info("News data updated successfully")
                 else:
-                    logger.error("Could not find location data")
+                    logger.error("Failed to fetch news data")
             except Exception as e:
-                logger.error(f"Error updating weather: {str(e)}")
+                logger.error(f"Error updating news: {str(e)}")
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """
@@ -136,14 +119,13 @@ class DashboardScreen(Screen):
     
     def update(self, prices: Optional[Dict[str, float]] = None) -> None:
         """
-        Update the screen with new price data.
+        Update the screen with new price and news data.
         
         Args:
             prices: Dictionary of current prices
         """
         self.current_prices = prices
         if prices:
-            # Update price changes and prepare ticker items
             self.ticker_items = []
             for symbol in prices:
                 historical_prices = self.crypto_api.get_historical_prices(symbol)
@@ -152,7 +134,6 @@ class DashboardScreen(Screen):
                     price_24h_ago = historical_prices[-4]
                     change_percent = ((current_price - price_24h_ago) / price_24h_ago) * 100
                     
-                    # Create ticker item with all necessary text
                     self.ticker_items.append({
                         'symbol': symbol,
                         'price': f"${prices[symbol]:,.2f}",
@@ -160,8 +141,8 @@ class DashboardScreen(Screen):
                         'color': AppConfig.GREEN if change_percent >= 0 else AppConfig.RED
                     })
         
-        # Update weather data
-        self._update_weather()
+        # Update news data
+        self._update_news()
     
     def draw(self, display: pygame.Surface) -> None:
         """
@@ -187,22 +168,8 @@ class DashboardScreen(Screen):
         time_rect = time_text.get_rect(centerx=self.width//2, top=date_rect.bottom + 10)
         display.blit(time_text, time_rect)
         
-        # Draw weather information
-        if self.weather_data:
-            try:
-                temp = self.weather_data['temp']
-                status = self.weather_data['detailed'].capitalize()
-                weather_text = f"{temp}°C | {status}"
-                weather_surface = self._create_text_surface(weather_text, self.date_font_size, AppConfig.WHITE)
-                weather_rect = weather_surface.get_rect(centerx=self.width//2, top=time_rect.bottom + 10)
-                display.blit(weather_surface, weather_rect)
-                line_y = weather_rect.bottom + self.padding
-            except KeyError:
-                line_y = time_rect.bottom + self.padding
-        else:
-            line_y = time_rect.bottom + self.padding
-        
         # Draw dividing line
+        line_y = time_rect.bottom + self.padding
         pygame.draw.line(display, AppConfig.CELL_BORDER_COLOR, 
                         (self.padding, line_y), (self.width - self.padding, line_y), 2)
         
@@ -212,6 +179,7 @@ class DashboardScreen(Screen):
         row_height = self.ticker_font_size + self.padding
         col_width = (self.width - (self.padding * 3)) // 2
         
+        # Draw ticker items
         for i, item in enumerate(self.ticker_items):
             row = i // 2
             col = i % 2
@@ -235,4 +203,31 @@ class DashboardScreen(Screen):
             # Draw texts
             display.blit(symbol_text, symbol_rect)
             display.blit(price_text, price_rect)
-            display.blit(change_text, change_rect) 
+            display.blit(change_text, change_rect)
+        
+        # Draw news section
+        news_top = grid_top + ((len(self.ticker_items) + 1) // 2) * row_height + self.padding
+        news_left = self.padding
+        
+        # Draw news header
+        news_header = self._create_text_surface("Latest Crypto News", self.header_font_size, AppConfig.WHITE)
+        header_rect = news_header.get_rect(left=news_left, top=news_top)
+        display.blit(news_header, header_rect)
+        
+        # Draw news items
+        for i, news in enumerate(self.news_items):
+            news_y = header_rect.bottom + (i * 140) + self.padding
+            
+            # Draw news image if available
+            if news['imageurl'] in self.news_images:
+                image = self.news_images[news['imageurl']]
+                display.blit(image, (news_left, news_y))
+                text_left = news_left + 220  # Image width + padding
+            else:
+                text_left = news_left
+            
+            # Draw news title (wrap text if needed)
+            title = news['title']
+            title_surface = self._create_text_surface(title, self.news_font_size, AppConfig.WHITE)
+            title_rect = title_surface.get_rect(left=text_left, top=news_y)
+            display.blit(title_surface, title_rect) 
