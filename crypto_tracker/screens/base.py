@@ -16,8 +16,8 @@ class Screen:
             screen_manager: The screen manager instance
         """
         self.manager = screen_manager
-        self.width = AppConfig.SCREEN_WIDTH
-        self.height = AppConfig.SCREEN_HEIGHT
+        self.width = AppConfig.DISPLAY_WIDTH
+        self.height = AppConfig.DISPLAY_HEIGHT
         
     def handle_event(self, event: pygame.event.Event) -> None:
         """
