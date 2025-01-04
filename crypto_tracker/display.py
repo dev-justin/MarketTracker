@@ -229,10 +229,9 @@ class Display:
             # Calculate 24-hour change
             historical_prices = self.crypto_api.get_historical_prices(symbol)
             if historical_prices and len(historical_prices) > 4:  # Ensure we have enough data
-                # Assuming the last price is the current price
                 current_price = historical_prices[-1]
-                # Get the price 24 hours ago (4 intervals back for 6-hour intervals)
-                price_24h_ago = historical_prices[-5]
+                # Get the price 24 hours ago (4 intervals of 6 hours = 24 hours)
+                price_24h_ago = historical_prices[-4]
                 change_percent = ((current_price - price_24h_ago) / price_24h_ago) * 100
                 
                 # Draw 24-hour change
