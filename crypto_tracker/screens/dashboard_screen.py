@@ -129,13 +129,14 @@ class DashboardScreen(Screen):
         date_rect = date_text.get_rect(centerx=self.width//2, top=self.padding)
         display.blit(date_text, date_rect)
         
-        # Draw dividing line
-        line_y = date_rect.bottom + self.padding
-        pygame.draw.line(display, AppConfig.CELL_BORDER_COLOR, 
-                        (self.padding, line_y), (self.width - self.padding, line_y), 2)
+        # Draw current time in large font below date (remove leading zero from hour)
+        current_time = datetime.now(self.local_tz).strftime("%I:%M %p").lstrip("0")
+        time_text = self._create_text_surface(current_time, self.time_font_size, AppConfig.WHITE)
+        time_rect = time_text.get_rect(centerx=self.width//2, top=date_rect.bottom + 10)
+        display.blit(time_text, time_rect)
         
         # Draw tickers in a grid
-        grid_top = line_y + self.padding
+        grid_top = time_rect.bottom + self.padding * 2
         grid_left = self.padding
         row_height = self.ticker_font_size + self.padding
         col_width = (self.width - (self.padding * 3)) // 2
@@ -164,13 +165,4 @@ class DashboardScreen(Screen):
             # Draw texts
             display.blit(symbol_text, symbol_rect)
             display.blit(price_text, price_rect)
-            display.blit(change_text, change_rect)
-        
-        # Calculate position for time at bottom
-        grid_bottom = grid_top + ((len(self.ticker_items) + 1) // 2) * row_height
-        
-        # Draw current time in large font at bottom (remove leading zero from hour)
-        current_time = datetime.now(self.local_tz).strftime("%I:%M %p").lstrip("0")
-        time_text = self._create_text_surface(current_time, self.time_font_size, AppConfig.WHITE)
-        time_rect = time_text.get_rect(centerx=self.width//2, bottom=self.height - self.padding)
-        display.blit(time_text, time_rect) 
+            display.blit(change_text, change_rect) 
