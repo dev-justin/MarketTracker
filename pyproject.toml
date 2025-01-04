@@ -1,0 +1,18 @@
+[project]
+name = "crypto-tracker"
+version = "0.1.0"
+description = "A cryptocurrency price tracker for Raspberry Pi with display"
+requires-python = ">=3.8"
+dependencies = [
+    "requests",
+    "pygame",  # for display handling
+    "python-dotenv",  # for environment variables
+    "ccxt"  # popular library for crypto exchange APIs
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"] 
