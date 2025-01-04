@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 from pyowm import OWM
 from pyowm.utils.config import get_default_config
+from dotenv import load_dotenv
 from ..config.settings import AppConfig
 from ..constants import EventTypes, ScreenNames
 from ..utils.logger import get_logger
@@ -52,6 +53,10 @@ class DashboardScreen(Screen):
         config_dict = get_default_config()
         config_dict['language'] = 'en'
         
+        # Load environment variables from .env file
+        env_path = os.path.join(os.path.dirname(__file__), '..', '..', '.env')
+        load_dotenv(env_path)
+        
         # Get API key from environment variable
         self.owm = None
         self.weather_mgr = None
@@ -65,7 +70,7 @@ class DashboardScreen(Screen):
             except Exception as e:
                 logger.error(f"Failed to initialize weather manager: {str(e)}")
         else:
-            logger.warning("OpenWeatherMap API key not found in environment variables")
+            logger.warning(f"OpenWeatherMap API key not found in environment variables. Checked path: {env_path}")
         
         logger.info("DashboardScreen initialized")
         
