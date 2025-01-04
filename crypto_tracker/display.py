@@ -155,17 +155,22 @@ class Display:
                 price_range = max_price - min_price or max_price * 0.1
                 line_y = self.chart_rect.bottom - ((price - min_price) * self.chart_rect.height / price_range)
 
-        # Draw vertical line with gradient alpha
-        line_surface = pygame.Surface((1, self.chart_rect.height), pygame.SRCALPHA)
-        for y in range(self.chart_rect.height):
-            alpha = 255 * (1 - y / self.chart_rect.height)
-            pygame.draw.line(
-                line_surface,
-                (*self.WHITE[:3], int(alpha)),
-                (0, y),
-                (0, y)
-            )
-        self.screen.blit(line_surface, (x, self.chart_rect.top))
+                # Draw dot at the point
+                dot_radius = 6
+                # Draw outer glow
+                pygame.draw.circle(
+                    self.screen,
+                    (255, 255, 255, 128),  # Semi-transparent white
+                    (x, line_y),
+                    dot_radius + 2
+                )
+                # Draw inner dot
+                pygame.draw.circle(
+                    self.screen,
+                    self.GREEN,  # Match chart color
+                    (x, line_y),
+                    dot_radius
+                )
 
         # Create tooltip content
         info_font = pygame.font.Font(None, 32)
