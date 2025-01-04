@@ -8,9 +8,8 @@ class KeyboardScreen(Screen):
         self.input_text = ""
         self.max_length = 5  # Max ticker length
         
-        # Keyboard layout
+        # Keyboard layout (removed numbers)
         self.keys = [
-            ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
             ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
             ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
             ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '⌫']
@@ -22,12 +21,20 @@ class KeyboardScreen(Screen):
         self.key_width = (usable_width - (9 * self.key_margin)) // 10  # 10 keys in longest row
         self.key_height = 60
         
-        # Calculate keyboard position
-        self.keyboard_y = self.height // 2
+        # Calculate keyboard position (moved up slightly since we removed a row)
+        self.keyboard_y = self.height // 3
+        
+        # Button dimensions
+        self.button_height = 50
+        self.button_width = 120
+        self.button_margin = 40
         
         # Create key rectangles
         self.key_rects = {}
         self._create_key_rects()
+        
+        # Create button rectangles
+        self._create_button_rects()
 
     def _create_key_rects(self):
         for row_idx, row in enumerate(self.keys):
@@ -39,6 +46,26 @@ class KeyboardScreen(Screen):
             for col_idx, key in enumerate(row):
                 x = start_x + col_idx * (self.key_width + self.key_margin)
                 self.key_rects[key] = pygame.Rect(x, y, self.key_width, self.key_height)
+
+    def _create_button_rects(self):
+        # Position buttons at the bottom with proper spacing
+        buttons_y = self.keyboard_y + (len(self.keys) * (self.key_height + self.key_margin)) + self.button_margin
+        
+        # Cancel button (left)
+        self.cancel_rect = pygame.Rect(
+            self.button_margin,
+            buttons_y,
+            self.button_width,
+            self.button_height
+        )
+        
+        # Done button (right)
+        self.done_rect = pygame.Rect(
+            self.width - self.button_width - self.button_margin,
+            buttons_y,
+            self.button_width,
+            self.button_height
+        )
 
     def handle_event(self, event):
         if not hasattr(event, 'x') or not hasattr(event, 'y'):
