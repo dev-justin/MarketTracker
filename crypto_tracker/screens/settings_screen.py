@@ -14,44 +14,18 @@ class SettingsScreen(Screen):
         """Initialize the settings screen."""
         super().__init__(screen_manager)
         self.ticker_screen = ticker_screen
+        self.crypto_api = ticker_screen.crypto_api
         
         # Grid settings
         self.grid_rows = AppConfig.GRID_ROWS
         self.grid_cols = AppConfig.GRID_COLS
         self.cell_padding = AppConfig.CELL_PADDING
+        self.title_height = AppConfig.TITLE_HEIGHT
         
         # Calculate cell dimensions
+        usable_height = self.height - self.title_height - AppConfig.BUTTON_AREA_HEIGHT
         self.cell_width = (self.width - (self.cell_padding * (self.grid_cols + 1))) // self.grid_cols
-        self.cell_height = (self.height - (self.cell_padding * (self.grid_rows + 1))) // self.grid_rows
-        
-        # Popup settings
-        self.action_width = 250
-        self.padding = 30
-        self.button_spacing = self.padding
-        self.symbol_button_spacing = self.padding * 0.7
-        
-        # Calculate popup dimensions
-        self.popup_height = (
-            self.padding * 2 +  # Top and bottom padding
-            self.cell_height +  # Symbol height
-            self.symbol_button_spacing +  # Space between symbol and first button
-            (self.button_spacing * 2) +  # Space between buttons
-            (self.cell_height * 3)  # Height for three buttons
-        )
-        
-        # Calculate positions for popup elements
-        self.popup_y = (self.height - self.popup_height) // 2
-        self.first_button_y = (
-            self.popup_y +
-            self.padding +
-            self.cell_height +
-            self.symbol_button_spacing
-        )
-        
-        # Touch handling
-        self.selected_cell = None
-        self.popup_visible = False
-        self.selected_symbol = None
+        self.cell_height = (usable_height - (self.cell_padding * (self.grid_rows + 1))) // self.grid_rows
         
         # Colors
         self.cell_bg_color = AppConfig.CELL_BG_COLOR
@@ -67,15 +41,15 @@ class SettingsScreen(Screen):
         button_height = AppConfig.BUTTON_HEIGHT
         self.back_button = pygame.Rect(
             (self.width - button_width) // 2,
-            self.height - button_height - 20,
+            self.height - button_height - AppConfig.BUTTON_MARGIN,
             button_width,
             button_height
         )
         
         # Action popup settings
-        self.showing_action_popup: bool = False
-        self.selected_symbol_index: Optional[int] = None
-        self.is_editing: bool = False  # Track if we're editing an existing symbol
+        self.showing_action_popup = False
+        self.selected_symbol_index = None
+        self.is_editing = False
         
         # Action buttons
         action_width = 250
@@ -144,8 +118,8 @@ class SettingsScreen(Screen):
         start_x = self.cell_padding
         start_y = self.title_height + self.cell_padding
         
-        for row in range(self.num_rows):
-            for col in range(self.grid_size):
+        for row in range(self.grid_rows):
+            for col in range(self.grid_cols):
                 x = start_x + col * (self.cell_width + self.cell_padding)
                 y = start_y + row * (self.cell_height + self.cell_padding)
                 self.cell_rects.append(pygame.Rect(x, y, self.cell_width, self.cell_height))

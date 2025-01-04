@@ -13,7 +13,17 @@ class AppConfig:
     RED = (255, 0, 0)
     GREEN = (0, 255, 0)
     GRAY = (128, 128, 128)
-    CELL_BORDER_COLOR = (40, 44, 52)
+    
+    # UI Colors
+    CELL_BG_COLOR = (30, 30, 30)
+    CELL_BORDER_COLOR = (45, 45, 45)
+    CELL_HIGHLIGHT_COLOR = (0, 255, 0, 80)
+    PLUS_ICON_COLOR = (60, 60, 60)
+    OVERLAY_COLOR = (0, 0, 0, 200)
+    POPUP_BG_COLOR = (40, 40, 40)
+    POPUP_BORDER_COLOR = (60, 60, 60)
+    EDIT_BUTTON_COLOR = (60, 60, 60)
+    DELETE_BUTTON_COLOR = (180, 0, 0)
     
     # Font settings
     FONT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'assets', 'fonts')
@@ -46,6 +56,13 @@ class AppConfig:
     GRID_ROWS = 4
     GRID_COLS = 4
     CELL_PADDING = 10
+    TITLE_HEIGHT = 80
+    BUTTON_AREA_HEIGHT = 80
+    
+    # Button settings
+    BUTTON_WIDTH = 120
+    BUTTON_HEIGHT = 50
+    BUTTON_MARGIN = 40
     
     # Keyboard settings
     KEY_SIZE = 60
