@@ -6,6 +6,7 @@ class SettingsScreen(Screen):
     def __init__(self, screen_manager, ticker_screen):
         super().__init__(screen_manager)
         self.ticker_screen = ticker_screen
+        self.crypto_api = ticker_screen.crypto_api
         
         # Grid settings
         self.grid_size = 3
@@ -39,8 +40,9 @@ class SettingsScreen(Screen):
                 self.cell_rects.append(pygame.Rect(x, y, self.cell_width, self.cell_height))
 
     def add_ticker(self, symbol):
-        if symbol not in self.ticker_screen.symbols:
-            self.ticker_screen.symbols.append(symbol)
+        """Add a new ticker and update the ticker screen's symbols"""
+        if self.crypto_api.add_ticker(symbol):
+            self.ticker_screen.symbols = self.crypto_api.get_tracked_symbols()
 
     def handle_event(self, event):
         if not hasattr(event, 'x') or not hasattr(event, 'y'):

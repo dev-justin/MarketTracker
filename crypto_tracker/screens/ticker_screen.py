@@ -10,7 +10,7 @@ class TickerScreen(Screen):
         self.crypto_api = crypto_api
         
         # Symbol management
-        self.symbols = ['BTC', 'ETH']
+        self.symbols = self.crypto_api.get_tracked_symbols()
         self.current_symbol_index = 0
         
         # Double tap detection
