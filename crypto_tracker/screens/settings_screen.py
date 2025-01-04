@@ -22,6 +22,10 @@ class SettingsScreen(Screen):
         self.cell_padding = AppConfig.CELL_PADDING
         self.title_height = AppConfig.TITLE_HEIGHT
         
+        # Button tracking
+        self.edit_buttons = {}
+        self.delete_buttons = {}
+        
         # Calculate cell dimensions
         usable_height = self.height - self.title_height - AppConfig.BUTTON_AREA_HEIGHT
         self.cell_width = (self.width - (self.cell_padding * (self.grid_cols + 1))) // self.grid_cols
@@ -227,7 +231,7 @@ class SettingsScreen(Screen):
         # Draw back button
         pygame.draw.rect(display, AppConfig.CELL_BG_COLOR, self.back_button, border_radius=10)
         pygame.draw.rect(display, AppConfig.CELL_BORDER_COLOR, self.back_button, 1, border_radius=10)
-        back_text = self._create_text_surface("Back", 36, AppConfig.WHITE)
+        back_text = self._create_text("Back", 'md', AppConfig.WHITE)
         back_rect = back_text.get_rect(center=self.back_button.center)
         display.blit(back_text, back_rect)
         
@@ -343,12 +347,7 @@ class SettingsScreen(Screen):
         self.add_button_rect = cell_rect.copy()
 
     def _draw_action_popup(self, display: pygame.Surface) -> None:
-        """
-        Draw the action popup.
-        
-        Args:
-            display: The pygame surface to draw on
-        """
+        """Draw the action popup."""
         # Draw semi-transparent background
         overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
         overlay.fill(AppConfig.OVERLAY_COLOR)
@@ -360,25 +359,25 @@ class SettingsScreen(Screen):
         
         # Draw symbol name
         symbol = self.ticker_screen.symbols[self.selected_symbol_index]
-        symbol_text = self._create_text_surface(symbol, 36, AppConfig.WHITE)
+        symbol_text = self._create_text(symbol, 'lg', AppConfig.WHITE)
         symbol_rect = symbol_text.get_rect(centerx=self.width//2, top=self.action_popup_rect.top + 10)
         display.blit(symbol_text, symbol_rect)
         
         # Draw edit button
         pygame.draw.rect(display, AppConfig.EDIT_BUTTON_COLOR, self.edit_button_rect, border_radius=10)
-        edit_text = self._create_text_surface("Edit", 36, AppConfig.WHITE)
+        edit_text = self._create_text("Edit", 'md', AppConfig.WHITE)
         edit_rect = edit_text.get_rect(center=self.edit_button_rect.center)
         display.blit(edit_text, edit_rect)
         
         # Draw delete button
         pygame.draw.rect(display, AppConfig.DELETE_BUTTON_COLOR, self.delete_button_rect, border_radius=10)
-        delete_text = self._create_text_surface("Delete", 36, AppConfig.WHITE)
+        delete_text = self._create_text("Delete", 'md', AppConfig.WHITE)
         delete_rect = delete_text.get_rect(center=self.delete_button_rect.center)
         display.blit(delete_text, delete_rect)
         
         # Draw cancel button
         pygame.draw.rect(display, AppConfig.CELL_BG_COLOR, self.cancel_button_rect, border_radius=10)
         pygame.draw.rect(display, AppConfig.CELL_BORDER_COLOR, self.cancel_button_rect, 1, border_radius=10)
-        cancel_text = self._create_text_surface("Cancel", 36, AppConfig.WHITE)
+        cancel_text = self._create_text("Cancel", 'md', AppConfig.WHITE)
         cancel_rect = cancel_text.get_rect(center=self.cancel_button_rect.center)
         display.blit(cancel_text, cancel_rect) 
