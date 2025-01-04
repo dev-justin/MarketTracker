@@ -49,10 +49,23 @@ class SettingsScreen(Screen):
         # Action buttons
         action_width = 200
         action_height = 50
-        padding = 20
+        padding = 25  # Increased base padding
         symbol_height = 40  # Height for symbol text
         popup_width = action_width + (padding * 2)
-        popup_height = symbol_height + (action_height * 3) + (padding * 3)  # Reduced padding
+        
+        # Calculate popup height with more padding
+        top_padding = padding * 2  # Extra padding at top
+        bottom_padding = padding * 2  # Extra padding at bottom
+        button_spacing = padding * 1.5  # Space between buttons
+        
+        popup_height = (
+            top_padding +  # Top padding
+            symbol_height +  # Symbol text
+            padding +  # Space after symbol
+            (action_height * 3) +  # Three buttons
+            (button_spacing * 2) +  # Spacing between buttons
+            bottom_padding  # Bottom padding
+        )
         
         # Popup background
         self.action_popup_rect = pygame.Rect(
@@ -62,9 +75,14 @@ class SettingsScreen(Screen):
             popup_height
         )
         
-        # Action buttons - adjusted y positions with less padding
+        # Action buttons - adjusted y positions with new spacing
         button_x = (self.width - action_width) // 2
-        first_button_y = self.action_popup_rect.top + symbol_height + padding  # Reduced padding
+        first_button_y = (
+            self.action_popup_rect.top +
+            top_padding +
+            symbol_height +
+            padding
+        )
         
         self.edit_button_rect = pygame.Rect(
             button_x,
@@ -75,14 +93,14 @@ class SettingsScreen(Screen):
         
         self.delete_button_rect = pygame.Rect(
             button_x,
-            first_button_y + action_height + padding,
+            first_button_y + action_height + button_spacing,
             action_width,
             action_height
         )
         
         self.cancel_button_rect = pygame.Rect(
             button_x,
-            first_button_y + (action_height + padding) * 2,
+            first_button_y + (action_height + button_spacing) * 2,
             action_width,
             action_height
         )
