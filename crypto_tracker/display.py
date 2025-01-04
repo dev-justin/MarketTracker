@@ -144,6 +144,17 @@ class Display:
         if x < self.chart_rect.left or x > self.chart_rect.right:
             return
 
+        # Calculate line y-position for tooltip placement
+        historical_prices = self.crypto_api.get_historical_prices(self.get_current_symbol())
+        if historical_prices:
+            chart_x = x - self.chart_rect.left
+            data_index = int(chart_x * len(historical_prices) / self.chart_rect.width)
+            if 0 <= data_index < len(historical_prices):
+                min_price = min(historical_prices)
+                max_price = max(historical_prices)
+                price_range = max_price - min_price or max_price * 0.1
+                line_y = self.chart_rect.bottom - ((price - min_price) * self.chart_rect.height / price_range)
+
         # Draw vertical line with gradient alpha
         line_surface = pygame.Surface((1, self.chart_rect.height), pygame.SRCALPHA)
         for y in range(self.chart_rect.height):
@@ -169,15 +180,19 @@ class Display:
         box_width = max(price_surface.get_width(), date_surface.get_width()) + padding * 2
         box_height = price_surface.get_height() + date_surface.get_height() + padding * 2
 
-        # Position tooltip
+        # Position tooltip above the line point
         box_x = min(max(x - box_width/2, padding), self.width - box_width - padding)
-        box_y = self.chart_rect.top - box_height - 20
+        box_y = line_y - box_height - 10  # 10 pixels above the line
+
+        # Ensure tooltip stays within screen bounds
+        if box_y < 0:
+            box_y = line_y + 10  # Place below line if would go off screen at top
 
         # Draw tooltip background with rounded corners
         tooltip_surface = pygame.Surface((box_width, box_height), pygame.SRCALPHA)
         pygame.draw.rect(
             tooltip_surface,
-            (40, 40, 40, 230),  # Semi-transparent dark background
+            (40, 40, 40, 230),
             (0, 0, box_width, box_height),
             border_radius=8
         )
