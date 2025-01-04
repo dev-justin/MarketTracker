@@ -23,6 +23,15 @@ class Display:
         
         # Define touch margin for chart line
         self.chart_touch_margin = 10  # pixels
+        
+        # Add settings screen state
+        self.show_settings = False
+        self.grid_size = 5  # 5x5 grid
+        self.cell_padding = 20
+        
+        # Calculate grid cell dimensions
+        self.cell_width = (self.width - (self.cell_padding * (self.grid_size + 1))) // self.grid_size
+        self.cell_height = (self.height - (self.cell_padding * (self.grid_size + 1))) // self.grid_size
 
     def _setup_runtime_dir(self):
         if os.geteuid() == 0:
@@ -179,87 +188,102 @@ class Display:
         x = int(event.x * self.width)
         y = int(event.y * self.height)
 
-        # Handle double tap anywhere on the left or right side
+        # Triple tap to toggle settings screen
         if event.type == self.FINGERDOWN:
             current_time = time.time()
-            
             if current_time - self.last_tap_time < self.double_tap_threshold:
-                if x < self.width // 2:
-                    self.current_symbol_index = (self.current_symbol_index - 1) % len(self.symbols)
-                else:
-                    self.current_symbol_index = (self.current_symbol_index + 1) % len(self.symbols)
+                # Check for third tap
+                if hasattr(self, 'second_tap_time') and current_time - self.second_tap_time < self.double_tap_threshold:
+                    self.show_settings = not self.show_settings
+                self.second_tap_time = current_time
             self.last_tap_time = current_time
 
-        # Handle chart touches
-        if event.type == self.FINGERDOWN and self.chart_rect.collidepoint(x, y):
-            historical_prices = self.crypto_api.get_historical_prices(self.get_current_symbol())
-            if historical_prices:
-                # Calculate the y position of the chart line at the touch x
-                chart_x = x - self.chart_rect.left
-                data_index = int(chart_x * len(historical_prices) / self.chart_rect.width)
-                if 0 <= data_index < len(historical_prices):
-                    price = historical_prices[data_index]
-                    min_price = min(historical_prices)
-                    max_price = max(historical_prices)
-                    price_range = max_price - min_price or max_price * 0.1
-                    line_y = self.chart_rect.bottom - ((price - min_price) * self.chart_rect.height / price_range)
+        # Only process other events if not in settings
+        if not self.show_settings:
+            # Handle double tap anywhere on the left or right side
+            if event.type == self.FINGERDOWN:
+                current_time = time.time()
+                
+                if current_time - self.last_tap_time < self.double_tap_threshold:
+                    if x < self.width // 2:
+                        self.current_symbol_index = (self.current_symbol_index - 1) % len(self.symbols)
+                    else:
+                        self.current_symbol_index = (self.current_symbol_index + 1) % len(self.symbols)
+                self.last_tap_time = current_time
 
-                    # Check if touch is within margin of the line OR below the line
-                    if abs(y - line_y) <= self.chart_touch_margin or y > line_y:
-                        self.touch_active = True
-                        self.touch_x = x
-                        self.touch_price, self.touch_date = self._get_price_at_x(x, historical_prices)
+            # Handle chart touches
+            if event.type == self.FINGERDOWN and self.chart_rect.collidepoint(x, y):
+                historical_prices = self.crypto_api.get_historical_prices(self.get_current_symbol())
+                if historical_prices:
+                    # Calculate the y position of the chart line at the touch x
+                    chart_x = x - self.chart_rect.left
+                    data_index = int(chart_x * len(historical_prices) / self.chart_rect.width)
+                    if 0 <= data_index < len(historical_prices):
+                        price = historical_prices[data_index]
+                        min_price = min(historical_prices)
+                        max_price = max(historical_prices)
+                        price_range = max_price - min_price or max_price * 0.1
+                        line_y = self.chart_rect.bottom - ((price - min_price) * self.chart_rect.height / price_range)
 
-        elif event.type == self.FINGERUP:
-            self.touch_active = False
-            self.touch_x = self.touch_price = self.touch_date = None
+                        # Check if touch is within margin of the line OR below the line
+                        if abs(y - line_y) <= self.chart_touch_margin or y > line_y:
+                            self.touch_active = True
+                            self.touch_x = x
+                            self.touch_price, self.touch_date = self._get_price_at_x(x, historical_prices)
+
+            elif event.type == self.FINGERUP:
+                self.touch_active = False
+                self.touch_x = self.touch_price = self.touch_date = None
 
     def update(self, prices):
-        self.screen.fill(self.BLACK)
-        
-        if prices:
-            current_symbol = self.get_current_symbol()
-            price = prices.get(current_symbol)
+        if self.show_settings:
+            self._draw_settings_screen()
+        else:
+            self.screen.fill(self.BLACK)
             
-            if price is None:
-                return
-
-            # Draw price (on top)
-            price_font = pygame.font.Font(None, 120)
-            price_text = price_font.render(f"${price:,.2f}", True, self.GREEN)
-            price_rect = price_text.get_rect(left=50, y=40)
-            self.screen.blit(price_text, price_rect)
-            
-            # Draw symbol (below price)
-            symbol_font = pygame.font.Font(None, 96)
-            symbol_text = symbol_font.render(current_symbol, True, self.WHITE)
-            symbol_rect = symbol_text.get_rect(left=50, y=120)
-            self.screen.blit(symbol_text, symbol_rect)
-            
-            # Calculate 24-hour change
-            historical_prices = self.crypto_api.get_historical_prices(current_symbol)
-            if historical_prices and len(historical_prices) > 4:  # Ensure we have enough data
-                current_price = historical_prices[-1]
-                # Get the price 24 hours ago (4 intervals of 6 hours = 24 hours)
-                price_24h_ago = historical_prices[-4]
-                change_percent = ((current_price - price_24h_ago) / price_24h_ago) * 100
+            if prices:
+                current_symbol = self.get_current_symbol()
+                price = prices.get(current_symbol)
                 
-                # Draw 24-hour change
-                change_color = self.GREEN if change_percent >= 0 else self.RED
-                # Format: positive without brackets, negative with brackets
-                change_text = (f"{change_percent:.2f}%" if change_percent >= 0 
-                             else f"({abs(change_percent):.2f}%)")
-                change_font = pygame.font.Font(None, 72)
-                change_surface = change_font.render(change_text, True, change_color)
-                change_rect = change_surface.get_rect(right=self.width - 50, y=40)
-                self.screen.blit(change_surface, change_rect)
-            
-            # Draw chart
-            if historical_prices:
-                self._draw_chart(historical_prices)
-                if all([self.touch_active, self.touch_x is not None, 
-                       self.touch_price is not None, self.touch_date is not None]):
-                    self._draw_touch_indicator(self.touch_x, self.touch_price, self.touch_date)
+                if price is None:
+                    return
+
+                # Draw price (on top)
+                price_font = pygame.font.Font(None, 120)
+                price_text = price_font.render(f"${price:,.2f}", True, self.GREEN)
+                price_rect = price_text.get_rect(left=50, y=40)
+                self.screen.blit(price_text, price_rect)
+                
+                # Draw symbol (below price)
+                symbol_font = pygame.font.Font(None, 96)
+                symbol_text = symbol_font.render(current_symbol, True, self.WHITE)
+                symbol_rect = symbol_text.get_rect(left=50, y=120)
+                self.screen.blit(symbol_text, symbol_rect)
+                
+                # Calculate 24-hour change
+                historical_prices = self.crypto_api.get_historical_prices(current_symbol)
+                if historical_prices and len(historical_prices) > 4:  # Ensure we have enough data
+                    current_price = historical_prices[-1]
+                    # Get the price 24 hours ago (4 intervals of 6 hours = 24 hours)
+                    price_24h_ago = historical_prices[-4]
+                    change_percent = ((current_price - price_24h_ago) / price_24h_ago) * 100
+                    
+                    # Draw 24-hour change
+                    change_color = self.GREEN if change_percent >= 0 else self.RED
+                    # Format: positive without brackets, negative with brackets
+                    change_text = (f"{change_percent:.2f}%" if change_percent >= 0 
+                                 else f"({abs(change_percent):.2f}%)")
+                    change_font = pygame.font.Font(None, 72)
+                    change_surface = change_font.render(change_text, True, change_color)
+                    change_rect = change_surface.get_rect(right=self.width - 50, y=40)
+                    self.screen.blit(change_surface, change_rect)
+                
+                # Draw chart
+                if historical_prices:
+                    self._draw_chart(historical_prices)
+                    if all([self.touch_active, self.touch_x is not None, 
+                           self.touch_price is not None, self.touch_date is not None]):
+                        self._draw_touch_indicator(self.touch_x, self.touch_price, self.touch_date)
 
         pygame.display.flip()
 
@@ -319,3 +343,42 @@ class Display:
         self.screen.blit(gradient_surface, (self.chart_rect.left, self.chart_rect.y))
         
         pygame.draw.lines(self.screen, self.chart_color, False, points, 2) 
+
+    def _draw_settings_screen(self):
+        self.screen.fill(self.BLACK)
+        
+        # Draw title
+        title_font = pygame.font.Font(None, 72)
+        title_text = title_font.render("Tracked Symbols", True, self.WHITE)
+        title_rect = title_text.get_rect(centerx=self.width//2, y=20)
+        self.screen.blit(title_text, title_rect)
+        
+        # Calculate starting position for grid
+        start_x = self.cell_padding
+        start_y = 100  # Below title
+        
+        # Draw grid
+        for row in range(self.grid_size):
+            for col in range(self.grid_size):
+                # Calculate cell position
+                x = start_x + col * (self.cell_width + self.cell_padding)
+                y = start_y + row * (self.cell_height + self.cell_padding)
+                
+                # Create cell rect
+                cell_rect = pygame.Rect(x, y, self.cell_width, self.cell_height)
+                
+                # Calculate index in symbols list
+                index = row * self.grid_size + col
+                
+                # Draw cell background
+                pygame.draw.rect(self.screen, (20, 20, 20), cell_rect)
+                # Draw cell border
+                pygame.draw.rect(self.screen, (40, 40, 40), cell_rect, 2)
+                
+                # If we have a symbol for this cell, draw it
+                if index < len(self.symbols):
+                    symbol = self.symbols[index]
+                    symbol_font = pygame.font.Font(None, 48)
+                    symbol_text = symbol_font.render(symbol, True, self.WHITE)
+                    symbol_rect = symbol_text.get_rect(center=cell_rect.center)
+                    self.screen.blit(symbol_text, symbol_rect) 
