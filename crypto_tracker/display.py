@@ -19,8 +19,11 @@ class Display:
         
         # Double tap detection
         self.last_tap_time = 0
-        self.second_tap_time = 0  # Initialize second_tap_time
         self.double_tap_threshold = 0.3  # seconds between taps
+        
+        # Triple tap detection
+        self.triple_tap_last_time = 0
+        self.triple_tap_second_time = 0
         
         # Define touch margin for chart line
         self.chart_touch_margin = 10  # pixels
@@ -192,17 +195,17 @@ class Display:
         # Triple tap to toggle settings screen
         if event.type == self.FINGERDOWN:
             current_time = time.time()
-            if current_time - self.last_tap_time < self.double_tap_threshold:
+            if current_time - self.triple_tap_last_time < self.double_tap_threshold:
                 # Check for third tap
-                if hasattr(self, 'second_tap_time') and current_time - self.second_tap_time < self.double_tap_threshold:
+                if current_time - self.triple_tap_second_time < self.double_tap_threshold:
                     self.show_settings = not self.show_settings
-                    self.second_tap_time = None  # Reset after toggling
-                    self.last_tap_time = 0  # Reset to prevent immediate re-trigger
+                    self.triple_tap_second_time = 0  # Reset after toggling
+                    self.triple_tap_last_time = 0  # Reset to prevent immediate re-trigger
                 else:
-                    self.second_tap_time = current_time
+                    self.triple_tap_second_time = current_time
             else:
-                self.second_tap_time = None  # Reset if not a triple tap
-            self.last_tap_time = current_time
+                self.triple_tap_second_time = 0  # Reset if too much time has passed
+            self.triple_tap_last_time = current_time
 
         # Only process other events if not in settings
         if not self.show_settings:
@@ -215,7 +218,7 @@ class Display:
                         self.current_symbol_index = (self.current_symbol_index - 1) % len(self.symbols)
                     else:
                         self.current_symbol_index = (self.current_symbol_index + 1) % len(self.symbols)
-                    self.last_tap_time = current_time  # Set to current time instead of 0
+                    self.last_tap_time = current_time
                 else:
                     self.last_tap_time = current_time
 
