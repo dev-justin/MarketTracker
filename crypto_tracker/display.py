@@ -197,7 +197,8 @@ class Display:
         x = int(event.x * self.width)
         y = int(event.y * self.height)
 
-        if event.type == self.FINGERDOWN:
+        # Handle all touch events the same way for consistent behavior
+        if event.type in (self.FINGERDOWN, self.FINGERMOTION):
             self.touch_active = True
             self.touch_x = x
             historical_prices = self.crypto_api.get_historical_prices('BTC')
@@ -205,10 +206,6 @@ class Display:
         elif event.type == self.FINGERUP:
             self.touch_active = False
             self.touch_x = self.touch_price = self.touch_date = None
-        elif event.type == self.FINGERMOTION and self.touch_active:
-            self.touch_x = x
-            historical_prices = self.crypto_api.get_historical_prices('BTC')
-            self.touch_price, self.touch_date = self._get_price_at_x(x, historical_prices)
 
     def update(self, prices):
         self.screen.fill(self.BLACK)
