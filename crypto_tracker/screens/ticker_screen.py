@@ -179,7 +179,7 @@ class TickerScreen(Screen):
         self.touch_x = self.touch_price = self.touch_date = None
 
     def _draw_price(self, display: pygame.Surface, price: float) -> None:
-        """Draw the price in the center of the screen."""
+        """Draw the price and coin name in the top left."""
         # Draw main price
         price_text = self._create_text(
             f"${price:,.2f}",
@@ -187,24 +187,40 @@ class TickerScreen(Screen):
             AppConfig.WHITE
         )
         price_rect = price_text.get_rect(
-            center=(self.width//2, self.height//2)
+            left=40,
+            top=40
         )
         display.blit(price_text, price_rect)
         
-        # Draw symbol below price
-        symbol_text = self._create_text(
-            self.get_current_symbol(),
-            'lg',
+        # Map symbols to full names
+        full_names = {
+            'BTC': 'Bitcoin',
+            'ETH': 'Ethereum',
+            'LTC': 'Litecoin',
+            'DOGE': 'Dogecoin',
+            'XRP': 'Ripple',
+            'ADA': 'Cardano',
+            'DOT': 'Polkadot',
+            'SOL': 'Solana',
+            'MATIC': 'Polygon',
+            'LINK': 'Chainlink'
+        }
+        
+        # Draw full coin name below price
+        current_symbol = self.get_current_symbol()
+        coin_name = full_names.get(current_symbol, current_symbol)
+        name_text = self._create_text(
+            coin_name,
+            'light-lg',
             AppConfig.GRAY
         )
-        symbol_rect = symbol_text.get_rect(
-            centerx=self.width//2,
-            top=price_rect.bottom + 20
+        name_rect = name_text.get_rect(
+            left=40,
+            top=price_rect.bottom + 10
         )
-        display.blit(symbol_text, symbol_rect)
+        display.blit(name_text, name_rect)
         
         # Draw 24h change if available
-        current_symbol = self.get_current_symbol()
         if current_symbol in self.price_changes:
             change = self.price_changes[current_symbol]
             color = AppConfig.GREEN if change >= 0 else AppConfig.RED
@@ -214,8 +230,8 @@ class TickerScreen(Screen):
                 color
             )
             change_rect = change_text.get_rect(
-                centerx=self.width//2,
-                top=symbol_rect.bottom + 10
+                left=40,
+                top=name_rect.bottom + 10
             )
             display.blit(change_text, change_rect)
 
