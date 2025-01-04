@@ -47,21 +47,22 @@ class SettingsScreen(Screen):
         self.is_editing = False  # Track if we're editing an existing symbol
         
         # Action buttons
-        action_width = 200
+        action_width = 250  # Increased from 200
         action_height = 50
-        padding = 25  # Increased base padding
+        padding = 30  # Increased side padding
         symbol_height = 40  # Height for symbol text
         popup_width = action_width + (padding * 2)
         
         # Calculate popup height with more padding
         top_padding = padding * 2  # Extra padding at top
         bottom_padding = padding * 2  # Extra padding at bottom
-        button_spacing = padding * 1.5  # Space between buttons
+        button_spacing = padding  # Reduced from padding * 1.5
+        symbol_button_spacing = padding * 0.7  # Reduced spacing between symbol and buttons
         
         popup_height = (
             top_padding +  # Top padding
             symbol_height +  # Symbol text
-            padding +  # Space after symbol
+            symbol_button_spacing +  # Reduced space after symbol
             (action_height * 3) +  # Three buttons
             (button_spacing * 2) +  # Spacing between buttons
             bottom_padding  # Bottom padding
@@ -81,7 +82,7 @@ class SettingsScreen(Screen):
             self.action_popup_rect.top +
             top_padding +
             symbol_height +
-            padding
+            symbol_button_spacing  # Use reduced spacing here
         )
         
         self.edit_button_rect = pygame.Rect(
