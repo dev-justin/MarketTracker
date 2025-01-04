@@ -100,16 +100,35 @@ class Display:
 
         logo_file = self.logo_path / f"{symbol.lower()}.png"
         
+        # Mapping for CoinGecko IDs
+        coingecko_ids = {
+            'BTC': 'bitcoin',
+            'ETH': 'ethereum',
+            'DOGE': 'dogecoin'
+        }
+        
         # Download logo if it doesn't exist
         if not logo_file.exists():
             try:
-                # Using Binance asset logo URL
-                url = f"https://raw.githubusercontent.com/binance/binance-spot-api-docs/master/images/assets/{symbol.lower()}.png"
+                # Get coin data from CoinGecko
+                coin_id = coingecko_ids.get(symbol)
+                if not coin_id:
+                    return None
+                    
+                url = f"https://api.coingecko.com/api/v3/coins/{coin_id}"
                 response = requests.get(url)
                 response.raise_for_status()
+                data = response.json()
+                
+                # Get the image URL from the response
+                image_url = data['image']['large']
+                
+                # Download the image
+                img_response = requests.get(image_url)
+                img_response.raise_for_status()
                 
                 with open(logo_file, 'wb') as f:
-                    f.write(response.content)
+                    f.write(img_response.content)
             except Exception as e:
                 print(f"Error downloading logo for {symbol}: {e}")
                 return None
