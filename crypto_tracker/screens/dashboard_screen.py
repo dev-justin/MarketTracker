@@ -8,6 +8,7 @@ from ..constants import EventTypes, ScreenNames
 from ..utils.logger import get_logger
 from .base import Screen
 import time
+from ..utils.icon_manager import IconManager
 
 logger = get_logger(__name__)
 
@@ -71,6 +72,9 @@ class DashboardScreen(Screen):
         self.current_prices = None
         self.price_changes = {}
         self.ticker_items = []
+        
+        # Initialize icon manager
+        self.icon_manager = IconManager()
         
         logger.info("DashboardScreen initialized")
     
@@ -204,12 +208,23 @@ class DashboardScreen(Screen):
             # Draw card background (slightly lighter than gradient)
             pygame.draw.rect(display, (30, 35, 42), card_rect, border_radius=15)
             
+            # Get and draw coin icon
+            icon = self.icon_manager.get_icon(item['symbol'])
+            icon_x = card_rect.left + 30
+            icon_y = card_rect.top + 20
+            
+            if icon:
+                display.blit(icon, (icon_x, icon_y))
+                text_left = icon_x + AppConfig.ICON_SIZE + 15  # Add some spacing after icon
+            else:
+                text_left = icon_x
+            
             # Draw coin name and pair
             coin_name = self._create_coin_text(item['symbol'], AppConfig.WHITE)
             pair_label = self._create_label_text(f"{item['symbol']}/USD", (128, 128, 128))
             
-            coin_rect = coin_name.get_rect(left=card_rect.left + 30, top=card_rect.top + 20)
-            pair_rect = pair_label.get_rect(left=card_rect.left + 30, top=coin_rect.bottom + 5)
+            coin_rect = coin_name.get_rect(left=text_left, centery=icon_y + AppConfig.ICON_SIZE//2)
+            pair_rect = pair_label.get_rect(left=text_left, top=coin_rect.bottom + 5)
             
             display.blit(coin_name, coin_rect)
             display.blit(pair_label, pair_rect)

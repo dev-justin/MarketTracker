@@ -7,6 +7,16 @@ class AppConfig:
     DISPLAY_HEIGHT = 480
     FPS = 30
     
+    # Asset directories
+    ASSETS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'assets')
+    FONT_DIR = os.path.join(ASSETS_DIR, 'fonts')
+    ICONS_DIR = os.path.join(ASSETS_DIR, 'icons')
+    
+    # Icon settings
+    ICON_SIZE = 48  # Size for coin icons
+    ICON_CACHE_TIME = 24 * 60 * 60  # 24 hours in seconds
+    ICON_API_URL = "https://api.coingecko.com/api/v3/coins/{id}?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false&sparkline=false"
+    
     # Colors
     BLACK = (0, 0, 0)
     WHITE = (255, 255, 255)
@@ -47,7 +57,7 @@ class AppConfig:
     # Font sizes
     FONT_SIZES = {
         'time': 70,
-        'date': 32,
+        'date': 36,
         'coin_name': 32,
         'price': 32,
         'label': 24
