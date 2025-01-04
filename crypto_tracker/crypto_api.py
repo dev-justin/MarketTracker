@@ -51,9 +51,14 @@ class CryptoAPI:
                     price = ticker_dict[binance_symbol]
                     prices[symbol] = price
                     
-                    if symbol in self.historical_prices:
-                        self.historical_prices[symbol].append(price)
-                        self.historical_prices[symbol] = self.historical_prices[symbol][-28:]
+                    # Only update historical prices if we've entered a new 6-hour interval
+                    current_hour = datetime.now().hour
+                    if current_hour % 6 == 0 and symbol in self.historical_prices:
+                        last_price_time = self.cache_time
+                        last_price_hour = datetime.fromtimestamp(last_price_time).hour
+                        if last_price_hour % 6 != 0:  # Only append if we haven't already for this interval
+                            self.historical_prices[symbol].append(price)
+                            self.historical_prices[symbol] = self.historical_prices[symbol][-28:]
             
             self.cached_prices = prices
             self.cache_time = time.time()

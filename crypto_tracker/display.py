@@ -122,7 +122,8 @@ class Display:
         
         if 0 <= data_index < len(prices):
             price = prices[data_index]
-            date = datetime.now() - timedelta(days=7) + timedelta(hours=data_index * 6)
+            # Calculate local time
+            date = datetime.now().replace(hour=0) - timedelta(days=7) + timedelta(hours=data_index * 6)
             return price, date
         return None, None
 
@@ -145,7 +146,7 @@ class Display:
         # Create tooltip content
         info_font = pygame.font.Font(None, 32)
         price_text = f"${price:,.2f}"
-        date_text = date.strftime("%b %d %H:%M")
+        date_text = date.strftime("%b %-d %-I:%M %p")
         
         price_surface = info_font.render(price_text, True, self.GREEN)
         date_surface = info_font.render(date_text, True, self.WHITE)
