@@ -124,6 +124,11 @@ class CryptoAPI:
         try:
             print("Fetching fresh prices from Binance")
             tickers = self.client.ticker_price()
+            print("\nRaw data from Binance:")
+            for ticker in tickers:
+                print(f"Symbol: {ticker['symbol']}, Price: {ticker['price']}")
+            print("\nProcessing data for tracked symbols:")
+            
             ticker_dict = {t['symbol']: float(t['price']) for t in tickers}
             
             for symbol in symbols:
@@ -131,7 +136,7 @@ class CryptoAPI:
                 if binance_symbol in ticker_dict:
                     price = ticker_dict[binance_symbol]
                     prices[symbol] = price
-                    print(f"Price for {symbol}: ${price:,.2f}")
+                    print(f"Price for {symbol} ({binance_symbol}): ${price:,.2f}")
                     
                     # Only update historical prices if we've entered a new 6-hour interval
                     current_hour = datetime.now().hour
