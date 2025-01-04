@@ -84,6 +84,7 @@ class DashboardScreen(Screen):
             try:
                 # Get local weather using IP geolocation
                 reg = self.owm.city_id_registry()
+                print(f"Registry: {reg}")
                 list_of_locations = reg.locations_for('Vancouver', country='CA')  # Default to Toronto if geolocation fails
                 if list_of_locations:
                     observation = self.weather_mgr.weather_at_place(f"{list_of_locations[0].name},{list_of_locations[0].country}")
