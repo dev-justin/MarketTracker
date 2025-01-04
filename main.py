@@ -17,6 +17,7 @@ def main():
                 elif event.type == pygame.KEYDOWN and event.key == pygame.K_q:
                     return
                 elif event.type in (1792, 1793, 1794):  # Touch events
+                    print(f"Touch event: {event}")
                     display.handle_event(event)
             
             # Try to get new prices for all tracked symbols
