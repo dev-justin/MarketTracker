@@ -6,12 +6,10 @@ from crypto_tracker.services.display import Display
 def main():
     crypto_api = CryptoAPI()
     display = Display(crypto_api)
+    prices = None
     
     try:
         while True:
-            # Get crypto prices for all symbols
-            prices = crypto_api.get_crypto_prices(['BTC', 'ETH'])
-            
             # Process events
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -19,11 +17,19 @@ def main():
                 elif event.type == pygame.KEYDOWN and event.key == pygame.K_q:
                     return
                 elif event.type in (1792, 1793, 1794):  # Touch events
-                    if prices:
-                        display.handle_event(event)
+                    display.handle_event(event)
             
-            if prices:
-                display.update(prices)
+            # Try to get new prices
+            try:
+                new_prices = crypto_api.get_crypto_prices(['BTC', 'ETH'])
+                if new_prices:  # Only update if we got valid prices
+                    prices = new_prices
+            except Exception as e:
+                print(f"Error fetching prices: {e}")
+            
+            # Update and draw regardless of whether we got new prices
+            display.update(prices)
+            display.draw()
             
             time.sleep(0.1)
             
