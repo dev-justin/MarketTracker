@@ -74,9 +74,14 @@ class Display:
         self.touch_date = None
         self.touch_x = None
 
+        # Add touch event type mapping
+        self.FINGERDOWN = 1793
+        self.FINGERUP = 1794
+        self.FINGERMOTION = 1792
+
         # Initialize touch input
-        os.environ['SDL_MOUSE_TOUCH_EVENTS'] = '1'  # Enable touch events
-        pygame.event.set_allowed([pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION])
+        os.environ['SDL_MOUSE_TOUCH_EVENTS'] = '0'  # Disable mouse events
+        os.environ['SDL_TOUCH_EVENTS_ENABLED'] = '1'  # Enable touch events
 
     def _draw_chart(self, prices):
         if not prices:
@@ -256,25 +261,38 @@ class Display:
 
     def handle_event(self, event):
         """Handle a single pygame event"""
-        print(f"Display handling event: {event.type}")  # Debug print
+        print(f"Display handling event: {event.type} ({event.__dict__})")  # More detailed debug
         
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            print(f"Touch DOWN at position: {event.pos}")  # Debug print
+        # Convert touch coordinates to screen coordinates
+        if hasattr(event, 'x') and hasattr(event, 'y'):
+            x = int(event.x * self.width)
+            y = int(event.y * self.height)
+            print(f"Touch position converted: ({x}, {y})")
+        else:
+            print("No position data in event")
+            return
+
+        if event.type == self.FINGERDOWN:
+            print(f"Touch DOWN at position: ({x}, {y})")
             self.touch_active = True
-            self.touch_x = event.pos[0]
-            self.touch_price, self.touch_date = self._get_price_at_x(
-                event.pos[0], self.crypto_api.get_historical_prices('BTC'))
-        elif event.type == pygame.MOUSEBUTTONUP:
-            print(f"Touch UP at position: {event.pos}")  # Debug print
+            self.touch_x = x
+            historical_prices = self.crypto_api.get_historical_prices('BTC')
+            self.touch_price, self.touch_date = self._get_price_at_x(x, historical_prices)
+            print(f"Price at touch: ${self.touch_price:,.2f}, Date: {self.touch_date}")
+            
+        elif event.type == self.FINGERUP:
+            print(f"Touch UP at position: ({x}, {y})")
             self.touch_active = False
             self.touch_x = None
             self.touch_price = None
             self.touch_date = None
-        elif event.type == pygame.MOUSEMOTION and self.touch_active:
-            print(f"Touch MOTION at position: {event.pos}")  # Debug print
-            self.touch_x = event.pos[0]
-            self.touch_price, self.touch_date = self._get_price_at_x(
-                event.pos[0], self.crypto_api.get_historical_prices('BTC'))
+            
+        elif event.type == self.FINGERMOTION and self.touch_active:
+            print(f"Touch MOTION at position: ({x}, {y})")
+            self.touch_x = x
+            historical_prices = self.crypto_api.get_historical_prices('BTC')
+            self.touch_price, self.touch_date = self._get_price_at_x(x, historical_prices)
+            print(f"Price at touch: ${self.touch_price:,.2f}, Date: {self.touch_date}")
 
     def update(self, prices):
         # Clear the screen
