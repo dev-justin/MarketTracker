@@ -7,7 +7,7 @@ dependencies = [
     "requests",
     "pygame",  # for display handling
     "python-dotenv",  # for environment variables
-    "ccxt"  # popular library for crypto exchange APIs
+    "binance-connector"  # for crypto price data
 ]
 
 [build-system]
