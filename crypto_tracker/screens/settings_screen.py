@@ -49,8 +49,9 @@ class SettingsScreen(Screen):
         action_width = 200
         action_height = 50
         padding = 20
+        symbol_height = 40  # Height for symbol text
         popup_width = action_width + (padding * 2)
-        popup_height = (action_height * 3) + (padding * 4)
+        popup_height = symbol_height + (action_height * 3) + (padding * 5)  # Added space for symbol
         
         # Popup background
         self.action_popup_rect = pygame.Rect(
@@ -60,27 +61,27 @@ class SettingsScreen(Screen):
             popup_height
         )
         
-        # Action buttons
+        # Action buttons - adjusted y positions to account for symbol text
         button_x = (self.width - action_width) // 2
-        button_y = self.action_popup_rect.top + padding
+        first_button_y = self.action_popup_rect.top + symbol_height + (padding * 2)  # Start after symbol text
         
         self.edit_button_rect = pygame.Rect(
             button_x,
-            button_y,
+            first_button_y,
             action_width,
             action_height
         )
         
         self.delete_button_rect = pygame.Rect(
             button_x,
-            button_y + action_height + padding,
+            first_button_y + action_height + padding,
             action_width,
             action_height
         )
         
         self.cancel_button_rect = pygame.Rect(
             button_x,
-            button_y + (action_height + padding) * 2,
+            first_button_y + (action_height + padding) * 2,
             action_width,
             action_height
         )
