@@ -60,7 +60,7 @@ class AppConfig:
         'date': 36,
         'coin_name': 24,
         'price': 28,
-        'label': 18
+        'label': 20
     }
     
     # Touch settings
