@@ -3,6 +3,7 @@ import pygame
 import os
 from datetime import datetime
 import requests
+import pytz
 from ..config.settings import AppConfig
 from ..constants import EventTypes, ScreenNames
 from ..utils.logger import get_logger
@@ -26,6 +27,17 @@ class DashboardScreen(Screen):
         """
         super().__init__(screen_manager)
         self.crypto_api = crypto_api
+        
+        # Get local timezone
+        self.local_tz = pytz.timezone('America/Vancouver')  # Default to Vancouver
+        try:
+            # Try to get system timezone
+            with open('/etc/timezone') as f:
+                system_tz = f.read().strip()
+                self.local_tz = pytz.timezone(system_tz)
+                logger.info(f"Using system timezone: {system_tz}")
+        except:
+            logger.warning("Could not detect system timezone, using default: America/Vancouver")
         
         # Display settings
         self.header_font_size = 48
@@ -166,13 +178,13 @@ class DashboardScreen(Screen):
             return
         
         # Draw current date
-        current_date = datetime.now().strftime("%A, %B %d, %Y")
+        current_date = datetime.now(self.local_tz).strftime("%A, %B %d, %Y")
         date_text = self._create_text_surface(current_date, self.date_font_size, AppConfig.WHITE)
         date_rect = date_text.get_rect(centerx=self.width//2, top=self.padding)
         display.blit(date_text, date_rect)
         
         # Draw current time (remove leading zero from hour)
-        current_time = datetime.now().strftime("%I:%M %p").lstrip("0")
+        current_time = datetime.now(self.local_tz).strftime("%I:%M %p").lstrip("0")
         time_text = self._create_text_surface(current_time, self.date_font_size, AppConfig.WHITE)
         time_rect = time_text.get_rect(centerx=self.width//2, top=date_rect.bottom + 10)
         display.blit(time_text, time_rect)
