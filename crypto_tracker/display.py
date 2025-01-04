@@ -197,28 +197,15 @@ class Display:
         x = int(event.x * self.width)
         y = int(event.y * self.height)
 
-        # Check if touch is within chart area
-        if self.chart_rect.collidepoint(x, y):
-            if event.type == self.FINGERDOWN:
-                self.touch_active = True
-            elif event.type == self.FINGERMOTION:
-                # Always update position and price while dragging
-                if self.touch_active:
-                    self.touch_x = x
-                    historical_prices = self.crypto_api.get_historical_prices('BTC')
-                    self.touch_price, self.touch_date = self._get_price_at_x(x, historical_prices)
-            elif event.type == self.FINGERUP:
-                self.touch_active = False
-                self.touch_x = self.touch_price = self.touch_date = None
-        else:
-            # Touch outside chart area
-            self.touch_active = False
-            self.touch_x = self.touch_price = self.touch_date = None
-
-        # If touch is active, ensure we have price data
-        if self.touch_active and not self.touch_price:
+        # Only handle touch down events within chart area
+        if event.type == self.FINGERDOWN and self.chart_rect.collidepoint(x, y):
+            self.touch_active = True
+            self.touch_x = x
             historical_prices = self.crypto_api.get_historical_prices('BTC')
             self.touch_price, self.touch_date = self._get_price_at_x(x, historical_prices)
+        elif event.type == self.FINGERUP:
+            self.touch_active = False
+            self.touch_x = self.touch_price = self.touch_date = None
 
     def update(self, prices):
         self.screen.fill(self.BLACK)
@@ -238,11 +225,26 @@ class Display:
             price_rect = price_text.get_rect(left=50, y=100)
             self.screen.blit(price_text, price_rect)
             
-            # Draw chart
+            # Calculate 24-hour change
             historical_prices = self.crypto_api.get_historical_prices(symbol)
+            if historical_prices and len(historical_prices) > 4:  # Ensure we have enough data
+                # Assuming the last price is the current price
+                current_price = historical_prices[-1]
+                # Get the price 24 hours ago (4 intervals back for 6-hour intervals)
+                price_24h_ago = historical_prices[-5]
+                change_percent = ((current_price - price_24h_ago) / price_24h_ago) * 100
+                
+                # Draw 24-hour change
+                change_color = self.GREEN if change_percent >= 0 else self.RED
+                change_text = f"{change_percent:+.2f}%"
+                change_font = pygame.font.Font(None, 72)
+                change_surface = change_font.render(change_text, True, change_color)
+                change_rect = change_surface.get_rect(right=self.width - 50, y=40)
+                self.screen.blit(change_surface, change_rect)
+            
+            # Draw chart
             if historical_prices:
                 self._draw_chart(historical_prices)
-                # Add check for all required touch data
                 if all([self.touch_active, self.touch_x is not None, 
                        self.touch_price is not None, self.touch_date is not None]):
                     self._draw_touch_indicator(self.touch_x, self.touch_price, self.touch_date)
