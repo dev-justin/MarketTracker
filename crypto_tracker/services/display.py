@@ -2,7 +2,7 @@ import pygame
 import os
 from pathlib import Path
 from .screen_manager import ScreenManager
-from ..screens import TickerScreen, SettingsScreen
+from ..screens import TickerScreen, SettingsScreen, KeyboardScreen
 
 class Display:
     def __init__(self, crypto_api):
@@ -43,7 +43,11 @@ class Display:
         
         # Get the ticker screen instance to pass to settings
         ticker_screen = self.screen_manager.screens['ticker']
-        self.screen_manager.add_screen('settings', SettingsScreen, ticker_screen)
+        settings_screen = SettingsScreen(self.screen_manager, ticker_screen)
+        self.screen_manager.add_screen('settings', settings_screen)
+        
+        # Add keyboard screen
+        self.screen_manager.add_screen('keyboard', KeyboardScreen, settings_screen.add_ticker)
         
         # Set initial screen
         self.screen_manager.switch_to('ticker')

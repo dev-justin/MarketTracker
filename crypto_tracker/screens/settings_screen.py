@@ -23,6 +23,24 @@ class SettingsScreen(Screen):
         self.triple_tap_last_time = 0
         self.triple_tap_second_time = 0
         self.double_tap_threshold = 0.3
+        
+        # Store cell rectangles for hit testing
+        self.cell_rects = []
+        self._create_cell_rects()
+
+    def _create_cell_rects(self):
+        start_x = self.cell_padding
+        start_y = 100  # Below title
+        
+        for row in range(self.grid_size):
+            for col in range(self.grid_size):
+                x = start_x + col * (self.cell_width + self.cell_padding)
+                y = start_y + row * (self.cell_height + self.cell_padding)
+                self.cell_rects.append(pygame.Rect(x, y, self.cell_width, self.cell_height))
+
+    def add_ticker(self, symbol):
+        if symbol not in self.ticker_screen.symbols:
+            self.ticker_screen.symbols.append(symbol)
 
     def handle_event(self, event):
         if not hasattr(event, 'x') or not hasattr(event, 'y'):
@@ -44,6 +62,11 @@ class SettingsScreen(Screen):
             else:
                 self.triple_tap_second_time = 0
             self.triple_tap_last_time = current_time
+            
+            # Check for clicks on empty cells
+            for i, rect in enumerate(self.cell_rects):
+                if rect.collidepoint(x, y) and i >= len(self.ticker_screen.symbols):
+                    self.manager.switch_to('keyboard')
 
     def _draw_plus_icon(self, cell_rect):
         # Calculate plus dimensions
