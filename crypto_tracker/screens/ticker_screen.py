@@ -2,7 +2,7 @@ import pygame
 from datetime import datetime, timedelta
 import time
 import math
-from ..screen_manager import Screen
+from ..services.screen_manager import Screen
 
 class TickerScreen(Screen):
     def __init__(self, screen_manager, crypto_api):

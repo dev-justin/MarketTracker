@@ -1,5 +1,5 @@
 import pygame
-from ..screen_manager import Screen
+from ..services.screen_manager import Screen
 
 class SettingsScreen(Screen):
     def __init__(self, screen_manager, ticker_screen):

@@ -2,7 +2,7 @@ import pygame
 import os
 from pathlib import Path
 from .screen_manager import ScreenManager
-from .screens import TickerScreen, SettingsScreen
+from ..screens import TickerScreen, SettingsScreen
 
 class Display:
     def __init__(self, crypto_api):

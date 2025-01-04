@@ -1,5 +1,5 @@
-import time
 import pygame
+import time
 from crypto_tracker.services.crypto_api import CryptoAPI
 from crypto_tracker.services.display import Display
 
@@ -30,7 +30,4 @@ def main():
     except KeyboardInterrupt:
         display.cleanup()
     finally:
-        display.cleanup()
-
-if __name__ == "__main__":
-    main() 
+        display.cleanup() 
