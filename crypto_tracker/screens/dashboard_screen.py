@@ -38,7 +38,7 @@ class DashboardScreen(Screen):
         
         # Display settings
         self.time_font_size = 96  # Larger font for time
-        self.date_font_size = 48  # Medium font for date
+        self.date_font_size = 72  # Larger font for date to match time width
         self.ticker_font_size = 72
         self.padding = 20
         
@@ -123,16 +123,10 @@ class DashboardScreen(Screen):
         if not self.ticker_items:
             return
         
-        # Draw current time in large font (remove leading zero from hour)
-        current_time = datetime.now(self.local_tz).strftime("%I:%M %p").lstrip("0")
-        time_text = self._create_text_surface(current_time, self.time_font_size, AppConfig.WHITE)
-        time_rect = time_text.get_rect(centerx=self.width//2, top=self.padding)
-        display.blit(time_text, time_rect)
-        
-        # Draw current date below time
-        current_date = datetime.now(self.local_tz).strftime("%A, %B %d, %Y")
+        # Draw current date at top in large font
+        current_date = datetime.now(self.local_tz).strftime("%b %d")  # Format: Jan 04
         date_text = self._create_text_surface(current_date, self.date_font_size, AppConfig.WHITE)
-        date_rect = date_text.get_rect(centerx=self.width//2, top=time_rect.bottom + 10)
+        date_rect = date_text.get_rect(centerx=self.width//2, top=self.padding)
         display.blit(date_text, date_rect)
         
         # Draw dividing line
@@ -170,4 +164,13 @@ class DashboardScreen(Screen):
             # Draw texts
             display.blit(symbol_text, symbol_rect)
             display.blit(price_text, price_rect)
-            display.blit(change_text, change_rect) 
+            display.blit(change_text, change_rect)
+        
+        # Calculate position for time at bottom
+        grid_bottom = grid_top + ((len(self.ticker_items) + 1) // 2) * row_height
+        
+        # Draw current time in large font at bottom (remove leading zero from hour)
+        current_time = datetime.now(self.local_tz).strftime("%I:%M %p").lstrip("0")
+        time_text = self._create_text_surface(current_time, self.time_font_size, AppConfig.WHITE)
+        time_rect = time_text.get_rect(centerx=self.width//2, bottom=self.height - self.padding)
+        display.blit(time_text, time_rect) 
