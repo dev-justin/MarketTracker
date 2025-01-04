@@ -2,6 +2,7 @@ import pygame
 import os
 import platform
 from pathlib import Path
+import requests
 from datetime import datetime, timedelta
 
 class Display:
@@ -58,6 +59,12 @@ class Display:
         self.chart_data = []
         self.max_data_points = 168  # 7 days worth of hourly points
 
+        # Add logo settings
+        self.logo_size = 72  # Size of the logo
+        self.logos = {}  # Cache for loaded logos
+        self.logo_path = Path("assets/logos")  # Directory to store downloaded logos
+        self.logo_path.mkdir(parents=True, exist_ok=True)
+
     def _draw_chart(self, prices):
         if not prices:
             return
@@ -86,6 +93,37 @@ class Display:
         if len(points) > 1:
             pygame.draw.lines(self.screen, self.chart_color, False, points, 2)
 
+    def _get_logo(self, symbol):
+        """Download and load the coin logo"""
+        if symbol in self.logos:
+            return self.logos[symbol]
+
+        logo_file = self.logo_path / f"{symbol.lower()}.png"
+        
+        # Download logo if it doesn't exist
+        if not logo_file.exists():
+            try:
+                # Using Binance asset logo URL
+                url = f"https://raw.githubusercontent.com/binance/binance-spot-api-docs/master/images/assets/{symbol.lower()}.png"
+                response = requests.get(url)
+                response.raise_for_status()
+                
+                with open(logo_file, 'wb') as f:
+                    f.write(response.content)
+            except Exception as e:
+                print(f"Error downloading logo for {symbol}: {e}")
+                return None
+
+        try:
+            # Load and scale the logo
+            logo = pygame.image.load(str(logo_file))
+            logo = pygame.transform.scale(logo, (self.logo_size, self.logo_size))
+            self.logos[symbol] = logo
+            return logo
+        except Exception as e:
+            print(f"Error loading logo for {symbol}: {e}")
+            return None
+
     def update(self, prices):
         # Clear the screen
         self.screen.fill(self.BLACK)
@@ -94,16 +132,25 @@ class Display:
         if prices:
             symbol, price = next(iter(prices.items()))
             
+            # Load and draw logo
+            logo = self._get_logo(symbol)
+            if logo:
+                logo_rect = logo.get_rect(left=50, centery=70)  # Position logo vertically centered with text
+                self.screen.blit(logo, logo_rect)
+                symbol_x = logo_rect.right + 20  # Position text after logo
+            else:
+                symbol_x = 50  # Default position if no logo
+            
             # Draw symbol (larger and left-aligned)
-            symbol_font = pygame.font.Font(None, 96)  # Increased size
+            symbol_font = pygame.font.Font(None, 96)
             symbol_text = symbol_font.render(symbol, True, self.WHITE)
-            symbol_rect = symbol_text.get_rect(left=50, y=40)  # Left aligned
+            symbol_rect = symbol_text.get_rect(left=symbol_x, y=40)
             self.screen.blit(symbol_text, symbol_rect)
             
             # Draw price (larger and left-aligned)
-            price_font = pygame.font.Font(None, 120)  # Increased size
+            price_font = pygame.font.Font(None, 120)
             price_text = price_font.render(f"${price:,.2f}", True, self.GREEN)
-            price_rect = price_text.get_rect(left=50, y=100)  # Left aligned
+            price_rect = price_text.get_rect(left=symbol_x, y=100)
             self.screen.blit(price_text, price_rect)
             
             # Get historical prices and draw the chart

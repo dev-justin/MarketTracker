@@ -7,7 +7,8 @@ dependencies = [
     "requests",
     "pygame",  # for display handling
     "python-dotenv",  # for environment variables
-    "binance-connector"  # for crypto price data
+    "binance-connector",  # for crypto price data
+    "pillow"  # for image handling
 ]
 
 [build-system]
