@@ -18,8 +18,11 @@ class Display:
         self.current_symbol_index = 0
         self.swipe_start_x = None
         self.swipe_start_time = None
-        self.swipe_threshold = 50  # Reduced swipe distance for sensitivity
-        self.min_swipe_speed = 0.2  # Minimum speed in pixels per second
+        self.swipe_threshold = 30  # Even more sensitive
+        self.min_swipe_speed = 0.1  # Lower speed requirement
+        
+        # Define swipe area (top portion of screen)
+        self.swipe_area = pygame.Rect(0, 0, self.width, 180)  # Area above chart
 
     def _setup_runtime_dir(self):
         if os.geteuid() == 0:
@@ -210,35 +213,37 @@ class Display:
         x = int(event.x * self.width)
         y = int(event.y * self.height)
 
-        if event.type == self.FINGERDOWN:
-            self.swipe_start_x = x
-            self.swipe_start_time = time.time()
-            # Handle chart touch
-            if self.chart_rect.collidepoint(x, y):
+        # Handle swipes in the top area
+        if self.swipe_area.collidepoint(x, y):
+            if event.type == self.FINGERDOWN:
+                self.swipe_start_x = x
+                self.swipe_start_time = time.time()
+            
+            elif event.type == self.FINGERUP:
+                if self.swipe_start_x is not None:
+                    swipe_distance = x - self.swipe_start_x
+                    swipe_time = time.time() - self.swipe_start_time
+                    swipe_speed = abs(swipe_distance) / swipe_time if swipe_time > 0 else 0
+
+                    if abs(swipe_distance) > self.swipe_threshold and swipe_speed > self.min_swipe_speed:
+                        if swipe_distance > 0 and self.current_symbol_index > 0:
+                            self.current_symbol_index -= 1
+                        elif swipe_distance < 0 and self.current_symbol_index < len(self.symbols) - 1:
+                            self.current_symbol_index += 1
+                
+                self.swipe_start_x = None
+                self.swipe_start_time = None
+
+        # Handle chart touches separately
+        if self.chart_rect.collidepoint(x, y):
+            if event.type == self.FINGERDOWN:
                 self.touch_active = True
                 self.touch_x = x
                 historical_prices = self.crypto_api.get_historical_prices(self.get_current_symbol())
                 self.touch_price, self.touch_date = self._get_price_at_x(x, historical_prices)
-        
-        elif event.type == self.FINGERUP:
-            if self.swipe_start_x is not None:
-                # Calculate swipe distance and speed
-                swipe_distance = x - self.swipe_start_x
-                swipe_time = time.time() - self.swipe_start_time
-                swipe_speed = abs(swipe_distance) / swipe_time if swipe_time > 0 else 0
-
-                if abs(swipe_distance) > self.swipe_threshold and swipe_speed > self.min_swipe_speed:
-                    # Swipe right
-                    if swipe_distance > 0 and self.current_symbol_index > 0:
-                        self.current_symbol_index -= 1
-                    # Swipe left
-                    elif swipe_distance < 0 and self.current_symbol_index < len(self.symbols) - 1:
-                        self.current_symbol_index += 1
-            
-            self.swipe_start_x = None
-            self.swipe_start_time = None
-            self.touch_active = False
-            self.touch_x = self.touch_price = self.touch_date = None
+            elif event.type == self.FINGERUP:
+                self.touch_active = False
+                self.touch_x = self.touch_price = self.touch_date = None
 
     def update(self, prices):
         self.screen.fill(self.BLACK)
