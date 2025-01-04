@@ -228,8 +228,9 @@ class DashboardScreen(Screen):
         # Draw tickers in a grid (2 columns)
         start_y = time_rect.bottom + self.padding * 2
         card_height = 80
-        card_spacing = 10
-        card_width = (self.width - (self.padding * 3)) // 2
+        card_spacing = 10  # Spacing between cards (both vertical and horizontal)
+        # Calculate card width using card_spacing instead of padding for horizontal gap
+        card_width = (self.width - (card_spacing * 3)) // 2  # One spacing between cards, one on each side
         arrow_size = 12
         
         for i, item in enumerate(self.ticker_items):
@@ -237,9 +238,9 @@ class DashboardScreen(Screen):
             row = i // 2
             col = i % 2
             
-            # Calculate card position
+            # Calculate card position using card_spacing for both directions
             card_rect = pygame.Rect(
-                self.padding + (col * (card_width + self.padding)),
+                card_spacing + (col * (card_width + card_spacing)),
                 start_y + (row * (card_height + card_spacing)),
                 card_width,
                 card_height
