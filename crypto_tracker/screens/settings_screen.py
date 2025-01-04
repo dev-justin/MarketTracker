@@ -181,7 +181,7 @@ class SettingsScreen(Screen):
             logger.debug("Edit button pressed")
             self.is_editing = True
             self.showing_action_popup = False
-            self.manager.switch_to(ScreenNames.KEYBOARD.value)
+            self.manager.switch_screen(ScreenNames.KEYBOARD.value)
         elif self.delete_button_rect.collidepoint(x, y):
             symbol = self.ticker_screen.symbols[self.selected_symbol_index]
             logger.info(f"Deleting symbol: {symbol}")
