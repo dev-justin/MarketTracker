@@ -36,18 +36,26 @@ class DashboardScreen(Screen):
             logger.warning("Could not detect system timezone, using default: America/Vancouver")
         
         # Display settings
-        self.time_font_size = 96
-        self.date_font_size = 48
-        self.coin_name_size = 36  # Size for coin names
-        self.price_size = 48      # Size for prices
-        self.label_size = 24      # Size for labels like "BUY/SELL"
         self.padding = 20
         
-        # Create fonts
-        self.date_font = pygame.font.Font(None, self.date_font_size)
-        self.coin_font = pygame.font.Font(None, self.coin_name_size)
-        self.price_font = pygame.font.Font(None, self.price_size)
-        self.label_font = pygame.font.Font(None, self.label_size)
+        # Load custom fonts
+        try:
+            # Create fonts using settings
+            self.date_font = pygame.font.Font(AppConfig.FONT_PATHS['regular'], AppConfig.FONT_SIZES['date'])
+            self.time_font = pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['time'])
+            self.coin_font = pygame.font.Font(AppConfig.FONT_PATHS['semibold'], AppConfig.FONT_SIZES['coin_name'])
+            self.price_font = pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['price'])
+            self.label_font = pygame.font.Font(AppConfig.FONT_PATHS['regular'], AppConfig.FONT_SIZES['label'])
+            
+            logger.info("Custom fonts loaded successfully")
+        except Exception as e:
+            logger.warning(f"Failed to load custom fonts, falling back to default: {e}")
+            # Fallback to default fonts
+            self.date_font = pygame.font.Font(None, AppConfig.FONT_SIZES['date'])
+            self.time_font = pygame.font.Font(None, AppConfig.FONT_SIZES['time'])
+            self.coin_font = pygame.font.Font(None, AppConfig.FONT_SIZES['coin_name'])
+            self.price_font = pygame.font.Font(None, AppConfig.FONT_SIZES['price'])
+            self.label_font = pygame.font.Font(None, AppConfig.FONT_SIZES['label'])
         
         # Background gradient colors
         self.gradient_top = (13, 17, 23)     # Dark navy
@@ -152,6 +160,10 @@ class DashboardScreen(Screen):
         """Create text surface using the label font."""
         return self.label_font.render(text, True, color)
     
+    def _create_time_text(self, text: str, color: tuple) -> pygame.Surface:
+        """Create text surface using the time font."""
+        return self.time_font.render(text, True, color)
+    
     def draw(self, display: pygame.Surface) -> None:
         """
         Draw the screen contents.
@@ -171,7 +183,7 @@ class DashboardScreen(Screen):
         display.blit(date_text, date_rect)
         
         current_time = datetime.now(self.local_tz).strftime("%I:%M %p").lstrip("0")
-        time_text = self._create_text_surface(current_time, self.time_font_size, AppConfig.WHITE)
+        time_text = self._create_time_text(current_time, AppConfig.WHITE)
         time_rect = time_text.get_rect(centerx=self.width//2, top=date_rect.bottom + 10)
         display.blit(time_text, time_rect)
         
