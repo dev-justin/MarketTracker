@@ -11,6 +11,25 @@ logger = get_logger(__name__)
 class IconManager:
     """Service for managing cryptocurrency icons."""
     
+    # Mapping of trading symbols to CoinGecko IDs
+    COINGECKO_IDS = {
+        'BTC': 'bitcoin',
+        'ETH': 'ethereum',
+        'LTC': 'litecoin',
+        'DOGE': 'dogecoin',
+        'XRP': 'ripple',
+        'ADA': 'cardano',
+        'DOT': 'polkadot',
+        'SOL': 'solana',
+        'MATIC': 'matic-network',
+        'LINK': 'chainlink',
+        'UNI': 'uniswap',
+        'AVAX': 'avalanche-2',
+        'ATOM': 'cosmos',
+        'ALGO': 'algorand',
+        'XLM': 'stellar'
+    }
+    
     def __init__(self):
         """Initialize the icon manager."""
         self.icons: Dict[str, pygame.Surface] = {}
@@ -46,8 +65,12 @@ class IconManager:
         
         # If not found locally, try to fetch from API
         try:
-            # Convert symbol to CoinGecko ID (you might need a mapping for some symbols)
-            coin_id = symbol.lower()
+            # Convert symbol to CoinGecko ID using mapping
+            coin_id = self.COINGECKO_IDS.get(symbol.upper())
+            if not coin_id:
+                logger.warning(f"No CoinGecko ID mapping found for {symbol}")
+                return None
+                
             response = requests.get(AppConfig.ICON_API_URL.format(id=coin_id))
             if response.status_code == 200:
                 data = response.json()
