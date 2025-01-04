@@ -22,6 +22,9 @@ class Display:
         # Initialize pygame
         pygame.init()
         
+        # Hide the cursor
+        pygame.mouse.set_visible(False)
+        
         # Set up the display for Raspberry Pi
         os.putenv('SDL_VIDEODRIVER', 'fbcon')  # Tell SDL to use the framebuffer
         os.putenv('SDL_FBDEV', '/dev/fb0')     # Set the framebuffer device
