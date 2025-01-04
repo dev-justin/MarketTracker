@@ -4,7 +4,7 @@ class ScreenNames(Enum):
     TICKER = 'ticker'
     SETTINGS = 'settings'
     KEYBOARD = 'keyboard'
-    WALLSTREET = 'wallstreet'
+    DASHBOARD = 'dashboard'
 
 class EventTypes(Enum):
     FINGER_DOWN = 1792

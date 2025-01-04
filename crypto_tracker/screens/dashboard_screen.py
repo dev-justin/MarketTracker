@@ -1,5 +1,6 @@
 from typing import Dict, Optional, List
 import pygame
+from datetime import datetime
 from ..config.settings import AppConfig
 from ..constants import EventTypes, ScreenNames
 from ..utils.logger import get_logger
@@ -8,12 +9,12 @@ import time
 
 logger = get_logger(__name__)
 
-class WallStreetScreen(Screen):
-    """Screen for displaying all cryptocurrency prices in a scrolling ticker format."""
+class DashboardScreen(Screen):
+    """Screen for displaying a dashboard of cryptocurrency prices and market information."""
     
     def __init__(self, screen_manager, crypto_api) -> None:
         """
-        Initialize the wallstreet screen.
+        Initialize the dashboard screen.
         
         Args:
             screen_manager: The screen manager instance
@@ -22,11 +23,11 @@ class WallStreetScreen(Screen):
         super().__init__(screen_manager)
         self.crypto_api = crypto_api
         
-        # Ticker settings
-        self.scroll_speed = 3  # pixels per frame
-        self.scroll_x = self.width  # Start from right edge
-        self.ticker_spacing = 100  # Space between each ticker item
-        self.font_size = 72  # Larger text for better visibility
+        # Display settings
+        self.header_font_size = 48
+        self.ticker_font_size = 72
+        self.date_font_size = 36
+        self.padding = 20
         
         # Touch handling
         self.swipe_start_y: Optional[int] = None
@@ -37,9 +38,9 @@ class WallStreetScreen(Screen):
         # Price data
         self.current_prices: Optional[Dict[str, float]] = None
         self.price_changes: Dict[str, float] = {}
-        self.ticker_items: List[Dict] = []  # List of items to display
+        self.ticker_items: List[Dict] = []
         
-        logger.info("WallStreetScreen initialized")
+        logger.info("DashboardScreen initialized")
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """
@@ -98,12 +99,6 @@ class WallStreetScreen(Screen):
                         'change': f"{change_percent:+.2f}%" if change_percent >= 0 else f"{change_percent:.2f}%",
                         'color': AppConfig.GREEN if change_percent >= 0 else AppConfig.RED
                     })
-        
-        # Update scroll position
-        self.scroll_x -= self.scroll_speed
-        total_width = self._calculate_total_width()
-        if self.scroll_x < -total_width:
-            self.scroll_x = self.width
     
     def draw(self, display: pygame.Surface) -> None:
         """
@@ -117,40 +112,50 @@ class WallStreetScreen(Screen):
         if not self.ticker_items:
             return
         
-        # Draw dividing line
-        line_y = self.height // 2
-        pygame.draw.line(display, AppConfig.CELL_BORDER_COLOR, 
-                        (0, line_y), (self.width, line_y), 2)
+        # Draw current date
+        current_date = datetime.now().strftime("%A, %B %d, %Y")
+        date_text = self._create_text_surface(current_date, self.date_font_size, AppConfig.WHITE)
+        date_rect = date_text.get_rect(centerx=self.width//2, top=self.padding)
+        display.blit(date_text, date_rect)
         
-        # Draw scrolling tickers
-        x_pos = self.scroll_x
-        for item in self.ticker_items:
-            # Draw symbol
-            symbol_text = self._create_text_surface(item['symbol'], self.font_size, AppConfig.WHITE)
-            symbol_rect = symbol_text.get_rect(left=x_pos, centery=line_y)
+        # Draw current time
+        current_time = datetime.now().strftime("%I:%M %p")
+        time_text = self._create_text_surface(current_time, self.date_font_size, AppConfig.WHITE)
+        time_rect = time_text.get_rect(centerx=self.width//2, top=date_rect.bottom + 10)
+        display.blit(time_text, time_rect)
+        
+        # Draw dividing line
+        line_y = time_rect.bottom + self.padding
+        pygame.draw.line(display, AppConfig.CELL_BORDER_COLOR, 
+                        (self.padding, line_y), (self.width - self.padding, line_y), 2)
+        
+        # Draw tickers in a grid
+        grid_top = line_y + self.padding
+        grid_left = self.padding
+        row_height = self.ticker_font_size + self.padding
+        col_width = (self.width - (self.padding * 3)) // 2
+        
+        for i, item in enumerate(self.ticker_items):
+            row = i // 2
+            col = i % 2
+            x = grid_left + (col * (col_width + self.padding))
+            y = grid_top + (row * row_height)
+            
+            # Draw ticker box
+            box_rect = pygame.Rect(x, y, col_width, row_height)
+            pygame.draw.rect(display, AppConfig.CELL_BORDER_COLOR, box_rect, 1, border_radius=5)
+            
+            # Draw symbol and price
+            symbol_text = self._create_text_surface(item['symbol'], self.ticker_font_size, AppConfig.WHITE)
+            price_text = self._create_text_surface(item['price'], self.ticker_font_size, AppConfig.WHITE)
+            change_text = self._create_text_surface(item['change'], self.ticker_font_size//2, item['color'])
+            
+            # Position texts
+            symbol_rect = symbol_text.get_rect(left=x + 10, centery=y + row_height//2)
+            price_rect = price_text.get_rect(right=x + col_width - 10, centery=y + row_height//2)
+            change_rect = change_text.get_rect(centerx=price_rect.centerx, top=price_rect.bottom + 5)
+            
+            # Draw texts
             display.blit(symbol_text, symbol_rect)
-            
-            # Draw price
-            price_text = self._create_text_surface(item['price'], self.font_size, AppConfig.WHITE)
-            price_rect = price_text.get_rect(left=x_pos + symbol_rect.width + 20, centery=line_y)
             display.blit(price_text, price_rect)
-            
-            # Draw change percentage
-            change_text = self._create_text_surface(item['change'], self.font_size, item['color'])
-            change_rect = change_text.get_rect(left=x_pos + symbol_rect.width + price_rect.width + 40, centery=line_y)
-            display.blit(change_text, change_rect)
-            
-            # Move to next ticker position
-            x_pos += symbol_rect.width + price_rect.width + change_rect.width + self.ticker_spacing
-    
-    def _calculate_total_width(self) -> int:
-        """Calculate the total width of all ticker items."""
-        total_width = 0
-        if self.ticker_items:
-            for item in self.ticker_items:
-                # Create temporary surfaces to calculate widths
-                symbol_width = self._create_text_surface(item['symbol'], self.font_size, AppConfig.WHITE).get_width()
-                price_width = self._create_text_surface(item['price'], self.font_size, AppConfig.WHITE).get_width()
-                change_width = self._create_text_surface(item['change'], self.font_size, item['color']).get_width()
-                total_width += symbol_width + price_width + change_width + self.ticker_spacing
-        return total_width 
+            display.blit(change_text, change_rect) 

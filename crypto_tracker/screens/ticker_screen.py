@@ -84,9 +84,9 @@ class TickerScreen(Screen):
             current_time = time.time()
             if current_time - self.last_tap_time < self.double_tap_threshold:
                 logger.debug("Double tap detected")
-                if y < self.height // 3:  # Top third of screen switches to wallstreet view
-                    logger.info("Switching to wallstreet view")
-                    self.manager.switch_screen(ScreenNames.WALLSTREET.value)
+                if y < self.height // 3:  # Top third of screen switches to dashboard view
+                    logger.info("Switching to dashboard view")
+                    self.manager.switch_screen(ScreenNames.DASHBOARD.value)
                 else:  # Bottom two-thirds switches symbols
                     self._switch_symbol()
             self.last_tap_time = current_time

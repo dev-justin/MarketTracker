@@ -7,7 +7,7 @@ from crypto_tracker.constants import ScreenNames
 from crypto_tracker.screens.ticker_screen import TickerScreen
 from crypto_tracker.screens.settings_screen import SettingsScreen
 from crypto_tracker.screens.keyboard_screen import KeyboardScreen
-from crypto_tracker.screens.wallstreet_screen import WallStreetScreen
+from crypto_tracker.screens.dashboard_screen import DashboardScreen
 from crypto_tracker.services.crypto_api import CryptoAPI
 
 class ScreenManager:
@@ -50,13 +50,13 @@ class ScreenManager:
         ticker_screen = TickerScreen(self, self.crypto_api)
         settings_screen = SettingsScreen(self, ticker_screen)        
         keyboard_screen = KeyboardScreen(self, settings_screen.add_ticker)
-        wallstreet_screen = WallStreetScreen(self, self.crypto_api)
+        dashboard_screen = DashboardScreen(self, self.crypto_api)
         
         self.screens = {
             ScreenNames.TICKER.value: ticker_screen,
             ScreenNames.SETTINGS.value: settings_screen,
             ScreenNames.KEYBOARD.value: keyboard_screen,
-            ScreenNames.WALLSTREET.value: wallstreet_screen
+            ScreenNames.DASHBOARD.value: dashboard_screen
         }
     
     def switch_screen(self, screen_name: str):
