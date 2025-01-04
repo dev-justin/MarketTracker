@@ -43,7 +43,7 @@ class Display:
         self.RED = (255, 0, 0)
         
         # Chart settings
-        self.chart_rect = pygame.Rect(0, 180, self.width, 250)
+        self.chart_rect = pygame.Rect(0, 220, self.width, 250)
         self.chart_color = self.GREEN
 
     def _init_touch(self):
@@ -217,13 +217,13 @@ class Display:
             # Draw price (on top)
             price_font = pygame.font.Font(None, 120)
             price_text = price_font.render(f"${price:,.2f}", True, self.GREEN)
-            price_rect = price_text.get_rect(left=50, y=40)  # Move price to top
+            price_rect = price_text.get_rect(left=50, y=40)
             self.screen.blit(price_text, price_rect)
             
             # Draw symbol (below price)
             symbol_font = pygame.font.Font(None, 96)
             symbol_text = symbol_font.render(symbol, True, self.WHITE)
-            symbol_rect = symbol_text.get_rect(left=50, y=140)  # Adjust y position for symbol
+            symbol_rect = symbol_text.get_rect(left=50, y=120)
             self.screen.blit(symbol_text, symbol_rect)
             
             # Calculate 24-hour change
