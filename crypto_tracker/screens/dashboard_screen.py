@@ -1,6 +1,9 @@
 from typing import Dict, Optional, List
 import pygame
+import os
 from datetime import datetime
+from pyowm import OWM
+from pyowm.utils.config import get_default_config
 from ..config.settings import AppConfig
 from ..constants import EventTypes, ScreenNames
 from ..utils.logger import get_logger
@@ -40,7 +43,44 @@ class DashboardScreen(Screen):
         self.price_changes: Dict[str, float] = {}
         self.ticker_items: List[Dict] = []
         
+        # Weather data
+        self.weather_data: Optional[Dict] = None
+        self.last_weather_update: float = 0
+        self.weather_update_interval: float = 300  # Update every 5 minutes
+        
+        # Initialize weather manager
+        config_dict = get_default_config()
+        config_dict['language'] = 'en'
+        
+        # Get API key from environment variable
+        api_key = os.getenv('OWM_API_KEY')
+        if not api_key:
+            logger.error("OpenWeatherMap API key not found in environment variables")
+            return
+            
+        self.owm = OWM(api_key, config_dict)
+        self.weather_mgr = self.owm.weather_manager()
+        
         logger.info("DashboardScreen initialized")
+        
+    def _update_weather(self) -> None:
+        """Update the weather data using PyOWM."""
+        current_time = time.time()
+        if (current_time - self.last_weather_update) >= self.weather_update_interval:
+            try:
+                # Get weather for current location (San Francisco as default)
+                observation = self.weather_mgr.weather_at_place('San Francisco,US')
+                weather = observation.weather
+                
+                self.weather_data = {
+                    'temp': round(weather.temperature('celsius')['temp']),
+                    'status': weather.status,
+                    'detailed': weather.detailed_status
+                }
+                self.last_weather_update = current_time
+                logger.info("Weather data updated successfully")
+            except Exception as e:
+                logger.error(f"Error updating weather: {str(e)}")
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """
@@ -99,6 +139,9 @@ class DashboardScreen(Screen):
                         'change': f"{change_percent:+.2f}%" if change_percent >= 0 else f"{change_percent:.2f}%",
                         'color': AppConfig.GREEN if change_percent >= 0 else AppConfig.RED
                     })
+        
+        # Update weather data
+        self._update_weather()
     
     def draw(self, display: pygame.Surface) -> None:
         """
@@ -118,14 +161,28 @@ class DashboardScreen(Screen):
         date_rect = date_text.get_rect(centerx=self.width//2, top=self.padding)
         display.blit(date_text, date_rect)
         
-        # Draw current time
-        current_time = datetime.now().strftime("%I:%M %p")
+        # Draw current time (remove leading zero from hour)
+        current_time = datetime.now().strftime("%I:%M %p").lstrip("0")
         time_text = self._create_text_surface(current_time, self.date_font_size, AppConfig.WHITE)
         time_rect = time_text.get_rect(centerx=self.width//2, top=date_rect.bottom + 10)
         display.blit(time_text, time_rect)
         
+        # Draw weather information
+        if self.weather_data:
+            try:
+                temp = self.weather_data['temp']
+                status = self.weather_data['detailed'].capitalize()
+                weather_text = f"{temp}°C | {status}"
+                weather_surface = self._create_text_surface(weather_text, self.date_font_size, AppConfig.WHITE)
+                weather_rect = weather_surface.get_rect(centerx=self.width//2, top=time_rect.bottom + 10)
+                display.blit(weather_surface, weather_rect)
+                line_y = weather_rect.bottom + self.padding
+            except KeyError:
+                line_y = time_rect.bottom + self.padding
+        else:
+            line_y = time_rect.bottom + self.padding
+        
         # Draw dividing line
-        line_y = time_rect.bottom + self.padding
         pygame.draw.line(display, AppConfig.CELL_BORDER_COLOR, 
                         (self.padding, line_y), (self.width - self.padding, line_y), 2)
         
