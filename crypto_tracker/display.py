@@ -238,11 +238,14 @@ class Display:
         # Handle double tap in the top area
         if event.type == self.FINGERDOWN:
             current_time = time.time()
+            print(f"Tap detected at x: {x}, y: {y}, time: {current_time}")  # Debug output
             if current_time - self.last_tap_time < self.double_tap_threshold:
                 if self.tap_area_left.collidepoint(x, y):
+                    print("Double tap on left detected")  # Debug output
                     # Double tap on left, switch to previous symbol
                     self.current_symbol_index = (self.current_symbol_index - 1) % len(self.symbols)
                 elif self.tap_area_right.collidepoint(x, y):
+                    print("Double tap on right detected")  # Debug output
                     # Double tap on right, switch to next symbol
                     self.current_symbol_index = (self.current_symbol_index + 1) % len(self.symbols)
             self.last_tap_time = current_time
