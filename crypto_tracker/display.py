@@ -196,8 +196,11 @@ class Display:
                 if hasattr(self, 'second_tap_time') and current_time - self.second_tap_time < self.double_tap_threshold:
                     self.show_settings = not self.show_settings
                     self.second_tap_time = None  # Reset after toggling
+                    self.last_tap_time = 0  # Reset to prevent immediate re-trigger
                 else:
                     self.second_tap_time = current_time
+            else:
+                self.second_tap_time = None  # Reset if not a triple tap
             self.last_tap_time = current_time
 
         # Only process other events if not in settings
