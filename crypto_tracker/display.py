@@ -214,7 +214,7 @@ class Display:
                         self.current_symbol_index = (self.current_symbol_index - 1) % len(self.symbols)
                     else:
                         self.current_symbol_index = (self.current_symbol_index + 1) % len(self.symbols)
-                    self.last_tap_time = 0  # Reset to prevent immediate re-trigger
+                    self.last_tap_time = current_time  # Set to current time instead of 0
                 else:
                     self.last_tap_time = current_time
 
