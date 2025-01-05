@@ -14,6 +14,10 @@ class TickerScreen(BaseScreen):
         self.current_index = 0
         self.coins = []
         
+        # Sparkline dimensions
+        self.sparkline_height = 100
+        self.sparkline_padding = 40  # Padding from sides
+        
         # Load initial coin data
         self.refresh_coins()
         
@@ -86,6 +90,39 @@ class TickerScreen(BaseScreen):
         change_surface = self.fonts['medium'].render(change_text, True, change_color)
         change_rect = change_surface.get_rect(centerx=self.width//2, top=price_rect.bottom + 10)
         self.display.surface.blit(change_surface, change_rect)
+        
+        # Draw sparkline if price history is available
+        if 'sparkline_in_7d' in current_coin and current_coin['sparkline_in_7d'].get('price'):
+            prices = current_coin['sparkline_in_7d']['price']
+            if prices:
+                # Calculate sparkline dimensions
+                sparkline_width = self.width - (self.sparkline_padding * 2)
+                sparkline_rect = pygame.Rect(
+                    self.sparkline_padding,
+                    change_rect.bottom + 30,
+                    sparkline_width,
+                    self.sparkline_height
+                )
+                
+                # Calculate min and max prices for scaling
+                min_price = min(prices)
+                max_price = max(prices)
+                price_range = max_price - min_price
+                
+                # Calculate points
+                points = []
+                for i, price in enumerate(prices):
+                    x = sparkline_rect.left + (i * sparkline_width / (len(prices) - 1))
+                    # Normalize price to sparkline height
+                    normalized_price = (price - min_price) / price_range if price_range > 0 else 0.5
+                    y = sparkline_rect.bottom - (normalized_price * self.sparkline_height)
+                    points.append((x, y))
+                
+                # Draw sparkline
+                if len(points) > 1:
+                    # Draw line with anti-aliasing
+                    line_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
+                    pygame.draw.aalines(self.display.surface, line_color, False, points)
         
         # Draw navigation hints
         if len(self.coins) > 1:
