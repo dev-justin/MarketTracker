@@ -108,20 +108,26 @@ class SettingsScreen(BaseScreen):
         text_start_x = rect.left + logo_size + (logo_margin * 2)
         text_width = rect.right - text_start_x - logo_margin
         
-        # Draw coin name
+        # Calculate total height of name + symbol for centering
         name_text = coin.get('name', '')
         if len(name_text) > 15:  # Truncate long names
             name_text = name_text[:13] + '...'
         name_surface = self.fonts['md'].render(name_text, True, AppConfig.WHITE)
+        
+        symbol_text = coin.get('symbol', '').upper()
+        symbol_surface = self.fonts['sm'].render(symbol_text, True, AppConfig.GRAY)
+        
+        total_text_height = name_surface.get_height() + symbol_surface.get_height() + 5  # 5px spacing
+        text_start_y = rect.centery - (total_text_height // 2)
+        
+        # Draw coin name
         name_rect = name_surface.get_rect(
             left=text_start_x,
-            top=rect.top + logo_margin
+            top=text_start_y
         )
         surface.blit(name_surface, name_rect)
         
         # Draw coin symbol
-        symbol_text = coin.get('symbol', '').upper()
-        symbol_surface = self.fonts['sm'].render(symbol_text, True, AppConfig.GRAY)
         symbol_rect = symbol_surface.get_rect(
             left=text_start_x,
             top=name_rect.bottom + 5
@@ -158,7 +164,7 @@ class SettingsScreen(BaseScreen):
         self.display.surface.fill(self.background_color)
         
         # Draw header
-        header_text = "My Portfolio"
+        header_text = "My Settings"
         header_surface = self.fonts['title-md'].render(header_text, True, AppConfig.WHITE)
         header_rect = header_surface.get_rect(
             left=self.padding,
