@@ -128,34 +128,20 @@ class TickerScreen(BaseScreen):
                     
                     # Create gradient colors
                     if is_positive:
-                        gradient_top = (0, 255, 0, 40)  # Semi-transparent green
-                        gradient_middle = (0, 255, 0, 20)  # More transparent green
+                        fill_color = (0, 255, 0, 40)  # Semi-transparent green
                         line_color = (0, 255, 0, 255)  # Solid green
                     else:
-                        gradient_top = (255, 0, 0, 40)  # Semi-transparent red
-                        gradient_middle = (255, 0, 0, 20)  # More transparent red
+                        fill_color = (255, 0, 0, 40)  # Semi-transparent red
                         line_color = (255, 0, 0, 255)  # Solid red
                     
-                    # Create gradient fill points by adding bottom corners
+                    # Create fill polygon points by adding bottom corners
                     fill_points = points + [
                         (self.width, sparkline_rect.height),  # Bottom right
                         (0, sparkline_rect.height)  # Bottom left
                     ]
                     
-                    # Draw gradient fill
-                    for i in range(sparkline_rect.height):
-                        progress = i / sparkline_rect.height
-                        if progress < 0.5:
-                            # Interpolate between top and middle
-                            alpha = int(gradient_top[3] + (gradient_middle[3] - gradient_top[3]) * (progress * 2))
-                            color = (*gradient_top[:3], alpha)
-                        else:
-                            # Interpolate between middle and transparent
-                            alpha = int(gradient_middle[3] * (2 - progress * 2))
-                            color = (*gradient_middle[:3], alpha)
-                        
-                        # Draw horizontal line for gradient
-                        pygame.draw.line(sparkline_surface, color, (0, i), (self.width, i))
+                    # Draw gradient fill using polygon
+                    pygame.draw.polygon(sparkline_surface, fill_color, fill_points)
                     
                     # Draw the actual line on top
                     pygame.draw.lines(sparkline_surface, line_color, False, points, 3)  # Thicker line
