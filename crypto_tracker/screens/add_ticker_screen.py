@@ -134,13 +134,13 @@ class AddTickerScreen(BaseScreen):
         self.display.surface.fill(self.background_color)
         
         # Draw "Enter Ticker" text
-        title_text = self.fonts['title-sm'].render("Add New Ticker", True, AppConfig.WHITE)
+        title_text = self.fonts['xl'].render("Add New Ticker", True, AppConfig.WHITE)
         title_rect = title_text.get_rect(centerx=self.width//2, top=20)
         self.display.surface.blit(title_text, title_rect)
         
         # Draw input box at 20% of screen height
-        input_width = 200
-        input_height = 50
+        input_width = 300
+        input_height = 80
         input_x = (self.width - input_width) // 2
         input_y = int(self.height * 0.2)
         
