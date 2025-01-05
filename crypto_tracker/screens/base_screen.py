@@ -27,6 +27,10 @@ class BaseScreen(ABC):
         """Update the screen."""
         pygame.display.flip()
 
+    def set_screen_manager(self, screen_manager: object) -> None:
+        """Set the screen manager."""
+        self.screen_manager = screen_manager
+
     @abstractmethod
     def draw(self) -> None:
         """Draw the screen contents."""

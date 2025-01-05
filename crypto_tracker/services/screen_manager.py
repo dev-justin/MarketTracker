@@ -13,6 +13,7 @@ class ScreenManager:
     def add_screen(self, name: str, screen: object):
         """Add a screen to the manager."""
         self.screens[name] = screen
+        screen.set_screen_manager(self)
         logger.debug(f"Added screen: {name}")
     
     def switch_screen(self, screen_name: str):
