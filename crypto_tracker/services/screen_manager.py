@@ -38,6 +38,11 @@ class ScreenManager:
             self.current_screen.on_screen_exit()
             
         self.current_screen = self.screens[name]
+        
+        # Special handling for edit_ticker screen
+        if name == 'edit_ticker' and args:
+            self.current_screen.load_coin(args[0])
+        
         self.current_screen.on_screen_enter()
         logger.info(f"Switched to screen: {name}")
     
