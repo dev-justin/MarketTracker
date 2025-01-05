@@ -3,7 +3,7 @@ from datetime import datetime
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 from .base_screen import BaseScreen
-import time
+from ..utils.gesture import handle_touch_event
 
 logger = get_logger(__name__)
 
@@ -14,41 +14,12 @@ class DashboardScreen(BaseScreen):
     logger.info("DashboardScreen initialized")
     
     def handle_event(self, event: pygame.event.Event) -> None:
-        """
-        Handle pygame events.
-        
-        Args:
-            event: The pygame event to handle
-        """
-                
-        # Touch handling
-        swipe_start_y = None
-        swipe_threshold = AppConfig.SWIPE_THRESHOLD
-        last_tap_time = 0
-        double_tap_threshold = AppConfig.DOUBLE_TAP_THRESHOLD
-
-        if event.type not in (AppConfig.EVENT_TYPES['FINGER_DOWN'], AppConfig.EVENT_TYPES['FINGER_UP']):
-            return
-            
-        x, y = self._scale_touch_input(event)
-        
-        # Handle double tap to return to ticker screen
-        if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
-            current_time = time.time()
-            if current_time - last_tap_time < double_tap_threshold:
-                logger.info("Double tap detected, returning to ticker screen")
-            last_tap_time = current_time
-        
-        # Handle swipe up to settings
-        if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
-            swipe_start_y = y
-            logger.debug(f"Touch start at y={y}")
-        elif event.type == AppConfig.EVENT_TYPES['FINGER_UP'] and swipe_start_y is not None:
-            swipe_distance = swipe_start_y - y
-            swipe_threshold = self.height * swipe_threshold
-            if swipe_distance > swipe_threshold:
-                logger.info("Swipe up detected, switching to settings")
-            swipe_start_y = None
+        """Handle pygame events."""
+        is_double_tap, is_swipe_up = handle_touch_event(event, self.height)
+        if is_double_tap:
+            logger.info("Double tap detected, returning to ticker screen")
+        elif is_swipe_up:
+            logger.info("Swipe up detected, switching to settings")
     
     def draw(self) -> None:
         """Draw the dashboard screen."""
