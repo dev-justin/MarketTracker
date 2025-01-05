@@ -38,7 +38,6 @@ class DashboardScreen(BaseScreen):
         
         # Get current time in local timezone
         now = datetime.now()
-        logger.debug(f"Current time: {now.strftime('%I:%M:%S %p')}")
         
         # Draw time
         time_text = now.strftime("%I:%M %p").lstrip("0")
