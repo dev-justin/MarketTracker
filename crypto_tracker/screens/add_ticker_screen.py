@@ -8,14 +8,13 @@ logger = get_logger(__name__)
 class AddTickerScreen(BaseScreen):
     def __init__(self, display) -> None:
         super().__init__(display)
-        self.background_color = (0, 0, 0)  # Pure black
-        self.grid_color = (0, 255, 0)      # Bright green
+        self.background_color = AppConfig.BLACK
         self.new_symbol = ""
         
         # Button dimensions
-        self.button_width = 120
-        self.button_height = 50
-        self.button_spacing = 20
+        self.button_width = AppConfig.BUTTON_WIDTH
+        self.button_height = AppConfig.BUTTON_HEIGHT
+        self.button_spacing = AppConfig.BUTTON_MARGIN
         
         # Keyboard layout
         self.keys = [
@@ -60,10 +59,11 @@ class AddTickerScreen(BaseScreen):
         for row in self.key_rects:
             for key, rect in row:
                 # Draw key background
-                pygame.draw.rect(surface, self.grid_color, rect, 2, border_radius=5)
+                pygame.draw.rect(surface, AppConfig.KEY_BG_COLOR, rect, 0, border_radius=5)
+                pygame.draw.rect(surface, AppConfig.KEY_BORDER_COLOR, rect, 2, border_radius=5)
                 
                 # Draw key text
-                text = self.fonts['bold-sm'].render(key, True, self.grid_color)
+                text = self.fonts['bold-sm'].render(key, True, AppConfig.WHITE)
                 text_rect = text.get_rect(center=rect.center)
                 surface.blit(text, text_rect)
     
@@ -83,8 +83,9 @@ class AddTickerScreen(BaseScreen):
             self.button_width,
             self.button_height
         )
-        pygame.draw.rect(surface, (255, 0, 0), self.cancel_rect, 2, border_radius=10)
-        cancel_text = self.fonts['bold-md'].render("Cancel", True, (255, 0, 0))
+        pygame.draw.rect(surface, AppConfig.KEY_BG_COLOR, self.cancel_rect, 0, border_radius=10)
+        pygame.draw.rect(surface, AppConfig.CANCEL_BUTTON_COLOR, self.cancel_rect, 2, border_radius=10)
+        cancel_text = self.fonts['bold-md'].render("Cancel", True, AppConfig.CANCEL_BUTTON_COLOR)
         cancel_text_rect = cancel_text.get_rect(center=self.cancel_rect.center)
         surface.blit(cancel_text, cancel_text_rect)
         
@@ -95,8 +96,14 @@ class AddTickerScreen(BaseScreen):
             self.button_width,
             self.button_height
         )
-        pygame.draw.rect(surface, self.grid_color, self.save_rect, 2, border_radius=10)
-        save_text = self.fonts['bold-md'].render("Save", True, self.grid_color)
+        
+        # Use active or inactive color based on whether there's input
+        save_color = (AppConfig.DONE_BUTTON_ACTIVE_COLOR if self.new_symbol 
+                     else AppConfig.DONE_BUTTON_INACTIVE_COLOR)
+        
+        pygame.draw.rect(surface, AppConfig.KEY_BG_COLOR, self.save_rect, 0, border_radius=10)
+        pygame.draw.rect(surface, save_color, self.save_rect, 2, border_radius=10)
+        save_text = self.fonts['bold-md'].render("Save", True, save_color)
         save_text_rect = save_text.get_rect(center=self.save_rect.center)
         surface.blit(save_text, save_text_rect)
     
@@ -141,14 +148,16 @@ class AddTickerScreen(BaseScreen):
         input_x = (self.width - input_width) // 2
         input_y = int(self.height * 0.2)
         
-        pygame.draw.rect(self.display.surface, self.grid_color,
-                        (input_x, input_y, input_width, input_height), 2, border_radius=10)
+        # Draw input box background and border
+        input_rect = pygame.Rect(input_x, input_y, input_width, input_height)
+        pygame.draw.rect(self.display.surface, AppConfig.INPUT_BG_COLOR, input_rect, 0, border_radius=10)
+        pygame.draw.rect(self.display.surface, AppConfig.KEY_BORDER_COLOR, input_rect, 2, border_radius=10)
         
         # Draw entered text or placeholder
         if self.new_symbol:
             text = self.fonts['bold-lg'].render(self.new_symbol, True, AppConfig.WHITE)
         else:
-            text = self.fonts['light-md'].render("Enter Symbol", True, (128, 128, 128))
+            text = self.fonts['light-md'].render("Enter Symbol", True, AppConfig.PLACEHOLDER_COLOR)
         text_rect = text.get_rect(center=(self.width//2, input_y + input_height//2))
         self.display.surface.blit(text, text_rect)
         
