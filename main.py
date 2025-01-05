@@ -9,6 +9,14 @@ class MarkertTrackerApp():
         self.display = Display()
         self.screen_manager = ScreenManager()
 
+        btc_data = self.crypto_service.get_coin_data('btc')
+        if btc_data:
+            print(f"\nFetched Bitcoin data:")
+            print(f"Symbol: {btc_data['symbol']}")
+            print(f"Name: {btc_data['name']}")
+            print(f"Price: ${btc_data['price']:,.2f}")
+            print(f"Logo saved at: {btc_data['logo_path']}\n")
+
         # Initialize screens
         self.screen_manager.add_screen('dashboard', DashboardScreen(self.display))
         self.screen_manager.add_screen('settings', SettingsScreen(self.display))
