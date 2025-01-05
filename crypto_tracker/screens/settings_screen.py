@@ -68,6 +68,7 @@ class SettingsScreen(BaseScreen):
         """Called when entering the screen."""
         logger.info("Refreshing tracked coins list")
         self.load_tracked_coins()
+        self.draw()  # Ensure screen is redrawn immediately
     
     def load_tracked_coins(self) -> None:
         """Load tracked coins from json file."""
@@ -153,26 +154,7 @@ class SettingsScreen(BaseScreen):
         )
         surface.blit(name_surface, name_rect)
         
-        # Draw coin symbol
-        symbol_rect = symbol_surface.get_rect(
-            left=text_start_x,
-            top=name_rect.bottom + 5
-        )
-        surface.blit(symbol_surface, symbol_rect)
-        
-        # Calculate positions for icons on the right
-        icon_margin = 15
-        edit_icon_rect = None
-        
-        # Draw edit icon on the right side
-        if self.edit_icon:
-            edit_icon_rect = self.edit_icon.get_rect(
-                right=rect.right - icon_margin,
-                centery=rect.centery
-            )
-            surface.blit(self.edit_icon, edit_icon_rect)
-        
-        # Draw favorite star if favorited (to the left of edit icon)
+        # Draw star if favorited (next to name)
         if coin.get('favorite', False) and self.star_icon:
             star_surface = self.star_icon.copy()
             # Change color to gold/orange
@@ -184,10 +166,26 @@ class SettingsScreen(BaseScreen):
                         star_surface.set_at((x, y), star_color)
             
             star_rect = star_surface.get_rect(
-                right=edit_icon_rect.left - icon_margin if edit_icon_rect else rect.right - icon_margin,
-                centery=rect.centery
+                left=name_rect.right + 10,
+                centery=name_rect.centery
             )
             surface.blit(star_surface, star_rect)
+        
+        # Draw coin symbol
+        symbol_rect = symbol_surface.get_rect(
+            left=text_start_x,
+            top=name_rect.bottom + 5
+        )
+        surface.blit(symbol_surface, symbol_rect)
+        
+        # Draw edit icon on the right side
+        edit_icon_rect = None
+        if self.edit_icon:
+            edit_icon_rect = self.edit_icon.get_rect(
+                right=rect.right - logo_margin,
+                centery=rect.centery
+            )
+            surface.blit(self.edit_icon, edit_icon_rect)
         
         return rect, edit_icon_rect, coin
     

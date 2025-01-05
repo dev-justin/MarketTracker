@@ -135,13 +135,29 @@ class EditTickerScreen(BaseScreen):
         except Exception as e:
             logger.error(f"Error loading logo for {self.current_coin['symbol']}: {e}")
         
-        # Draw coin name larger and below logo
+        # Draw coin name and star if favorited
         name_text = self.fonts['title-lg'].render(self.current_coin['name'], True, AppConfig.WHITE)
         name_rect = name_text.get_rect(
             centerx=left_side_center,
             top=logo_rect.bottom + 15
         )
         self.display.surface.blit(name_text, name_rect)
+        
+        # Draw star if favorited
+        if self.current_coin.get('favorite', False) and self.star_icon:
+            star_surface = self.star_icon.copy()
+            star_color = (255, 165, 0)  # Orange/gold
+            for x in range(star_surface.get_width()):
+                for y in range(star_surface.get_height()):
+                    color = star_surface.get_at((x, y))
+                    if color.a > 0:  # If pixel is not transparent
+                        star_surface.set_at((x, y), star_color)
+            
+            star_rect = star_surface.get_rect(
+                left=name_rect.right + 10,
+                centery=name_rect.centery
+            )
+            self.display.surface.blit(star_surface, star_rect)
         
         # Draw symbol below name
         symbol_text = self.fonts['title-md'].render(self.current_coin['symbol'].upper(), True, AppConfig.GRAY)
@@ -160,41 +176,11 @@ class EditTickerScreen(BaseScreen):
         favorite_bg_color = (255, 165, 0) if is_favorited else button_bg_color  # Orange when favorited
         pygame.draw.rect(self.display.surface, favorite_bg_color, self.favorite_rect, border_radius=corner_radius)
         
-        # Draw star icon and text
-        if self.star_icon:
-            # Create a copy of the star icon surface to modify its color
-            star_surface = self.star_icon.copy()
-            if is_favorited:
-                # Change the color to gold/orange
-                star_color = (255, 165, 0)  # Orange to match button
-                for x in range(star_surface.get_width()):
-                    for y in range(star_surface.get_height()):
-                        color = star_surface.get_at((x, y))
-                        if color.a > 0:  # If pixel is not transparent
-                            star_surface.set_at((x, y), star_color)
-            else:
-                # Set to dark gray for unfavorited state
-                for x in range(star_surface.get_width()):
-                    for y in range(star_surface.get_height()):
-                        color = star_surface.get_at((x, y))
-                        if color.a > 0:  # If pixel is not transparent
-                            star_surface.set_at((x, y), (50, 50, 50))
-            
-            # Position star icon to the left of text
-            star_rect = star_surface.get_rect(
-                right=self.favorite_rect.centerx - 5,
-                centery=self.favorite_rect.centery
-            )
-            self.display.surface.blit(star_surface, star_rect)
-        
-        # Draw favorite text
-        favorite_text = "Favorited" if is_favorited else "Favorite"
-        text_color = AppConfig.BLACK if is_favorited else AppConfig.WHITE  # Black text on orange background
+        # Draw favorite text (no star icon in button)
+        favorite_text = "Unfavorite" if is_favorited else "Favorite"
+        text_color = AppConfig.BLACK if is_favorited else AppConfig.WHITE
         favorite_text_surface = self.fonts['medium'].render(favorite_text, True, text_color)
-        favorite_text_rect = favorite_text_surface.get_rect(
-            left=self.favorite_rect.centerx + 5,
-            centery=self.favorite_rect.centery
-        )
+        favorite_text_rect = favorite_text_surface.get_rect(center=self.favorite_rect.center)
         self.display.surface.blit(favorite_text_surface, favorite_text_rect)
         
         # Delete button (middle)
