@@ -8,14 +8,6 @@ logger = get_logger(__name__)
 
 class DashboardScreen(BaseScreen):
     """Screen for displaying the current day and time."""
-
-    def __init__(self, display) -> None:
-        super().__init__(display)
-        # Background gradient colors
-        self.gradient_top = (13, 17, 23)     # Dark navy
-        self.gradient_bottom = (22, 27, 34)  # Slightly lighter navy
-        self.padding = 20
-        logger.info("DashboardScreen initialized")
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
@@ -27,11 +19,15 @@ class DashboardScreen(BaseScreen):
     
     def draw(self) -> None:
         """Draw the dashboard screen."""
+
+        GRADIENT_TOP = (13, 17, 23)
+        GRADIENT_BOTTOM = (22, 27, 34)
+
         # Draw background gradient
         for y in range(self.height):
             progress = y / self.height
             color = [
-                int(self.gradient_top[i] + (self.gradient_bottom[i] - self.gradient_top[i]) * progress)
+                int(GRADIENT_TOP[i] + (GRADIENT_BOTTOM[i] - GRADIENT_TOP[i]) * progress)
                 for i in range(3)
             ]
             pygame.draw.line(self.display.surface, color, (0, y), (self.width, y))
