@@ -1,4 +1,6 @@
 import pygame
+import json
+import os
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 from .base_screen import BaseScreen
@@ -26,6 +28,37 @@ class AddTickerScreen(BaseScreen):
         
         logger.info("AddTickerScreen initialized")
     
+    def add_ticker(self, symbol: str) -> None:
+        """Add a new ticker to tracked coins."""
+        try:
+            # Load existing coins
+            tracked_coins = []
+            if os.path.exists(AppConfig.TRACKED_COINS_FILE):
+                with open(AppConfig.TRACKED_COINS_FILE, 'r') as f:
+                    tracked_coins = json.load(f)
+            
+            # Add new coin with proper structure
+            new_coin = {
+                'id': symbol.lower(),
+                'symbol': symbol.upper(),
+                'favorite': False
+            }
+            
+            # Check if coin already exists
+            if not any(coin.get('id') == new_coin['id'] for coin in tracked_coins):
+                tracked_coins.append(new_coin)
+                
+                # Save updated list
+                os.makedirs(os.path.dirname(AppConfig.TRACKED_COINS_FILE), exist_ok=True)
+                with open(AppConfig.TRACKED_COINS_FILE, 'w') as f:
+                    json.dump(tracked_coins, f, indent=2)
+                logger.info(f"Added new ticker: {symbol}")
+            else:
+                logger.warning(f"Ticker already exists: {symbol}")
+                
+        except Exception as e:
+            logger.error(f"Error adding ticker: {e}")
+    
     def setup_keyboard(self):
         """Calculate keyboard layout dimensions."""
         keyboard_height = self.height * 0.5 
@@ -51,57 +84,21 @@ class AddTickerScreen(BaseScreen):
                 x += self.key_width + key_padding
             self.key_rects.append(row_rects)
             y += self.key_height + key_padding
-    
-    def _draw_keyboard(self, surface: pygame.Surface):
-        """Draw the on-screen keyboard."""
-        # Draw each key
-        for row in self.key_rects:
-            for key, rect in row:
-                # Draw key background
-                pygame.draw.rect(surface, AppConfig.KEY_BG_COLOR, rect, 0, border_radius=5)
-                pygame.draw.rect(surface, AppConfig.KEY_BORDER_COLOR, rect, 2, border_radius=5)
-                
-                # Draw key text
-                text = self.fonts['bold-sm'].render(key, True, AppConfig.WHITE)
-                text_rect = text.get_rect(center=rect.center)
-                surface.blit(text, text_rect)
-    
-    def _draw_buttons(self, surface: pygame.Surface):
-        """Draw Cancel and Save buttons."""
-        # Calculate button positions
-        total_width = (2 * self.button_width) + self.button_spacing
-        start_x = (self.width - total_width) // 2
         
-        # Position buttons at 85% of screen height
-        button_y = int(self.height * 0.85)
-        
-        # Cancel button (left)
+        # Create save and cancel buttons
+        button_y = self.height - self.button_height - 20
         self.cancel_rect = pygame.Rect(
-            start_x,
+            20,
             button_y,
             self.button_width,
             self.button_height
         )
-        pygame.draw.rect(surface, AppConfig.RED, self.cancel_rect, 0, border_radius=10)
-        cancel_text = self.fonts['bold-md'].render("Cancel", True, AppConfig.WHITE)
-        cancel_text_rect = cancel_text.get_rect(center=self.cancel_rect.center)
-        surface.blit(cancel_text, cancel_text_rect)
-        
-        # Save button (right)
         self.save_rect = pygame.Rect(
-            start_x + self.button_width + self.button_spacing,
+            self.width - self.button_width - 20,
             button_y,
             self.button_width,
             self.button_height
         )
-        
-        # Use active or inactive color based on whether there's input
-        save_color = AppConfig.GREEN if self.new_symbol else AppConfig.GRAY
-        
-        pygame.draw.rect(surface, save_color, self.save_rect, 0, border_radius=10)
-        save_text = self.fonts['bold-md'].render("Save", True, AppConfig.WHITE)
-        save_text_rect = save_text.get_rect(center=self.save_rect.center)
-        surface.blit(save_text, save_text_rect)
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
@@ -121,7 +118,7 @@ class AddTickerScreen(BaseScreen):
             elif self.save_rect.collidepoint(x, y):
                 logger.info("Save button clicked")
                 if self.new_symbol:
-                    self.crypto_service.add_tracked_symbol(self.new_symbol)
+                    self.add_ticker(self.new_symbol)
                     self.screen_manager.switch_screen('settings')
             else:
                 # Check for key presses
@@ -138,35 +135,53 @@ class AddTickerScreen(BaseScreen):
                             return
     
     def draw(self) -> None:
+        """Draw the add ticker screen."""
         # Fill background with black
         self.display.surface.fill(self.background_color)
         
-        # Draw "Enter Ticker" text
-        title_text = self.fonts['bold-xl'].render("Add New Ticker", True, AppConfig.WHITE)
+        # Draw "Add New Ticker" text
+        title_text = self.fonts['title-md'].render("Add New Ticker", True, AppConfig.WHITE)
         title_rect = title_text.get_rect(centerx=self.width//2, top=20)
         self.display.surface.blit(title_text, title_rect)
         
-        # Draw input box at 20% of screen height
-        input_width = 300
-        input_height = 60
-        input_x = (self.width - input_width) // 2
-        input_y = int(self.height * 0.2)
+        # Draw input box
+        input_rect = pygame.Rect(
+            (self.width - 300) // 2,
+            self.height * 0.2,
+            300,
+            60
+        )
+        pygame.draw.rect(self.display.surface, AppConfig.INPUT_BG_COLOR, input_rect)
+        pygame.draw.rect(self.display.surface, AppConfig.CELL_BORDER_COLOR, input_rect, 1)
         
-        # Draw input box background and border
-        input_rect = pygame.Rect(input_x, input_y, input_width, input_height)
-        pygame.draw.rect(self.display.surface, AppConfig.INPUT_BG_COLOR, input_rect, 0, border_radius=10)
-        pygame.draw.rect(self.display.surface, AppConfig.KEY_BORDER_COLOR, input_rect, 2, border_radius=10)
-        
-        # Draw entered text or placeholder
         if self.new_symbol:
-            text = self.fonts['bold-lg'].render(self.new_symbol, True, AppConfig.WHITE)
+            input_text = self.fonts['medium'].render(self.new_symbol, True, AppConfig.WHITE)
         else:
-            text = self.fonts['light-md'].render("Enter Symbol", True, AppConfig.PLACEHOLDER_COLOR)
-        text_rect = text.get_rect(center=(self.width//2, input_y + input_height//2))
-        self.display.surface.blit(text, text_rect)
+            input_text = self.fonts['medium'].render("Enter Symbol", True, AppConfig.PLACEHOLDER_COLOR)
         
-        # Draw keyboard and buttons
-        self._draw_keyboard(self.display.surface)
-        self._draw_buttons(self.display.surface)
+        input_text_rect = input_text.get_rect(center=input_rect.center)
+        self.display.surface.blit(input_text, input_text_rect)
+        
+        # Draw keyboard
+        for row in self.key_rects:
+            for key, rect in row:
+                pygame.draw.rect(self.display.surface, AppConfig.KEY_BG_COLOR, rect)
+                pygame.draw.rect(self.display.surface, AppConfig.KEY_BORDER_COLOR, rect, 1)
+                
+                key_text = self.fonts['medium'].render(key, True, AppConfig.WHITE)
+                key_text_rect = key_text.get_rect(center=rect.center)
+                self.display.surface.blit(key_text, key_text_rect)
+        
+        # Draw buttons
+        pygame.draw.rect(self.display.surface, AppConfig.CANCEL_BUTTON_COLOR, self.cancel_rect)
+        cancel_text = self.fonts['medium'].render("Cancel", True, AppConfig.WHITE)
+        cancel_text_rect = cancel_text.get_rect(center=self.cancel_rect.center)
+        self.display.surface.blit(cancel_text, cancel_text_rect)
+        
+        save_color = AppConfig.DONE_BUTTON_ACTIVE_COLOR if self.new_symbol else AppConfig.DONE_BUTTON_INACTIVE_COLOR
+        pygame.draw.rect(self.display.surface, save_color, self.save_rect)
+        save_text = self.fonts['medium'].render("Save", True, AppConfig.WHITE)
+        save_text_rect = save_text.get_rect(center=self.save_rect.center)
+        self.display.surface.blit(save_text, save_text_rect)
         
         self.update_screen() 

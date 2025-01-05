@@ -40,16 +40,36 @@ class SettingsScreen(BaseScreen):
         try:
             if os.path.exists(AppConfig.TRACKED_COINS_FILE):
                 with open(AppConfig.TRACKED_COINS_FILE, 'r') as f:
-                    self.tracked_coins = json.load(f)
-                    # Initialize favorite status if not present
-                    for coin in self.tracked_coins:
-                        if isinstance(coin, dict) and 'favorite' not in coin:
-                            coin['favorite'] = False
+                    data = json.load(f)
+                    # Ensure proper data structure
+                    self.tracked_coins = []
+                    for item in data:
+                        if isinstance(item, dict) and 'id' in item and 'symbol' in item:
+                            if 'favorite' not in item:
+                                item['favorite'] = False
+                            self.tracked_coins.append(item)
+                        elif isinstance(item, str):
+                            # Convert old format to new format
+                            self.tracked_coins.append({
+                                'id': item.lower(),
+                                'symbol': item.upper(),
+                                'favorite': False
+                            })
             else:
                 self.tracked_coins = []
         except Exception as e:
             logger.error(f"Error loading tracked coins: {e}")
             self.tracked_coins = []
+    
+    def save_tracked_coins(self) -> None:
+        """Save tracked coins to json file."""
+        try:
+            os.makedirs(os.path.dirname(AppConfig.TRACKED_COINS_FILE), exist_ok=True)
+            with open(AppConfig.TRACKED_COINS_FILE, 'w') as f:
+                json.dump(self.tracked_coins, f, indent=2)
+            logger.info("Tracked coins saved successfully")
+        except Exception as e:
+            logger.error(f"Error saving tracked coins: {e}")
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
@@ -77,8 +97,8 @@ class SettingsScreen(BaseScreen):
                     self.cell_height
                 )
                 if cell_rect.collidepoint(x, y):
-                    logger.info(f"Coin {coin['id']} clicked, switching to edit screen")
-                    self.screen_manager.switch_screen('edit_ticker', coin['id'])
+                    logger.info(f"Coin {coin.get('id', 'unknown')} clicked, switching to edit screen")
+                    self.screen_manager.switch_screen('edit_ticker', coin.get('id'))
                 cell_y += self.cell_height + self.cell_spacing
 
     def _draw_coin_cell(self, surface: pygame.Surface, y: int, coin: dict) -> None:
@@ -92,7 +112,7 @@ class SettingsScreen(BaseScreen):
         pygame.draw.rect(surface, AppConfig.CELL_BORDER_COLOR, rect, 1)
         
         # Draw coin symbol
-        symbol_text = coin['symbol'].upper()
+        symbol_text = coin.get('symbol', '').upper()
         symbol_surface = self.fonts['medium'].render(symbol_text, True, AppConfig.WHITE)
         symbol_rect = symbol_surface.get_rect(
             centery=rect.centery,
