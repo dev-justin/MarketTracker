@@ -10,14 +10,17 @@ logger = get_logger(__name__)
 class TickerScreen(BaseScreen):
     def __init__(self, display) -> None:
         super().__init__(display)
-        self.background_color = AppConfig.BLACK
+        self.background_color = (13, 13, 13)  # Darker black for more contrast
         self.crypto_manager = CryptoManager()
         self.current_index = 0
         self.coins = []
         
-        # Sparkline dimensions
-        self.sparkline_height = self.height // 2  # 50% of screen height
-        self.sparkline_padding = 0  # No padding for full width
+        # Sparkline dimensions - make it larger
+        self.sparkline_height = int(self.height * 0.6)  # 60% of screen height
+        self.sparkline_padding = 40  # Add padding for month labels
+        
+        # Month labels
+        self.months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
         
         # Load initial coin data
         self.refresh_coins()
@@ -72,47 +75,6 @@ class TickerScreen(BaseScreen):
         
         current_coin = self.coins[self.current_index]
         
-        # Draw coin logo in top right if available
-        logo_size = 64
-        logo_margin = 20
-        try:
-            logo_path = os.path.join(AppConfig.CACHE_DIR, f"{current_coin['symbol'].lower()}_logo.png")
-            if os.path.exists(logo_path):
-                logo = pygame.image.load(logo_path)
-                logo = pygame.transform.scale(logo, (logo_size, logo_size))
-                logo_rect = logo.get_rect(
-                    right=self.width - logo_margin,
-                    top=20
-                )
-                self.display.surface.blit(logo, logo_rect)
-        except Exception as e:
-            logger.error(f"Error loading logo for {current_coin['symbol']}: {e}")
-        
-        # Draw coin name and symbol
-        title_text = f"{current_coin['name']} ({current_coin['symbol']})"
-        title_surface = self.fonts['light'].render(title_text, True, AppConfig.WHITE)
-        title_rect = title_surface.get_rect(left=20, top=20)  # Left aligned with 20px padding
-        self.display.surface.blit(title_surface, title_rect)
-        
-        # Draw price (extra large)
-        price_text = f"${current_coin['current_price']:,.2f}"
-        price_surface = self.fonts['title-xl'].render(price_text, True, AppConfig.WHITE)
-        # Scale up the price text by 1.5x
-        scaled_price_surface = pygame.transform.scale(
-            price_surface,
-            (int(price_surface.get_width() * 1.5), int(price_surface.get_height() * 1.5))
-        )
-        price_rect = scaled_price_surface.get_rect(left=20, top=title_rect.bottom + 5)
-        self.display.surface.blit(scaled_price_surface, price_rect)
-        
-        # Draw 24h change (larger)
-        change_24h = current_coin['price_change_24h']
-        change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
-        change_text = f"{change_24h:+.2f}% (24h)"
-        change_surface = self.fonts['title-md'].render(change_text, True, change_color)
-        change_rect = change_surface.get_rect(left=20, top=price_rect.bottom + 5)
-        self.display.surface.blit(change_surface, change_rect)
-        
         # Draw sparkline if price history is available
         if 'sparkline_7d' in current_coin and current_coin['sparkline_7d']:
             prices = current_coin['sparkline_7d']
@@ -120,12 +82,13 @@ class TickerScreen(BaseScreen):
                 # Create a surface for the gradient and sparkline with alpha channel
                 sparkline_surface = pygame.Surface((self.width, self.sparkline_height), pygame.SRCALPHA)
                 
-                # Calculate sparkline dimensions
+                # Calculate sparkline dimensions with padding
+                chart_width = self.width - (self.sparkline_padding * 2)
                 sparkline_rect = pygame.Rect(
+                    self.sparkline_padding,
                     0,
-                    0,
-                    self.width,
-                    self.sparkline_height
+                    chart_width,
+                    self.sparkline_height - 40  # Space for month labels
                 )
                 
                 # Calculate min and max prices for scaling
@@ -136,7 +99,7 @@ class TickerScreen(BaseScreen):
                 # Calculate points
                 points = []
                 for i, price in enumerate(prices):
-                    x = i * self.width / (len(prices) - 1)
+                    x = sparkline_rect.left + (i * chart_width / (len(prices) - 1))
                     # Normalize price to sparkline height, starting from bottom
                     normalized_price = (price - min_price) / price_range if price_range > 0 else 0.5
                     y = sparkline_rect.height - (normalized_price * sparkline_rect.height)
@@ -150,35 +113,80 @@ class TickerScreen(BaseScreen):
                     
                     # Create gradient colors
                     if is_positive:
-                        fill_color = (0, 255, 0, 40)  # Semi-transparent green
+                        fill_color = (0, 255, 0, 15)  # Very subtle green
                         line_color = (0, 255, 0, 255)  # Solid green
                     else:
-                        fill_color = (255, 0, 0, 40)  # Semi-transparent red
+                        fill_color = (255, 0, 0, 15)  # Very subtle red
                         line_color = (255, 0, 0, 255)  # Solid red
                     
                     # Create fill polygon points by adding bottom corners
                     fill_points = points + [
-                        (self.width, sparkline_rect.height),  # Bottom right
-                        (0, sparkline_rect.height)  # Bottom left
+                        (sparkline_rect.right, sparkline_rect.height),  # Bottom right
+                        (sparkline_rect.left, sparkline_rect.height)  # Bottom left
                     ]
                     
                     # Draw gradient fill using polygon
                     pygame.draw.polygon(sparkline_surface, fill_color, fill_points)
                     
+                    # Draw month labels
+                    label_y = sparkline_rect.bottom + 20
+                    label_width = chart_width / (len(self.months) - 1)
+                    for i, month in enumerate(self.months):
+                        label_surface = self.fonts['light'].render(month, True, (128, 128, 128))
+                        label_rect = label_surface.get_rect(
+                            centerx=sparkline_rect.left + (i * label_width),
+                            centery=label_y
+                        )
+                        self.display.surface.blit(label_surface, label_rect)
+                    
+                    # Draw vertical grid lines (very subtle)
+                    for i in range(len(self.months)):
+                        x = sparkline_rect.left + (i * label_width)
+                        pygame.draw.line(
+                            sparkline_surface,
+                            (40, 40, 40, 128),  # Very subtle gray
+                            (x, 0),
+                            (x, sparkline_rect.height),
+                            1
+                        )
+                    
                     # Draw the actual line on top
-                    pygame.draw.lines(sparkline_surface, line_color, False, points, 3)  # Thicker line
+                    pygame.draw.lines(sparkline_surface, line_color, False, points, 2)
                     
                     # Position and draw the sparkline surface
                     self.display.surface.blit(
                         sparkline_surface,
-                        (0, self.height - self.sparkline_height)
+                        (0, 20)  # Position at top with small margin
                     )
         
-        # Draw navigation hints
-        if len(self.coins) > 1:
-            nav_text = f"{self.current_index + 1} / {len(self.coins)}"
-            nav_surface = self.fonts['sm'].render(nav_text, True, AppConfig.GRAY)
-            nav_rect = nav_surface.get_rect(centerx=self.width//2, bottom=self.height - 20)
-            self.display.surface.blit(nav_surface, nav_rect)
+        # Draw crypto amount (large, centered)
+        amount_text = f"{current_coin['current_price']:.8f} {current_coin['symbol']}"
+        amount_surface = self.fonts['title-xl'].render(amount_text, True, AppConfig.WHITE)
+        amount_rect = amount_surface.get_rect(
+            centerx=self.width//2,
+            bottom=self.height - 80
+        )
+        self.display.surface.blit(amount_surface, amount_rect)
+        
+        # Draw USD value below
+        usd_value = f"(${current_coin['current_price']:,.2f})"
+        usd_surface = self.fonts['light'].render(usd_value, True, (128, 128, 128))
+        usd_rect = usd_surface.get_rect(
+            centerx=self.width//2,
+            top=amount_rect.bottom + 5
+        )
+        self.display.surface.blit(usd_surface, usd_rect)
+        
+        # Draw percentage change with arrow
+        change_24h = current_coin['price_change_24h']
+        arrow = "↗" if change_24h >= 0 else "↘"
+        change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
+        change_text = f"{arrow} {abs(change_24h):.1f}%"
+        change_surface = self.fonts['title-md'].render(change_text, True, change_color)
+        change_rect = change_surface.get_rect(
+            centerx=self.width//2,
+            top=usd_rect.bottom + 10
+        )
+        self.display.surface.blit(change_surface, change_rect)
         
         self.update_screen() 
