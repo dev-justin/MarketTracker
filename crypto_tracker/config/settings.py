@@ -9,7 +9,7 @@ class AppConfig:
     TIMEZONE = 'America/New_York'  # Default timezone for timestamps
     
     # Display settings
-    DISPLAY_WIDTH = 320
+    DISPLAY_WIDTH = 800
     DISPLAY_HEIGHT = 480
     FPS = 30
     
