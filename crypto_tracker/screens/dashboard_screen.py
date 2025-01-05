@@ -3,19 +3,21 @@ from datetime import datetime
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 from .base_screen import BaseScreen
-from ..utils.gesture import handle_touch_event
+from ..utils.gesture import GestureHandler
 
 logger = get_logger(__name__)
 
 class DashboardScreen(BaseScreen):
     """Screen for displaying the current day and time."""
 
-        
-    logger.info("DashboardScreen initialized")
+    def __init__(self, display) -> None:
+        super().__init__(display)
+        self.gesture_handler = GestureHandler()
+        logger.info("DashboardScreen initialized")
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
-        is_double_tap, is_swipe_up = handle_touch_event(event, self.height)
+        is_double_tap, is_swipe_up = self.gesture_handler.handle_touch_event(event, self.height)
         if is_double_tap:
             logger.info("Double tap detected, returning to ticker screen")
         elif is_swipe_up:
