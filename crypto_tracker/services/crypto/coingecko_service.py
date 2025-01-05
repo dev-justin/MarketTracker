@@ -20,7 +20,7 @@ class CoinGeckoService:
         """
         try:
             search_results = self.client.search(symbol.lower())
-            logger.info(f"Search results: {search_results}")
+            logger.info(f"Search results: {search_results.get('coins', [])}")
             for coin in search_results.get('coins', []):
                 if coin['symbol'].lower() == symbol.lower():
                     return coin['id']
