@@ -3,6 +3,8 @@ import pygame
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 from ..utils.gesture import GestureHandler
+from ..services.service_manager import ServiceManager
+from ..services.asset_manager import AssetManager
 
 logger = get_logger(__name__)
 
@@ -11,12 +13,20 @@ class BaseScreen(ABC):
     
     def __init__(self, display) -> None:
         """Initialize the base screen."""
-        self.display = display
+        # Get service instances
+        service_manager = ServiceManager()
+        self.display = service_manager.get_display()
+        self.crypto_manager = service_manager.get_crypto_manager()
+        
+        # Get asset manager
+        self.assets = AssetManager()
+        
+        # Initialize screen properties
         self.screen_manager = None
         self.gesture_handler = GestureHandler()
         self.width = AppConfig.DISPLAY_WIDTH
         self.height = AppConfig.DISPLAY_HEIGHT
-        self.fonts = display.fonts
+        self.fonts = self.display.fonts
         logger.info(f"{self.__class__.__name__} initialized")
     
     def on_screen_enter(self) -> None:

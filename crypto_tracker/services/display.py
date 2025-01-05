@@ -7,13 +7,25 @@ logger = get_logger(__name__)
 
 """Service for managing shared display resources."""
 class Display:
-    def __init__(self):
+    """Service for managing shared display resources."""
+    
+    _instance = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._init_display()
+        return cls._instance
+    
+    def _init_display(self):
         """Initialize the display service."""
-        self._setup_runtime_dir()
-        self._init_pygame()
-        self._init_display()
-        self._init_fonts()
-        logger.info("Display service initialized")
+        if not hasattr(self, 'initialized'):
+            self._setup_runtime_dir()
+            self._init_pygame()
+            self._init_display_surface()
+            self._init_fonts()
+            self.initialized = True
+            logger.info("Display service initialized")
     
     def _setup_runtime_dir(self):
         """Set up the runtime directory for pygame."""
@@ -27,7 +39,7 @@ class Display:
         pygame.font.init()
         pygame.mouse.set_visible(False)
     
-    def _init_display(self):
+    def _init_display_surface(self):
         """Initialize the pygame display."""
         self.surface = pygame.display.set_mode((AppConfig.DISPLAY_WIDTH, AppConfig.DISPLAY_HEIGHT))
         pygame.display.set_caption("Crypto Tracker")
@@ -35,44 +47,48 @@ class Display:
     
     def _init_fonts(self):
         """Initialize shared fonts."""
-        self.fonts = {
-            # Title fonts
-            'title-xl': pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['title-xl']),
-            'title-lg': pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['title-lg']),
-            'title-md': pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['title-md']),
-            'title-sm': pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['title-sm']),
-            
-            # Regular fonts
-            'xl': pygame.font.Font(AppConfig.FONT_PATHS['regular'], AppConfig.FONT_SIZES['xl']),
-            'lg': pygame.font.Font(AppConfig.FONT_PATHS['regular'], AppConfig.FONT_SIZES['lg']),
-            'md': pygame.font.Font(AppConfig.FONT_PATHS['regular'], AppConfig.FONT_SIZES['md']),
-            'sm': pygame.font.Font(AppConfig.FONT_PATHS['regular'], AppConfig.FONT_SIZES['sm']),
-            'xs': pygame.font.Font(AppConfig.FONT_PATHS['regular'], AppConfig.FONT_SIZES['xs']),
-            
-            # Bold fonts
-            'bold-xl': pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['xl']),
-            'bold-lg': pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['lg']),
-            'bold-md': pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['md']),
-            'bold-sm': pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['sm']),
-            'bold-xs': pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['xs']),
-            
-            # Light fonts
-            'light-xl': pygame.font.Font(AppConfig.FONT_PATHS['light'], AppConfig.FONT_SIZES['xl']),
-            'light-lg': pygame.font.Font(AppConfig.FONT_PATHS['light'], AppConfig.FONT_SIZES['lg']),
-            'light-md': pygame.font.Font(AppConfig.FONT_PATHS['light'], AppConfig.FONT_SIZES['md']),
-            'light-sm': pygame.font.Font(AppConfig.FONT_PATHS['light'], AppConfig.FONT_SIZES['sm']),
-            'light-xs': pygame.font.Font(AppConfig.FONT_PATHS['light'], AppConfig.FONT_SIZES['xs']),
-            
-            # Medium fonts
-            'medium-xl': pygame.font.Font(AppConfig.FONT_PATHS['medium'], AppConfig.FONT_SIZES['xl']),
-            'medium-lg': pygame.font.Font(AppConfig.FONT_PATHS['medium'], AppConfig.FONT_SIZES['lg']),
-            'medium-md': pygame.font.Font(AppConfig.FONT_PATHS['medium'], AppConfig.FONT_SIZES['md']),
-            'medium-sm': pygame.font.Font(AppConfig.FONT_PATHS['medium'], AppConfig.FONT_SIZES['sm']),
-            'medium-xs': pygame.font.Font(AppConfig.FONT_PATHS['medium'], AppConfig.FONT_SIZES['xs']),
-            
-            # Aliases for backward compatibility
-            'medium': pygame.font.Font(AppConfig.FONT_PATHS['medium'], AppConfig.FONT_SIZES['md']),
-            'regular': pygame.font.Font(AppConfig.FONT_PATHS['regular'], AppConfig.FONT_SIZES['md']),
-            'bold': pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['md']),
-            'light': pygame.font.Font(AppConfig.FONT_PATHS['light'], AppConfig.FONT_SIZES['md']),
-        }
+        self.fonts = {}
+        self._load_default_fonts()
+    
+    def _load_default_fonts(self):
+        """Load the default set of fonts."""
+        # Title fonts
+        for size in ['title-xl', 'title-lg', 'title-md', 'title-sm']:
+            self.get_font('bold', size)
+        
+        # Regular fonts
+        for size in ['xl', 'lg', 'md', 'sm', 'xs']:
+            self.get_font('regular', size)
+            self.get_font('bold', size)
+            self.get_font('light', size)
+    
+    def get_font(self, style: str, size: str) -> pygame.font.Font:
+        """
+        Get a font with specific style and size.
+        
+        Args:
+            style: Font style ('light', 'regular', 'medium', 'bold', 'semibold')
+            size: Font size ('xs', 'sm', 'md', 'lg', 'xl', 'title-sm', 'title-md', 'title-lg', 'title-xl')
+        """
+        key = f"{style}-{size}"
+        if key not in self.fonts:
+            try:
+                if style not in AppConfig.FONT_PATHS:
+                    logger.error(f"Font style not found: {style}")
+                    style = 'regular'  # Fallback to regular
+                
+                if size not in AppConfig.FONT_SIZES:
+                    logger.error(f"Font size not found: {size}")
+                    size = 'md'  # Fallback to medium
+                
+                self.fonts[key] = pygame.font.Font(
+                    AppConfig.FONT_PATHS[style],
+                    AppConfig.FONT_SIZES[size]
+                )
+                logger.debug(f"Created font: {key}")
+            except Exception as e:
+                logger.error(f"Error creating font {key}: {e}")
+                # Return a fallback font
+                return pygame.font.Font(None, AppConfig.FONT_SIZES['md'])
+        
+        return self.fonts[key]

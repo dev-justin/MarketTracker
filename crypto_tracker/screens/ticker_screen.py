@@ -1,36 +1,26 @@
+"""Screen for displaying detailed coin information."""
+
 import pygame
+import os
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 from .base_screen import BaseScreen
-from ..services.crypto.crypto_manager import CryptoManager
-import os
 
 logger = get_logger(__name__)
 
 class TickerScreen(BaseScreen):
+    """Screen for displaying detailed coin information."""
+    
     def __init__(self, display) -> None:
+        """Initialize the ticker screen."""
         super().__init__(display)
         self.background_color = (13, 13, 13)  # Darker black for more contrast
-        self.crypto_manager = CryptoManager()
         self.current_index = 0
         self.coins = []
         
         # Sparkline dimensions
         self.sparkline_height = int(self.height * 0.7)  # 70% of screen height
         self.sparkline_padding = 0
-        
-        # Load trend icons
-        try:
-            self.trend_up_icon = pygame.image.load(os.path.join(AppConfig.ASSETS_DIR, 'icons', 'trending-up.svg'))
-            self.trend_down_icon = pygame.image.load(os.path.join(AppConfig.ASSETS_DIR, 'icons', 'trending-down.svg'))
-            # Scale icons to match text height
-            icon_size = 32
-            self.trend_up_icon = pygame.transform.scale(self.trend_up_icon, (icon_size, icon_size))
-            self.trend_down_icon = pygame.transform.scale(self.trend_down_icon, (icon_size, icon_size))
-        except Exception as e:
-            logger.error(f"Error loading trend icons: {e}")
-            self.trend_up_icon = None
-            self.trend_down_icon = None
         
         # Load initial coin data
         self.refresh_coins()
@@ -69,102 +59,75 @@ class TickerScreen(BaseScreen):
     
     def draw(self) -> None:
         """Draw the ticker screen."""
+        if not self.coins:
+            return
+            
+        current_coin = self.coins[self.current_index]
+        
         # Fill background
         self.display.surface.fill(self.background_color)
         
-        # Refresh coin data
-        self.refresh_coins()
-        
-        if not self.coins:
-            # Draw "No coins" message
-            text = self.fonts['title-md'].render("No coins tracked", True, AppConfig.WHITE)
-            text_rect = text.get_rect(center=(self.width//2, self.height//2))
-            self.display.surface.blit(text, text_rect)
-            self.update_screen()
-            return
-        
-        current_coin = self.coins[self.current_index]
-        
-        # Draw coin logo in top right if available
-        logo_size = 64
-        logo_margin = 20
-        logo_rect = None
-        try:
-            logo_path = os.path.join(AppConfig.CACHE_DIR, f"{current_coin['symbol'].lower()}_logo.png")
-            if os.path.exists(logo_path):
-                logo = pygame.image.load(logo_path)
-                logo = pygame.transform.scale(logo, (logo_size, logo_size))
-                logo_rect = logo.get_rect(
-                    right=self.width - logo_margin,
-                    top=logo_margin
-                )
-                self.display.surface.blit(logo, logo_rect)
-        except Exception as e:
-            logger.error(f"Error loading logo for {current_coin['symbol']}: {e}")
-        
-        # Draw price in top left (large)
+        # Draw price (larger)
         price_text = f"${current_coin['current_price']:,.2f}"
         price_surface = self.fonts['title-xl'].render(price_text, True, AppConfig.WHITE)
-        # Scale up the price text
-        scaled_price_surface = pygame.transform.scale(
-            price_surface,
-            (int(price_surface.get_width() * 1.2), int(price_surface.get_height() * 1.2))
-        )
-        price_rect = scaled_price_surface.get_rect(
+        price_rect = price_surface.get_rect(
             left=20,
             top=20
         )
-        self.display.surface.blit(scaled_price_surface, price_rect)
+        self.display.surface.blit(price_surface, price_rect)
         
-        # Draw percentage change with trend icon (next to price)
+        # Draw 24h change next to price
         change_24h = current_coin['price_change_24h']
         change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
+        change_text = f"{change_24h:+.1f}%"
+        change_surface = self.fonts['title-md'].render(change_text, True, change_color)
+        change_rect = change_surface.get_rect(
+            left=price_rect.right + 20,
+            centery=price_rect.centery
+        )
+        self.display.surface.blit(change_surface, change_rect)
         
         # Draw trend icon
-        trend_icon = self.trend_up_icon if change_24h >= 0 else self.trend_down_icon
+        trend_icon = self.assets.get_icon(
+            'trending-up' if change_24h >= 0 else 'trending-down',
+            size=(32, 32),
+            color=change_color
+        )
         if trend_icon:
-            # Color the trend icon
-            colored_icon = trend_icon.copy()
-            for x in range(colored_icon.get_width()):
-                for y in range(colored_icon.get_height()):
-                    color = colored_icon.get_at((x, y))
-                    if color.a > 0:  # If pixel is not transparent
-                        colored_icon.set_at((x, y), change_color)
-            
-            trend_rect = colored_icon.get_rect(
-                left=price_rect.right + 20,
-                centery=price_rect.centery
+            trend_rect = trend_icon.get_rect(
+                left=change_rect.right + 10,
+                centery=change_rect.centery
             )
-            self.display.surface.blit(colored_icon, trend_rect)
-            
-            # Draw percentage next to icon
-            change_text = f"{abs(change_24h):.1f}%"
-            change_surface = self.fonts['title-lg'].render(change_text, True, change_color)
-            change_rect = change_surface.get_rect(
-                left=trend_rect.right + 5,
-                centery=trend_rect.centery
-            )
-            self.display.surface.blit(change_surface, change_rect)
+            self.display.surface.blit(trend_icon, trend_rect)
         
         # Draw coin name and symbol below price (larger)
         name_text = f"{current_coin['name']}"
-        name_surface = self.fonts['title-lg'].render(name_text, True, AppConfig.WHITE)  # Increased to title-lg
+        name_surface = self.fonts['title-lg'].render(name_text, True, AppConfig.WHITE)
         name_rect = name_surface.get_rect(
             left=20,
-            top=price_rect.bottom + 15  # Increased spacing
+            top=price_rect.bottom + 15
         )
         self.display.surface.blit(name_surface, name_rect)
         
         # Draw symbol below name (larger but light weight)
         symbol_text = current_coin['symbol'].upper()
-        # Create light font with title-md size
-        symbol_font = pygame.font.Font(AppConfig.FONT_PATHS['light'], AppConfig.FONT_SIZES['title-md'])
+        symbol_font = self.display.get_font('light', 'title-md')
         symbol_surface = symbol_font.render(symbol_text, True, (128, 128, 128))
         symbol_rect = symbol_surface.get_rect(
             left=20,
             top=name_rect.bottom + 8
         )
         self.display.surface.blit(symbol_surface, symbol_rect)
+        
+        # Draw star if favorited
+        if current_coin.get('favorite', False):
+            star_icon = self.assets.get_icon('star', size=(24, 24), color=(255, 165, 0))
+            if star_icon:
+                star_rect = star_icon.get_rect(
+                    left=symbol_rect.right + 10,
+                    centery=symbol_rect.centery
+                )
+                self.display.surface.blit(star_icon, star_rect)
         
         # Draw sparkline if price history is available
         if 'sparkline_7d' in current_coin and current_coin['sparkline_7d']:
@@ -181,50 +144,26 @@ class TickerScreen(BaseScreen):
                     self.sparkline_height
                 )
                 
-                # Calculate min and max prices for scaling
-                min_price = min(prices)
-                max_price = max(prices)
-                price_range = max_price - min_price
+                # Draw sparkline
+                if len(prices) > 1:
+                    min_price = min(prices)
+                    max_price = max(prices)
+                    price_range = max_price - min_price
+                    
+                    if price_range > 0:
+                        points = []
+                        for i, price in enumerate(prices):
+                            x = int((i / (len(prices) - 1)) * sparkline_rect.width)
+                            y = int(sparkline_rect.height - ((price - min_price) / price_range) * sparkline_rect.height)
+                            points.append((x, y))
+                        
+                        if len(points) > 1:
+                            # Draw line with gradient color based on price change
+                            line_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
+                            pygame.draw.lines(sparkline_surface, line_color, False, points, 2)
                 
-                # Calculate points
-                points = []
-                for i, price in enumerate(prices):
-                    x = i * self.width / (len(prices) - 1)
-                    # Normalize price to sparkline height, starting from bottom
-                    normalized_price = (price - min_price) / price_range if price_range > 0 else 0.5
-                    y = sparkline_rect.height - (normalized_price * sparkline_rect.height)
-                    points.append((x, y))
-                
-                # Draw sparkline with gradient
-                if len(points) > 1:
-                    # Calculate 7d performance
-                    price_change_7d = (prices[-1] - prices[0]) / prices[0] * 100
-                    is_positive = price_change_7d >= 0
-                    
-                    # Create gradient colors
-                    if is_positive:
-                        fill_color = (0, 255, 0, 15)  # Very subtle green
-                        line_color = (0, 255, 0, 255)  # Solid green
-                    else:
-                        fill_color = (255, 0, 0, 15)  # Very subtle red
-                        line_color = (255, 0, 0, 255)  # Solid red
-                    
-                    # Create fill polygon points by adding bottom corners
-                    fill_points = points + [
-                        (sparkline_rect.right, sparkline_rect.height),  # Bottom right
-                        (sparkline_rect.left, sparkline_rect.height)  # Bottom left
-                    ]
-                    
-                    # Draw gradient fill using polygon
-                    pygame.draw.polygon(sparkline_surface, fill_color, fill_points)
-                    
-                    # Draw the actual line on top
-                    pygame.draw.lines(sparkline_surface, line_color, False, points, 2)
-                    
-                    # Position and draw the sparkline surface at the bottom
-                    self.display.surface.blit(
-                        sparkline_surface,
-                        (0, self.height - self.sparkline_height)
-                    )
+                # Position sparkline at bottom of screen
+                sparkline_rect.bottom = self.height
+                self.display.surface.blit(sparkline_surface, sparkline_rect)
         
         self.update_screen() 

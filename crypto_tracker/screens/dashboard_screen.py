@@ -1,12 +1,12 @@
+"""Screen for displaying the dashboard with time and favorite coins."""
+
 import pygame
 from datetime import datetime
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 from .base_screen import BaseScreen
 from zoneinfo import ZoneInfo
-from ..services.crypto.crypto_manager import CryptoManager
 import os
-from pygame import gfxdraw
 
 logger = get_logger(__name__)
 
@@ -17,7 +17,6 @@ class DashboardScreen(BaseScreen):
         """Initialize the dashboard screen."""
         super().__init__(display)
         self.background_color = (13, 13, 13)  # Darker black for more contrast
-        self.crypto_manager = CryptoManager()
         self.box_height = 120  # Height of each coin box
         self.box_width = (self.width - 60) // 2  # Two columns with margins
         logger.info("DashboardScreen initialized")
@@ -108,7 +107,6 @@ class DashboardScreen(BaseScreen):
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
-        # Handle touch events
         gestures = self.gesture_handler.handle_touch_event(event)
         
         if gestures['swipe_up']:
@@ -129,7 +127,8 @@ class DashboardScreen(BaseScreen):
         
         # Draw date
         date_text = local_time.strftime("%A, %B %d")
-        date_surface = self.fonts['light-lg'].render(date_text, True, AppConfig.WHITE)
+        date_font = self.display.get_font('light', 'lg')
+        date_surface = date_font.render(date_text, True, AppConfig.WHITE)
         date_rect = date_surface.get_rect(centerx=self.width // 2, top=20)
         self.display.surface.blit(date_surface, date_rect)
         
@@ -147,7 +146,7 @@ class DashboardScreen(BaseScreen):
         if favorite_coins:
             # Draw "Favorites" header
             favorites_text = "Favorites"
-            favorites_font = pygame.font.Font(AppConfig.FONT_PATHS['light'], AppConfig.FONT_SIZES['title-md'])
+            favorites_font = self.display.get_font('light', 'title-md')
             favorites_surface = favorites_font.render(favorites_text, True, (128, 128, 128))
             favorites_rect = favorites_surface.get_rect(
                 left=20,
@@ -191,7 +190,7 @@ class DashboardScreen(BaseScreen):
                         self.display.surface.blit(logo, logo_rect)
                         
                         # Draw coin name
-                        name_font = pygame.font.Font(AppConfig.FONT_PATHS['light'], AppConfig.FONT_SIZES['lg'])
+                        name_font = self.display.get_font('light', 'lg')
                         name_text = coin['name']
                         name_surface = name_font.render(name_text, True, AppConfig.WHITE)
                         name_rect = name_surface.get_rect(
@@ -202,11 +201,11 @@ class DashboardScreen(BaseScreen):
                         
                         # Draw price with larger font
                         price_text = f"${coin['current_price']:,.2f}"
-                        price_font = pygame.font.Font(AppConfig.FONT_PATHS['regular'], AppConfig.FONT_SIZES['title-md'])  # Increased size
+                        price_font = self.display.get_font('regular', 'title-md')
                         price_surface = price_font.render(price_text, True, AppConfig.WHITE)
                         price_rect = price_surface.get_rect(
-                            left=logo_rect.right + 15,  # Align with name
-                            top=name_rect.bottom + 8  # Space after name
+                            left=logo_rect.right + 15,
+                            top=name_rect.bottom + 8
                         )
                         self.display.surface.blit(price_surface, price_rect)
                         
@@ -214,11 +213,11 @@ class DashboardScreen(BaseScreen):
                         change_24h = coin['price_change_24h']
                         change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
                         change_text = f"{change_24h:+.1f}%"
-                        change_font = pygame.font.Font(AppConfig.FONT_PATHS['regular'], AppConfig.FONT_SIZES['lg'])  # Increased size
+                        change_font = self.display.get_font('regular', 'lg')
                         change_surface = change_font.render(change_text, True, change_color)
                         change_rect = change_surface.get_rect(
                             right=box_rect.right - 15,
-                            centery=price_rect.centery  # Align with price vertically
+                            centery=price_rect.centery
                         )
                         self.display.surface.blit(change_surface, change_rect)
                         
