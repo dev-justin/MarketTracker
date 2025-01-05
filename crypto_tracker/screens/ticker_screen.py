@@ -53,26 +53,18 @@ class TickerScreen(BaseScreen):
         logger.info(f"Switched to previous coin: {self.current_index}")
     
     def handle_event(self, event: pygame.event.Event) -> None:
-        if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
-            x, y = self._scale_touch_input(event)
-            current_time = pygame.time.get_ticks() / 1000  # Convert to seconds
-            
-            # Check for double tap
-            if self.last_touch_x is not None:
-                time_diff = current_time - self.last_touch_time
-                if time_diff < AppConfig.DOUBLE_TAP_THRESHOLD:
-                    # Double tap on left side
-                    if x < self.width // 2:
-                        self.previous_coin()
-                    # Double tap on right side
-                    else:
-                        self.next_coin()
-            
-            self.last_touch_x = x
-            self.last_touch_time = current_time
-            
-        elif event.type == AppConfig.EVENT_TYPES['FINGER_UP']:
-            self.last_touch_x = None
+        """Handle pygame events."""
+        gestures = self.gesture_handler.handle_touch_event(event)
+        
+        if gestures['swipe_up']:
+            logger.info("Swipe up detected, returning to dashboard")
+            self.screen_manager.switch_screen('dashboard')
+        elif gestures['double_tap_left']:
+            logger.info("Double tap left detected, switching to previous coin")
+            self.previous_coin()
+        elif gestures['double_tap_right']:
+            logger.info("Double tap right detected, switching to next coin")
+            self.next_coin()
     
     def _draw_price_section(self, surface: pygame.Surface):
         """Draw the price and coin info section."""

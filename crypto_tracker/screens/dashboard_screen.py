@@ -49,7 +49,7 @@ class DashboardScreen(BaseScreen):
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
         # Handle touch events
-        gestures = self.gesture_handler.handle_touch_event(event, self.width, self.height)
+        gestures = self.gesture_handler.handle_touch_event(event)
         
         if gestures['swipe_up']:
             logger.info("Swipe up detected, switching to settings")

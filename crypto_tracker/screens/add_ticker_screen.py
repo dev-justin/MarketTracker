@@ -104,30 +104,28 @@ class AddTickerScreen(BaseScreen):
         surface.blit(save_text, save_text_rect)
     
     def handle_event(self, event: pygame.event.Event) -> None:
-        if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
+        """Handle pygame events."""
+        gestures = self.gesture_handler.handle_touch_event(event)
+        
+        if gestures['swipe_down']:
+            logger.info("Swipe down detected, returning to settings")
+            self.screen_manager.switch_screen('settings')
+        elif event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
+            # Get touch position
             x, y = self._scale_touch_input(event)
             
-            # Check for key presses
-            for row in self.key_rects:
-                for key, rect in row:
-                    if rect.collidepoint(x, y):
-                        if key == 'DEL':
-                            if self.new_symbol:
-                                self.new_symbol = self.new_symbol[:-1]
-                                logger.debug(f"Backspace pressed, current input: {self.new_symbol}")
-                        elif len(self.new_symbol) < 5:
-                            self.new_symbol += key
-                            logger.debug(f"Key pressed: {key}, current input: {self.new_symbol}")
-                        return
-            
-            # Check if save button was pressed
-            if self.save_rect.collidepoint(x, y) and self.new_symbol:
-                logger.info(f"Adding new coin: {self.new_symbol}")
-                self.crypto_service.add_tracked_symbol(self.new_symbol)
+            # Check for button clicks
+            if self.cancel_button_rect.collidepoint(x, y):
+                logger.info("Cancel button clicked")
                 self.screen_manager.switch_screen('settings')
-            # Check if cancel button was pressed
-            elif self.cancel_rect.collidepoint(x, y):
-                self.screen_manager.switch_screen('settings')
+            elif self.save_button_rect.collidepoint(x, y):
+                logger.info("Save button clicked")
+                if self.input_text:
+                    self.crypto_service.add_symbol(self.input_text.upper())
+                    self.screen_manager.switch_screen('settings')
+            else:
+                # Handle keyboard input
+                self.handle_keyboard_input(x, y)
     
     def draw(self) -> None:
         # Fill background with black

@@ -15,14 +15,12 @@ class GestureHandler:
         self.start_pos = None  # Track start position for swipes
         logger.info("GestureHandler initialized")
     
-    def handle_touch_event(self, event: pygame.event.Event, screen_width: int, screen_height: int) -> dict:
+    def handle_touch_event(self, event: pygame.event.Event) -> dict:
         """
         Handle touch events and detect gestures.
         
         Args:
             event: The pygame event to handle
-            screen_width: The width of the screen for position calculations
-            screen_height: The height of the screen for swipe calculations
             
         Returns:
             Dictionary containing gesture information:
@@ -43,8 +41,8 @@ class GestureHandler:
         
         if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
             # Store start position for swipe detection
-            x = event.x * screen_width
-            y = event.y * screen_height
+            x = event.x * AppConfig.DISPLAY_WIDTH
+            y = event.y * AppConfig.DISPLAY_HEIGHT
             self.start_pos = (x, y)
             
             # Check for double tap
@@ -52,7 +50,7 @@ class GestureHandler:
                 time_diff = current_time - self.last_tap_time
                 if time_diff < AppConfig.DOUBLE_TAP_THRESHOLD:
                     # Determine which side was tapped
-                    if x < screen_width / 2:
+                    if x < AppConfig.DISPLAY_WIDTH / 2:
                         gestures['double_tap_left'] = True
                         logger.debug("Double tap left detected")
                     else:
@@ -64,12 +62,12 @@ class GestureHandler:
             
         elif event.type == AppConfig.EVENT_TYPES['FINGER_UP']:
             if self.start_pos is not None:
-                end_x = event.x * screen_width
-                end_y = event.y * screen_height
+                end_x = event.x * AppConfig.DISPLAY_WIDTH
+                end_y = event.y * AppConfig.DISPLAY_HEIGHT
                 start_x, start_y = self.start_pos
                 
                 # Calculate vertical swipe distance as percentage of screen height
-                vertical_swipe = (start_y - end_y) / screen_height
+                vertical_swipe = (start_y - end_y) / AppConfig.DISPLAY_HEIGHT
                 
                 # If swiped up more than threshold
                 if vertical_swipe > AppConfig.SWIPE_THRESHOLD:

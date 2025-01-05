@@ -29,17 +29,18 @@ class SettingsScreen(BaseScreen):
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
-        # Handle touch events
-        is_double_tap, is_swipe_up = self.gesture_handler.handle_touch_event(event, self.height)
-        if is_double_tap or is_swipe_up:  # Either gesture returns to dashboard
-            logger.info("Returning to dashboard")
+        gestures = self.gesture_handler.handle_touch_event(event)
+        
+        if gestures['swipe_down']:
+            logger.info("Swipe down detected, returning to dashboard")
             self.screen_manager.switch_screen('dashboard')
         elif event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
+            # Get touch position
             x, y = self._scale_touch_input(event)
             
-            # Check if Add Ticker button was clicked
-            if self.add_button_rect.collidepoint(x, y):
-                logger.info("Add Ticker button clicked")
+            # Check if plus button was clicked
+            if self.plus_button_rect.collidepoint(x, y):
+                logger.info("Plus button clicked, switching to add ticker screen")
                 self.screen_manager.switch_screen('add_ticker')
 
     def _draw_coin_cell(self, surface: pygame.Surface, y: int, symbol: str):
