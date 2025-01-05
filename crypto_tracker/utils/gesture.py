@@ -44,11 +44,9 @@ class GestureHandler:
         # Handle swipe up
         if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
             self.swipe_start_y = event.y
-            logger.debug(f"Touch start at y={event.y:.2f}")
         elif event.type == AppConfig.EVENT_TYPES['FINGER_UP'] and self.swipe_start_y is not None:
             swipe_distance = self.swipe_start_y - event.y
             swipe_threshold = screen_height * self.swipe_threshold
-            logger.debug(f"Swipe distance: {swipe_distance:.2f}, threshold: {swipe_threshold:.2f}")
             if swipe_distance > swipe_threshold:
                 is_swipe_up = True
                 logger.debug("Swipe up detected")

@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import pygame
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
+from ..utils.gesture import GestureHandler
 
 logger = get_logger(__name__)
 
@@ -19,6 +20,7 @@ class BaseScreen(ABC):
         self.fonts = display.fonts
         self.width = AppConfig.DISPLAY_WIDTH
         self.height = AppConfig.DISPLAY_HEIGHT
+        self.gesture_handler = GestureHandler()
         logger.info("Base screen initialized")
             
     def update_screen(self) -> None:
@@ -26,13 +28,8 @@ class BaseScreen(ABC):
         pygame.display.flip()
 
     @abstractmethod
-    def draw(self, display: pygame.Surface) -> None:
-        """
-        Draw the screen contents.
-        
-        Args:
-            display: The pygame surface to draw on
-        """
+    def draw(self) -> None:
+        """Draw the screen contents."""
         raise NotImplementedError("Screens must implement draw") 
     
     @abstractmethod

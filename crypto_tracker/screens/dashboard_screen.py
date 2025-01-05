@@ -3,7 +3,6 @@ from datetime import datetime
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 from .base_screen import BaseScreen
-from ..utils.gesture import GestureHandler
 
 logger = get_logger(__name__)
 
@@ -12,7 +11,10 @@ class DashboardScreen(BaseScreen):
 
     def __init__(self, display) -> None:
         super().__init__(display)
-        self.gesture_handler = GestureHandler()
+        # Background gradient colors
+        self.gradient_top = (13, 17, 23)     # Dark navy
+        self.gradient_bottom = (22, 27, 34)  # Slightly lighter navy
+        self.padding = 20
         logger.info("DashboardScreen initialized")
     
     def handle_event(self, event: pygame.event.Event) -> None:
@@ -25,25 +27,18 @@ class DashboardScreen(BaseScreen):
     
     def draw(self) -> None:
         """Draw the dashboard screen."""
-
-        # Display settings
-        padding = 20
-                
-        # Background gradient colors
-        gradient_top = (13, 17, 23)     # Dark navy
-        gradient_bottom = (22, 27, 34)  # Slightly lighter navy
-
         # Draw background gradient
         for y in range(self.height):
             progress = y / self.height
             color = [
-                int(gradient_top[i] + (gradient_bottom[i] - gradient_top[i]) * progress)
+                int(self.gradient_top[i] + (self.gradient_bottom[i] - self.gradient_top[i]) * progress)
                 for i in range(3)
             ]
             pygame.draw.line(self.display.surface, color, (0, y), (self.width, y))
         
         # Get current time in local timezone
         now = datetime.now()
+        logger.debug(f"Current time: {now.strftime('%I:%M:%S %p')}")
         
         # Draw time
         time_text = now.strftime("%I:%M %p").lstrip("0")
@@ -55,6 +50,6 @@ class DashboardScreen(BaseScreen):
         date_text = now.strftime("%A, %B %d")
         date_surface = self.fonts['title-md'].render(date_text, True, AppConfig.WHITE)
         date_rect = date_surface.get_rect(center=(self.width // 2, time_rect.top - 50))
-        self.display.surface.blit(date_surface, date_rect) 
-
+        self.display.surface.blit(date_surface, date_rect)
+        
         self.update_screen()
