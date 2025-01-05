@@ -157,7 +157,9 @@ class TickerScreen(BaseScreen):
         
         # Draw symbol below name (larger but light weight)
         symbol_text = current_coin['symbol'].upper()
-        symbol_surface = self.fonts['light-title-md'].render(symbol_text, True, (128, 128, 128))  # Changed to light font
+        # Create light font with title-md size
+        symbol_font = pygame.font.Font(AppConfig.FONT_PATHS['light'], AppConfig.FONT_SIZES['title-md'])
+        symbol_surface = symbol_font.render(symbol_text, True, (128, 128, 128))
         symbol_rect = symbol_surface.get_rect(
             left=20,
             top=name_rect.bottom + 8
