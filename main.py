@@ -7,14 +7,14 @@ from crypto_tracker.services.crypto_service import CryptoService
 class MarkertTrackerApp():
     def __init__(self):
         self.display = Display()
-        self.screen_manager = ScreenManager()
+        self.screen_manager = ScreenManager(self.display)
         self.crypto_service = CryptoService()
-        btc_data = self.crypto_service.get_coin_data('btc')
-        print(btc_data)
 
         # Initialize screens
         self.screen_manager.add_screen('dashboard', DashboardScreen(self.display))
-        self.screen_manager.add_screen('settings', SettingsScreen(self.display))
+        settings_screen = SettingsScreen(self.display)
+        settings_screen.crypto_service = self.crypto_service  # Pass crypto service
+        self.screen_manager.add_screen('settings', settings_screen)
         self.screen_manager.switch_screen('dashboard')
 
     def run(self):
