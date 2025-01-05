@@ -46,14 +46,14 @@ class DashboardScreen(BaseScreen):
         
         # Handle swipe up to settings
         if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
-            self.swipe_start_y = y
+            SWIPE_START_Y = y
             logger.debug(f"Touch start at y={y}")
-        elif event.type == AppConfig.EVENT_TYPES['FINGER_UP'] and self.swipe_start_y is not None:
-            swipe_distance = self.swipe_start_y - y
-            swipe_threshold = self.height * self.swipe_threshold
+        elif event.type == AppConfig.EVENT_TYPES['FINGER_UP'] and SWIPE_START_Y is not None:
+            swipe_distance = SWIPE_START_Y - y
+            swipe_threshold = self.height * self.SWIPE_THRESHOLD
             if swipe_distance > swipe_threshold:
                 logger.info("Swipe up detected, switching to settings")
-            self.swipe_start_y = None
+            SWIPE_START_Y = None
     
     def draw(self) -> None:
         """Draw the dashboard screen."""
