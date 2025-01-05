@@ -1,6 +1,5 @@
 from typing import Dict, Optional, List
 import pygame
-import pytz
 from datetime import datetime
 from ..config.settings import AppConfig
 from ..constants import EventTypes, ScreenNames
@@ -16,16 +15,6 @@ class DashboardScreen(Screen):
     def __init__(self, screen_manager) -> None:
         """Initialize the dashboard screen."""
         super().__init__(screen_manager)
-        
-        # Get local timezone
-        self.local_tz = pytz.timezone('America/Vancouver')
-        try:
-            with open('/etc/timezone') as f:
-                system_tz = f.read().strip()
-                self.local_tz = pytz.timezone(system_tz)
-                logger.info(f"Using system timezone: {system_tz}")
-        except:
-            logger.warning("Could not detect system timezone, using default: America/Vancouver")
         
         # Display settings
         self.padding = 20
