@@ -24,7 +24,7 @@ class MarkertTrackerApp():
         self.screen_manager.add_screen('add_ticker', add_ticker_screen)
         
         ticker_screen = TickerScreen(self.display)
-        ticker_screen.crypto_service = self.crypto_service
+        ticker_screen.set_crypto_service(self.crypto_service)
         self.screen_manager.add_screen('ticker', ticker_screen)
         
         self.screen_manager.switch_screen('dashboard')

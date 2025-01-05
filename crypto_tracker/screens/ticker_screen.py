@@ -14,21 +14,25 @@ class TickerScreen(BaseScreen):
         self.chart_y = self.height - self.chart_height
         self.last_touch_x = None
         self.last_touch_time = 0
-        
-        # Load initial coin data
-        self.update_current_coin()
+        self.current_coin = None
+        self.crypto_service = None  # Will be set by main app
         
         logger.info("TickerScreen initialized")
     
     def update_current_coin(self):
         """Update the current coin data."""
-        if not self.crypto_service.tracked_symbols:
+        if not self.crypto_service or not self.crypto_service.tracked_symbols:
             self.current_coin = None
             return
             
         symbol = self.crypto_service.tracked_symbols[self.current_index]
         self.current_coin = self.crypto_service.get_coin_data(symbol)
         logger.info(f"Updated current coin: {symbol}")
+    
+    def set_crypto_service(self, service):
+        """Set the crypto service and initialize first coin."""
+        self.crypto_service = service
+        self.update_current_coin()
     
     def next_coin(self):
         """Switch to next coin."""
