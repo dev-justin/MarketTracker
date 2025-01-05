@@ -39,15 +39,15 @@ class TickerScreen(BaseScreen):
         """Handle pygame events."""
         gestures = self.gesture_handler.handle_touch_event(event)
         
-        if gestures['swipe_down']:
-            logger.info("Swipe down detected, returning to dashboard")
-            self.screen_manager.switch_screen('dashboard')
-        elif gestures['swipe_left']:
+        if gestures['swipe_left']:
             logger.info("Swipe left detected, showing next coin")
             self.next_coin()
         elif gestures['swipe_right']:
             logger.info("Swipe right detected, showing previous coin")
             self.previous_coin()
+        elif gestures['swipe_down']:
+            logger.info("Swipe down detected, returning to dashboard")
+            self.screen_manager.switch_screen('dashboard')
     
     def draw(self) -> None:
         """Draw the ticker screen."""
