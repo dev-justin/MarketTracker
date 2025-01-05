@@ -7,19 +7,6 @@ import time
 
 logger = get_logger(__name__)
 
-# Display settings
-PADDING = 20
-        
-# Background gradient colors
-GRADIENT_TOP = (13, 17, 23)     # Dark navy
-GRADIENT_BOTTOM = (22, 27, 34)  # Slightly lighter navy
-        
-# Touch handling
-SWIPE_START_Y = None
-SWIPE_THRESHOLD = AppConfig.SWIPE_THRESHOLD
-LAST_TAP_TIME = 0
-DOUBLE_TAP_THRESHOLD = AppConfig.DOUBLE_TAP_THRESHOLD
-
 class DashboardScreen(BaseScreen):
     """Screen for displaying the current day and time."""
 
@@ -33,6 +20,20 @@ class DashboardScreen(BaseScreen):
         Args:
             event: The pygame event to handle
         """
+
+        # Display settings
+        padding = 20
+                
+        # Background gradient colors
+        gradient_top = (13, 17, 23)     # Dark navy
+        gradient_bottom = (22, 27, 34)  # Slightly lighter navy
+                
+        # Touch handling
+        swipe_start_y = None
+        swipe_threshold = AppConfig.SWIPE_THRESHOLD
+        last_tap_time = 0
+        double_tap_threshold = AppConfig.DOUBLE_TAP_THRESHOLD
+
         if event.type not in (AppConfig.EVENT_TYPES['FINGER_DOWN'], AppConfig.EVENT_TYPES['FINGER_UP']):
             return
             
@@ -41,23 +42,24 @@ class DashboardScreen(BaseScreen):
         # Handle double tap to return to ticker screen
         if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
             current_time = time.time()
-            if current_time - self.LAST_TAP_TIME < self.DOUBLE_TAP_THRESHOLD:
+            if current_time - self.last_tap_time < self.double_tap_threshold:
                 logger.info("Double tap detected, returning to ticker screen")
-            self.LAST_TAP_TIME = current_time
+            self.last_tap_time = current_time
         
         # Handle swipe up to settings
         if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
-            SWIPE_START_Y = y
+            swipe_start_y = y
             logger.debug(f"Touch start at y={y}")
-        elif event.type == AppConfig.EVENT_TYPES['FINGER_UP'] and SWIPE_START_Y is not None:
-            swipe_distance = SWIPE_START_Y - y
+        elif event.type == AppConfig.EVENT_TYPES['FINGER_UP'] and swipe_start_y is not None:
+            swipe_distance = swipe_start_y - y
             swipe_threshold = self.height * self.SWIPE_THRESHOLD
             if swipe_distance > swipe_threshold:
                 logger.info("Swipe up detected, switching to settings")
-            SWIPE_START_Y = None
+            swipe_start_y = None
     
     def draw(self) -> None:
         """Draw the dashboard screen."""
+
         # Draw background gradient
         for y in range(self.height):
             progress = y / self.height
