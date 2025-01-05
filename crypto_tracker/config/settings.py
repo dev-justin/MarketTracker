@@ -6,6 +6,13 @@ class AppConfig:
     DISPLAY_WIDTH = 800
     DISPLAY_HEIGHT = 480
     FPS = 30
+
+    # Touch events
+    EVENT_TYPES = {
+        'FINGER_DOWN': 1792,
+        'FINGER_UP': 1793,
+        'FINGER_MOVE': 1794,
+    }
     
     # Asset directories
     ASSETS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'assets')

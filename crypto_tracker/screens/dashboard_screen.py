@@ -1,7 +1,6 @@
 import pygame
 from datetime import datetime
 from ..config.settings import AppConfig
-from ..constants import EventTypes
 from ..utils.logger import get_logger
 from .base import Screen
 import time
@@ -37,23 +36,23 @@ class DashboardScreen(Screen):
         Args:
             event: The pygame event to handle
         """
-        if event.type not in (EventTypes.FINGER_DOWN.value, EventTypes.FINGER_UP.value):
+        if event.type not in (AppConfig.EVENT_TYPES.FINGER_DOWN, AppConfig.EVENT_TYPES.FINGER_UP):
             return
             
         x, y = self._scale_touch_input(event)
         
         # Handle double tap to return to ticker screen
-        if event.type == EventTypes.FINGER_DOWN.value:
+        if event.type == AppConfig.EVENT_TYPES.FINGER_DOWN:
             current_time = time.time()
             if current_time - self.last_tap_time < self.double_tap_threshold:
                 logger.info("Double tap detected, returning to ticker screen")
             self.last_tap_time = current_time
         
         # Handle swipe up to settings
-        if event.type == EventTypes.FINGER_DOWN.value:
+        if event.type == AppConfig.EVENT_TYPES.FINGER_DOWN:
             self.swipe_start_y = y
             logger.debug(f"Touch start at y={y}")
-        elif event.type == EventTypes.FINGER_UP.value and self.swipe_start_y is not None:
+        elif event.type == AppConfig.EVENT_TYPES.FINGER_UP and self.swipe_start_y is not None:
             swipe_distance = self.swipe_start_y - y
             swipe_threshold = self.height * self.swipe_threshold
             if swipe_distance > swipe_threshold:
