@@ -28,8 +28,8 @@ class AddTickerScreen(BaseScreen):
     
     def setup_keyboard(self):
         """Calculate keyboard layout dimensions."""
-        keyboard_height = self.height * 0.5  # Take up 40% of screen height
-        keyboard_top = self.height * 0.5     # Start keyboard at 40% down the screen
+        keyboard_height = self.height * 0.5 
+        keyboard_top = self.height * 0.4     
         key_padding = 10
         num_rows = len(self.keys)
         
