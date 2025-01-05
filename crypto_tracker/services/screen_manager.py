@@ -32,4 +32,3 @@ class ScreenManager:
         """Draw the current screen."""
         if self.current_screen:
             self.current_screen.draw()
-            self.display.flip() 
