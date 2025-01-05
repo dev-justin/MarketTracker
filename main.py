@@ -9,8 +9,7 @@ from crypto_tracker.screens.add_ticker_screen import AddTickerScreen
 from crypto_tracker.screens.edit_ticker_screen import EditTickerScreen
 from crypto_tracker.config.settings import AppConfig
 from crypto_tracker.utils.logger import get_logger
-
-from crypto_tracker.services.crypto.coingecko_service import CoinGeckoService
+from crypto_tracker.services.crypto.crypto_manager import CryptoManager
 
 logger = get_logger(__name__)
 
@@ -19,6 +18,10 @@ def main():
     try:
         # Initialize pygame
         pygame.init()
+        
+        # Initialize crypto manager and start price updates
+        crypto_manager = CryptoManager()
+        crypto_manager.start_price_updates()
         
         # Create display
         display = Display()
@@ -54,10 +57,13 @@ def main():
             screen_manager.update_screen()
             clock.tick(AppConfig.FPS)
         
+        # Clean up
+        crypto_manager.stop_price_updates()
         pygame.quit()
         
     except Exception as e:
         logger.error(f"Application error: {e}")
+        crypto_manager.stop_price_updates()
         pygame.quit()
         raise
 

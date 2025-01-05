@@ -2,7 +2,7 @@ import pygame
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 from .base_screen import BaseScreen
-from ..services.crypto.tracked_coins_service import TrackedCoinsService
+from ..services.crypto.crypto_manager import CryptoManager
 from ..components.keyboard import VirtualKeyboard
 
 logger = get_logger(__name__)
@@ -11,7 +11,7 @@ class AddTickerScreen(BaseScreen):
     def __init__(self, display) -> None:
         super().__init__(display)
         self.background_color = AppConfig.BLACK
-        self.tracked_coins_service = TrackedCoinsService()
+        self.crypto_manager = CryptoManager()
         self.error_message = None
         
         # Button dimensions
@@ -47,7 +47,7 @@ class AddTickerScreen(BaseScreen):
     def add_ticker(self, symbol: str) -> None:
         """Add a new ticker to tracked coins."""
         try:
-            if self.tracked_coins_service.add_coin(symbol):
+            if self.crypto_manager.add_coin(symbol):
                 logger.info(f"Successfully added ticker: {symbol}")
                 self.error_message = None
                 return

@@ -2,7 +2,7 @@ import pygame
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 from .base_screen import BaseScreen
-from ..services.crypto.tracked_coins_service import TrackedCoinsService
+from ..services.crypto.crypto_manager import CryptoManager
 
 logger = get_logger(__name__)
 
@@ -10,7 +10,7 @@ class EditTickerScreen(BaseScreen):
     def __init__(self, display) -> None:
         super().__init__(display)
         self.background_color = AppConfig.BLACK
-        self.tracked_coins_service = TrackedCoinsService()
+        self.crypto_manager = CryptoManager()
         self.current_coin = None
         
         # Button dimensions
@@ -41,25 +41,25 @@ class EditTickerScreen(BaseScreen):
         
         logger.info("EditTickerScreen initialized")
     
-    def load_coin(self, symbol: str) -> None:
+    def load_coin(self, coin_id: str) -> None:
         """Load coin data for editing."""
-        self.current_coin = self.tracked_coins_service.get_coin(symbol)
+        self.current_coin = self.crypto_manager.get_coin_data(coin_id)
         if not self.current_coin:
-            logger.error(f"Could not load coin: {symbol}")
+            logger.error(f"Could not load coin: {coin_id}")
             self.screen_manager.switch_screen('settings')
     
     def delete_coin(self) -> None:
         """Delete the current coin."""
-        if self.current_coin and self.tracked_coins_service.remove_coin(self.current_coin['symbol']):
+        if self.current_coin and self.crypto_manager.remove_coin(self.current_coin['id']):
             logger.info(f"Deleted coin: {self.current_coin['symbol']}")
             self.screen_manager.switch_screen('settings')
     
     def toggle_favorite(self) -> None:
         """Toggle favorite status for current coin."""
         if self.current_coin:
-            self.tracked_coins_service.toggle_favorite(self.current_coin['symbol'])
-            # Refresh current coin data
-            self.current_coin = self.tracked_coins_service.get_coin(self.current_coin['symbol'])
+            if self.crypto_manager.toggle_favorite(self.current_coin['id']):
+                # Refresh current coin data
+                self.current_coin = self.crypto_manager.get_coin_data(self.current_coin['id'])
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
