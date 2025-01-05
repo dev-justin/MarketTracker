@@ -119,24 +119,27 @@ class CryptoService:
     
     def get_coin_data(self, symbol: str) -> Optional[Dict]:
         """
-        Fetch coin data including price, name, and logo.
+        Fetch coin data including price, name, logo, and historical data.
         
         Args:
             symbol: The coin symbol (e.g., 'btc')
             
         Returns:
-            Dictionary containing coin data or None if fetch fails
+            Dictionary containing:
+            - symbol: Coin symbol (e.g., 'BTC')
+            - name: Full coin name (e.g., 'Bitcoin')
+            - price: Current price in USD
+            - price_change_24h: 24h price change percentage
+            - sparkline_7d: List of 7-day price data points
+            - logo_path: Path to cached logo image
         """
         try:
             # Search for coin
             coin_info = self.search_coin(symbol)
-            print('-'*100)
-            print(coin_info)
-            print('-'*100)
             if not coin_info:
                 return None
             
-            # Fetch coin data
+            # Fetch coin data with sparkline
             coin_data = self.client.get_coin_by_id(
                 coin_info['id'],
                 localization=False,
@@ -144,17 +147,16 @@ class CryptoService:
                 market_data=True,
                 community_data=False,
                 developer_data=False,
-                sparkline=False
+                sparkline=True
             )
-            print('-'*100)
-            print(coin_data)
-            print('-'*100)
             
             # Extract relevant data
             price = coin_data['market_data']['current_price']['usd']
+            price_change_24h = coin_data['market_data']['price_change_percentage_24h']
             name = coin_data['name']
             symbol = coin_data['symbol'].upper()
             image_url = coin_data['image']['large']
+            sparkline_7d = coin_data['market_data']['sparkline_7d']['price']
             
             # Download and cache the logo
             logo_path = os.path.join(AppConfig.CACHE_DIR, f"{symbol.lower()}_logo.png")
@@ -169,7 +171,9 @@ class CryptoService:
                 'symbol': symbol,
                 'name': name,
                 'price': price,
-                'logo_path': logo_path
+                'price_change_24h': price_change_24h,
+                'sparkline_7d': sparkline_7d,
+                'logo_path': logo_path,
             }
             
             logger.info(f"Fetched data for {symbol}: {result}")
