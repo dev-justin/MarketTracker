@@ -27,6 +27,9 @@ class SettingsScreen(BaseScreen):
         self.cell_height = 70
         self.cell_spacing = 10
         
+        # Initialize tracked coins list
+        self.tracked_coins = []
+        
         # Load tracked coins
         self.load_tracked_coins()
         
@@ -40,7 +43,7 @@ class SettingsScreen(BaseScreen):
                     self.tracked_coins = json.load(f)
                     # Initialize favorite status if not present
                     for coin in self.tracked_coins:
-                        if 'favorite' not in coin:
+                        if isinstance(coin, dict) and 'favorite' not in coin:
                             coin['favorite'] = False
             else:
                 self.tracked_coins = []
@@ -124,8 +127,9 @@ class SettingsScreen(BaseScreen):
         # Draw tracked coins
         current_y = self.header_height + self.padding
         for coin in self.tracked_coins:
-            self._draw_coin_cell(self.display.surface, current_y, coin)
-            current_y += self.cell_height + self.cell_spacing
+            if isinstance(coin, dict):
+                self._draw_coin_cell(self.display.surface, current_y, coin)
+                current_y += self.cell_height + self.cell_spacing
         
         # Draw add button at the bottom
         self.add_button_rect = pygame.Rect(

@@ -36,23 +36,43 @@ class Display:
     def _init_fonts(self):
         """Initialize shared fonts."""
         self.fonts = {
+            # Title fonts
             'title-xl': pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['title-xl']),
             'title-lg': pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['title-lg']),
             'title-md': pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['title-md']),
             'title-sm': pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['title-sm']),
+            
+            # Regular fonts
             'xl': pygame.font.Font(AppConfig.FONT_PATHS['regular'], AppConfig.FONT_SIZES['xl']),
             'lg': pygame.font.Font(AppConfig.FONT_PATHS['regular'], AppConfig.FONT_SIZES['lg']),
             'md': pygame.font.Font(AppConfig.FONT_PATHS['regular'], AppConfig.FONT_SIZES['md']),
             'sm': pygame.font.Font(AppConfig.FONT_PATHS['regular'], AppConfig.FONT_SIZES['sm']),
             'xs': pygame.font.Font(AppConfig.FONT_PATHS['regular'], AppConfig.FONT_SIZES['xs']),
+            
+            # Bold fonts
             'bold-xl': pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['xl']),
             'bold-lg': pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['lg']),
             'bold-md': pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['md']),
             'bold-sm': pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['sm']),
             'bold-xs': pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['xs']),
+            
+            # Light fonts
             'light-xl': pygame.font.Font(AppConfig.FONT_PATHS['light'], AppConfig.FONT_SIZES['xl']),
             'light-lg': pygame.font.Font(AppConfig.FONT_PATHS['light'], AppConfig.FONT_SIZES['lg']),
             'light-md': pygame.font.Font(AppConfig.FONT_PATHS['light'], AppConfig.FONT_SIZES['md']),
             'light-sm': pygame.font.Font(AppConfig.FONT_PATHS['light'], AppConfig.FONT_SIZES['sm']),
-            'light-xs': pygame.font.Font(AppConfig.FONT_PATHS['light'], AppConfig.FONT_SIZES['xs'])
+            'light-xs': pygame.font.Font(AppConfig.FONT_PATHS['light'], AppConfig.FONT_SIZES['xs']),
+            
+            # Medium fonts
+            'medium-xl': pygame.font.Font(AppConfig.FONT_PATHS['medium'], AppConfig.FONT_SIZES['xl']),
+            'medium-lg': pygame.font.Font(AppConfig.FONT_PATHS['medium'], AppConfig.FONT_SIZES['lg']),
+            'medium-md': pygame.font.Font(AppConfig.FONT_PATHS['medium'], AppConfig.FONT_SIZES['md']),
+            'medium-sm': pygame.font.Font(AppConfig.FONT_PATHS['medium'], AppConfig.FONT_SIZES['sm']),
+            'medium-xs': pygame.font.Font(AppConfig.FONT_PATHS['medium'], AppConfig.FONT_SIZES['xs']),
+            
+            # Aliases for backward compatibility
+            'medium': pygame.font.Font(AppConfig.FONT_PATHS['medium'], AppConfig.FONT_SIZES['md']),
+            'regular': pygame.font.Font(AppConfig.FONT_PATHS['regular'], AppConfig.FONT_SIZES['md']),
+            'bold': pygame.font.Font(AppConfig.FONT_PATHS['bold'], AppConfig.FONT_SIZES['md']),
+            'light': pygame.font.Font(AppConfig.FONT_PATHS['light'], AppConfig.FONT_SIZES['md']),
         }
