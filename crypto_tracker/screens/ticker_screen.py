@@ -116,25 +116,7 @@ class TickerScreen(BaseScreen):
         )
         self.display.surface.blit(scaled_price_surface, price_rect)
         
-        # Draw coin name and symbol below price
-        name_text = f"{current_coin['name']}"
-        name_surface = self.fonts['light'].render(name_text, True, AppConfig.WHITE)
-        name_rect = name_surface.get_rect(
-            left=20,
-            top=price_rect.bottom + 10
-        )
-        self.display.surface.blit(name_surface, name_rect)
-        
-        # Draw symbol below name
-        symbol_text = current_coin['symbol'].upper()
-        symbol_surface = self.fonts['light'].render(symbol_text, True, (128, 128, 128))  # Gray color
-        symbol_rect = symbol_surface.get_rect(
-            left=20,
-            top=name_rect.bottom + 5
-        )
-        self.display.surface.blit(symbol_surface, symbol_rect)
-        
-        # Draw percentage change with trend icon (below symbol)
+        # Draw percentage change with trend icon (next to price)
         change_24h = current_coin['price_change_24h']
         change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
         
@@ -150,19 +132,37 @@ class TickerScreen(BaseScreen):
                         colored_icon.set_at((x, y), change_color)
             
             trend_rect = colored_icon.get_rect(
-                left=20,
-                top=symbol_rect.bottom + 10
+                left=price_rect.right + 20,
+                centery=price_rect.centery
             )
             self.display.surface.blit(colored_icon, trend_rect)
             
             # Draw percentage next to icon
             change_text = f"{abs(change_24h):.1f}%"
-            change_surface = self.fonts['title-md'].render(change_text, True, change_color)
+            change_surface = self.fonts['title-lg'].render(change_text, True, change_color)
             change_rect = change_surface.get_rect(
                 left=trend_rect.right + 5,
                 centery=trend_rect.centery
             )
             self.display.surface.blit(change_surface, change_rect)
+        
+        # Draw coin name and symbol below price (larger)
+        name_text = f"{current_coin['name']}"
+        name_surface = self.fonts['title-lg'].render(name_text, True, AppConfig.WHITE)  # Increased to title-lg
+        name_rect = name_surface.get_rect(
+            left=20,
+            top=price_rect.bottom + 15  # Increased spacing
+        )
+        self.display.surface.blit(name_surface, name_rect)
+        
+        # Draw symbol below name (larger)
+        symbol_text = current_coin['symbol'].upper()
+        symbol_surface = self.fonts['title-md'].render(symbol_text, True, (128, 128, 128))  # Increased to title-md
+        symbol_rect = symbol_surface.get_rect(
+            left=20,
+            top=name_rect.bottom + 8  # Adjusted spacing
+        )
+        self.display.surface.blit(symbol_surface, symbol_rect)
         
         # Draw sparkline if price history is available
         if 'sparkline_7d' in current_coin and current_coin['sparkline_7d']:
