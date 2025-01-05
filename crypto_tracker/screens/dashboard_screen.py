@@ -16,10 +16,11 @@ class DashboardScreen(BaseScreen):
         self.background_color = (0, 0, 0)  # Pure black
         self.glow_color = (0, 255, 0)      # Bright green
         self.spots = [
-            {'x': 0.2, 'y': 0.3, 'size': 200, 'alpha': 10},   # Top left area
-            {'x': 0.8, 'y': 0.7, 'size': 250, 'alpha': 8},    # Bottom right area
-            {'x': 0.7, 'y': 0.2, 'size': 180, 'alpha': 12},   # Top right area
-            {'x': 0.3, 'y': 0.8, 'size': 220, 'alpha': 7},    # Bottom left area
+            {'x': 0.2, 'y': 0.3, 'size': 300, 'alpha': 25},   # Top left area
+            {'x': 0.8, 'y': 0.7, 'size': 350, 'alpha': 20},   # Bottom right area
+            {'x': 0.7, 'y': 0.2, 'size': 280, 'alpha': 30},   # Top right area
+            {'x': 0.3, 'y': 0.8, 'size': 320, 'alpha': 22},   # Bottom left area
+            {'x': 0.5, 'y': 0.5, 'size': 400, 'alpha': 15},   # Center area (subtle)
         ]
         logger.info("DashboardScreen initialized")
     
@@ -28,11 +29,12 @@ class DashboardScreen(BaseScreen):
         spot_surface = pygame.Surface((size * 2, size * 2), pygame.SRCALPHA)
         
         # Create multiple circles with decreasing alpha for smooth glow
-        num_layers = 20
+        num_layers = 30  # Increased number of layers for smoother gradient
         for i in range(num_layers):
             progress = i / num_layers
             current_size = int(size * (1 - progress))
-            current_alpha = int(alpha * (1 - progress) ** 2)  # Quadratic falloff
+            # Adjusted falloff for more visible outer glow
+            current_alpha = int(alpha * (1 - progress) ** 1.5)  # Reduced power for slower falloff
             
             pygame.draw.circle(
                 spot_surface,
