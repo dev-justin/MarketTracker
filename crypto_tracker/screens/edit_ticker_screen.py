@@ -148,7 +148,7 @@ class EditTickerScreen(BaseScreen):
         
         # Favorite button (top)
         is_favorited = self.current_coin.get('favorite', False)
-        favorite_bg_color = (60, 60, 60) if is_favorited else button_bg_color  # Slightly lighter when active
+        favorite_bg_color = (255, 165, 0) if is_favorited else button_bg_color  # Orange when favorited
         pygame.draw.rect(self.display.surface, favorite_bg_color, self.favorite_rect, border_radius=corner_radius)
         
         # Draw star icon and text
@@ -156,10 +156,10 @@ class EditTickerScreen(BaseScreen):
             # Create a copy of the star icon surface to modify its color
             star_surface = self.star_icon.copy()
             if is_favorited:
-                # Change the color to gold for favorited state
-                gold_color = (255, 215, 0)  # RGB for gold
+                # Change the color to match the button
+                star_color = (255, 255, 255)  # White star on orange background
                 pixels = pygame.PixelArray(star_surface)
-                pixels.replace((50, 50, 50), gold_color)  # Replace dark gray with gold
+                pixels.replace((50, 50, 50), star_color)  # Replace dark gray with white
                 del pixels
             
             # Position star icon to the left of text
@@ -171,7 +171,8 @@ class EditTickerScreen(BaseScreen):
         
         # Draw favorite text
         favorite_text = "Favorited" if is_favorited else "Favorite"
-        favorite_text_surface = self.fonts['medium'].render(favorite_text, True, AppConfig.WHITE)
+        text_color = AppConfig.BLACK if is_favorited else AppConfig.WHITE  # Black text on orange background
+        favorite_text_surface = self.fonts['medium'].render(favorite_text, True, text_color)
         favorite_text_rect = favorite_text_surface.get_rect(
             left=self.favorite_rect.centerx + 5,
             centery=self.favorite_rect.centery
