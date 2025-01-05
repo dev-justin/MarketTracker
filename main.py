@@ -11,6 +11,7 @@ class MarkertTrackerApp():
 
         # Initialize screens
         self.screen_manager.add_screen('dashboard', DashboardScreen(self.display))
+        self.screen_manager.switch_screen('dashboard')
 
     def run(self):
         while True:
