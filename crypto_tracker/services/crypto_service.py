@@ -126,15 +126,7 @@ class CryptoService:
         """Process raw coin data into standard format."""
         try:
             symbol = coin_data['symbol'].upper()
-            
-            # Download and cache logo
-            logo_path = os.path.join(AppConfig.CACHE_DIR, f"{symbol.lower()}_logo.png")
-            if not os.path.exists(logo_path):
-                response = requests.get(coin_data['image']['large'])
-                if response.status_code == 200:
-                    with open(logo_path, 'wb') as f:
-                        f.write(response.content)
-                    logger.debug(f"Cached logo for {symbol}")
+            logo_path = self._cache_coin_logo(coin_data)
             
             return {
                 'symbol': symbol,
@@ -211,18 +203,10 @@ class CryptoService:
                 'favorite': False
             }
             
-            # Load existing tracked coins
-            tracked_coins = []
-            if os.path.exists(AppConfig.TRACKED_COINS_FILE):
-                with open(AppConfig.TRACKED_COINS_FILE, 'r') as f:
-                    tracked_coins = json.load(f)
-            
             # Check if coin already exists
-            if not any(coin.get('id') == processed_data['id'] for coin in tracked_coins):
-                tracked_coins.append(processed_data)
-                # Save updated list
-                with open(AppConfig.TRACKED_COINS_FILE, 'w') as f:
-                    json.dump(tracked_coins, f, indent=2)
+            if not any(coin.get('id') == processed_data['id'] for coin in self.tracked_symbols):
+                self.tracked_symbols.append(processed_data)
+                self._save_tracked_symbols()
                 logger.info(f"Added new coin to track: {processed_data['name']} ({processed_data['symbol']})")
                 return True
             
@@ -266,15 +250,22 @@ class CryptoService:
         Returns:
             True if successfully removed, False otherwise
         """
-        symbol = symbol.upper()
-        if symbol in self.tracked_symbols:
-            self.tracked_symbols.remove(symbol)
-            self._save_tracked_symbols()
-            logger.info(f"Removed symbol from tracking: {symbol}")
-            return True
-        
-        logger.warning(f"Symbol not tracked: {symbol}")
-        return False
+        try:
+            symbol = symbol.upper()
+            # Find and remove the coin by symbol
+            for coin in self.tracked_symbols[:]:  # Create a copy to safely modify during iteration
+                if coin.get('symbol') == symbol:
+                    self.tracked_symbols.remove(coin)
+                    self._save_tracked_symbols()
+                    logger.info(f"Removed coin from tracking: {symbol}")
+                    return True
+            
+            logger.warning(f"Symbol not tracked: {symbol}")
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error removing tracked symbol: {e}")
+            return False
     
     def search_coin(self, symbol: str) -> Optional[Dict]:
         """
