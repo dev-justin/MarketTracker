@@ -74,13 +74,13 @@ class TickerScreen(BaseScreen):
         # Draw coin name and symbol
         title_text = f"{current_coin['name']} ({current_coin['symbol']})"
         title_surface = self.fonts['title-md'].render(title_text, True, AppConfig.WHITE)
-        title_rect = title_surface.get_rect(centerx=self.width//2, top=20)
+        title_rect = title_surface.get_rect(left=20, top=20)  # Left aligned with 20px padding
         self.display.surface.blit(title_surface, title_rect)
         
-        # Draw price
+        # Draw price (larger)
         price_text = f"${current_coin['current_price']:,.2f}"
-        price_surface = self.fonts['title-lg'].render(price_text, True, AppConfig.WHITE)
-        price_rect = price_surface.get_rect(centerx=self.width//2, top=title_rect.bottom + 20)
+        price_surface = self.fonts['title-xl'].render(price_text, True, AppConfig.WHITE)  # Using larger font
+        price_rect = price_surface.get_rect(left=20, top=title_rect.bottom + 5)  # Left aligned with small gap
         self.display.surface.blit(price_surface, price_rect)
         
         # Draw 24h change
@@ -88,7 +88,7 @@ class TickerScreen(BaseScreen):
         change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
         change_text = f"{change_24h:+.2f}% (24h)"
         change_surface = self.fonts['medium'].render(change_text, True, change_color)
-        change_rect = change_surface.get_rect(centerx=self.width//2, top=price_rect.bottom + 10)
+        change_rect = change_surface.get_rect(left=20, top=price_rect.bottom + 5)  # Left aligned
         self.display.surface.blit(change_surface, change_rect)
         
         # Draw sparkline if price history is available
