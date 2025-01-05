@@ -130,6 +130,9 @@ class CryptoService:
         try:
             # Search for coin
             coin_info = self.search_coin(symbol)
+            print('-'*100)
+            print(coin_info)
+            print('-'*100)
             if not coin_info:
                 return None
             
@@ -143,6 +146,9 @@ class CryptoService:
                 developer_data=False,
                 sparkline=False
             )
+            print('-'*100)
+            print(coin_data)
+            print('-'*100)
             
             # Extract relevant data
             price = coin_data['market_data']['current_price']['usd']
