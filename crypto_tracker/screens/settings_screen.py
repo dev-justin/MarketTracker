@@ -13,38 +13,51 @@ class SettingsScreen(BaseScreen):
         super().__init__(display)
         self.background_color = (0, 0, 0)  # Pure black
         self.grid_color = (0, 255, 0)      # Bright green
-        self.grid_size = 5  # 5x5 grid
-        self.padding = 20
-        self.is_adding_coin = False
-        self.new_symbol = ""  # For storing symbol being typed
+        self.grid_cols = 5  # 5 columns
+        self.grid_rows = 2  # 2 rows
+        self.padding = 40   # Increased padding for better spacing
         
         # Calculate grid layout
         usable_width = self.width - (2 * self.padding)
-        usable_height = self.height - (2 * self.padding) - 80  # Account for title
-        self.cell_size = min(usable_width // self.grid_size, usable_height // self.grid_size)
-        self.grid_start_x = (self.width - (self.cell_size * self.grid_size)) // 2
-        self.grid_start_y = 80  # Start below title
+        usable_height = self.height - (2 * self.padding) - 100  # Account for title
+        
+        # Calculate cell size to maintain aspect ratio
+        self.cell_width = usable_width // self.grid_cols
+        self.cell_height = usable_height // self.grid_rows
+        
+        # Center the grid
+        self.grid_start_x = (self.width - (self.cell_width * self.grid_cols)) // 2
+        self.grid_start_y = 100  # Start below title
+        
+        self.is_adding_coin = False
+        self.new_symbol = ""  # For storing symbol being typed
         
         logger.info("SettingsScreen initialized")
     
     def _draw_coin_cell(self, surface: pygame.Surface, x: int, y: int, symbol: str = None):
         """Draw a single cell in the grid."""
-        rect = pygame.Rect(x, y, self.cell_size, self.cell_size)
+        margin = 10  # Space between cells
+        cell_rect = pygame.Rect(
+            x + margin//2, 
+            y + margin//2, 
+            self.cell_width - margin, 
+            self.cell_height - margin
+        )
         
         # Draw cell border
-        pygame.draw.rect(surface, self.grid_color, rect, 2, border_radius=10)
+        pygame.draw.rect(surface, self.grid_color, cell_rect, 2, border_radius=10)
         
         if symbol:
             # Draw coin symbol
             text = self.fonts['bold-md'].render(symbol, True, self.grid_color)
-            text_rect = text.get_rect(center=(x + self.cell_size // 2, y + self.cell_size // 2))
+            text_rect = text.get_rect(center=(x + self.cell_width//2, y + self.cell_height//2))
             surface.blit(text, text_rect)
         else:
             # Draw plus sign
-            plus_size = min(self.cell_size // 3, 30)
+            plus_size = min(self.cell_width//3, 30)
             plus_color = self.grid_color
-            center_x = x + self.cell_size // 2
-            center_y = y + self.cell_size // 2
+            center_x = x + self.cell_width//2
+            center_y = y + self.cell_height//2
             
             # Horizontal line
             pygame.draw.line(surface, plus_color, 
@@ -79,12 +92,12 @@ class SettingsScreen(BaseScreen):
             elif event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
                 # Check if plus button was clicked
                 x, y = self._scale_touch_input(event)
-                cell_x = (x - self.grid_start_x) // self.cell_size
-                cell_y = (y - self.grid_start_y) // self.cell_size
+                cell_x = (x - self.grid_start_x) // self.cell_width
+                cell_y = (y - self.grid_start_y) // self.cell_height
                 
-                if (0 <= cell_x < self.grid_size and 
-                    0 <= cell_y < self.grid_size):
-                    cell_index = cell_y * self.grid_size + cell_x
+                if (0 <= cell_x < self.grid_cols and 
+                    0 <= cell_y < self.grid_rows):
+                    cell_index = cell_y * self.grid_cols + cell_x
                     if cell_index >= len(self.crypto_service.tracked_symbols):
                         logger.info("Add button clicked")
                         self.is_adding_coin = True
@@ -96,16 +109,18 @@ class SettingsScreen(BaseScreen):
         
         # Draw "Settings" text
         settings_text = self.fonts['title-lg'].render("Settings", True, AppConfig.WHITE)
-        settings_rect = settings_text.get_rect(centerx=self.width // 2, top=20)
+        settings_rect = settings_text.get_rect(centerx=self.width//2, top=20)
         self.display.surface.blit(settings_text, settings_rect)
         
         # Draw grid
         tracked_symbols = self.crypto_service.tracked_symbols
-        for i in range(self.grid_size * self.grid_size):
-            row = i // self.grid_size
-            col = i % self.grid_size
-            x = self.grid_start_x + (col * self.cell_size)
-            y = self.grid_start_y + (row * self.cell_size)
+        max_cells = self.grid_rows * self.grid_cols
+        
+        for i in range(max_cells):
+            row = i // self.grid_cols
+            col = i % self.grid_cols
+            x = self.grid_start_x + (col * self.cell_width)
+            y = self.grid_start_y + (row * self.cell_height)
             
             if i < len(tracked_symbols):
                 self._draw_coin_cell(self.display.surface, x, y, tracked_symbols[i])
@@ -133,7 +148,7 @@ class SettingsScreen(BaseScreen):
                 text = self.fonts['bold-lg'].render(self.new_symbol, True, AppConfig.WHITE)
             else:
                 text = self.fonts['light-md'].render("Enter Symbol", True, (128, 128, 128))
-            text_rect = text.get_rect(center=(self.width // 2, input_y + input_height // 2))
+            text_rect = text.get_rect(center=(self.width//2, input_y + input_height//2))
             self.display.surface.blit(text, text_rect)
         
         self.update_screen() 
