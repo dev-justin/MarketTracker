@@ -1,6 +1,7 @@
 from pycoingecko import CoinGeckoAPI
 import requests
-from typing import Optional, Dict
+import json
+from typing import Optional, Dict, List
 from ..utils.logger import get_logger
 import os
 from ..config.settings import AppConfig
@@ -14,8 +15,110 @@ class CryptoService:
         """Initialize the crypto service."""
         self.client = CoinGeckoAPI()
         self.cache_dir = os.path.join(AppConfig.ASSETS_DIR, 'cache')
+        self.data_dir = os.path.join(AppConfig.ASSETS_DIR, 'data')
         os.makedirs(self.cache_dir, exist_ok=True)
+        os.makedirs(self.data_dir, exist_ok=True)
+        self.tracked_file = os.path.join(self.data_dir, 'tracked_coins.json')
+        self.tracked_symbols = self._load_tracked_symbols()
         logger.info("CryptoService initialized")
+    
+    def _load_tracked_symbols(self) -> List[str]:
+        """Load tracked symbols from file."""
+        try:
+            if os.path.exists(self.tracked_file):
+                with open(self.tracked_file, 'r') as f:
+                    symbols = json.load(f)
+                    logger.info(f"Loaded tracked symbols: {symbols}")
+                    return symbols
+        except Exception as e:
+            logger.error(f"Error loading tracked symbols: {e}")
+        
+        # Default to empty list if file doesn't exist or error occurs
+        return []
+    
+    def _save_tracked_symbols(self):
+        """Save tracked symbols to file."""
+        try:
+            with open(self.tracked_file, 'w') as f:
+                json.dump(self.tracked_symbols, f, indent=2)
+            logger.info(f"Saved tracked symbols: {self.tracked_symbols}")
+        except Exception as e:
+            logger.error(f"Error saving tracked symbols: {e}")
+    
+    def search_coin(self, symbol: str) -> Optional[Dict]:
+        """
+        Search for a coin by symbol.
+        
+        Args:
+            symbol: The coin symbol to search for (e.g., 'btc')
+            
+        Returns:
+            Dictionary with coin ID and name if found, None otherwise
+        """
+        try:
+            # Search CoinGecko
+            symbol = symbol.lower()
+            search_results = self.client.search(symbol)
+            
+            # Look for exact symbol match in coins
+            for coin in search_results.get('coins', []):
+                if coin['symbol'].lower() == symbol:
+                    return {
+                        'id': coin['id'],
+                        'symbol': coin['symbol'].upper(),
+                        'name': coin['name']
+                    }
+            
+            logger.warning(f"No exact match found for symbol: {symbol}")
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error searching for coin: {e}")
+            return None
+    
+    def add_tracked_symbol(self, symbol: str) -> bool:
+        """
+        Add a symbol to track.
+        
+        Args:
+            symbol: The symbol to track (e.g., 'btc')
+            
+        Returns:
+            True if successfully added, False otherwise
+        """
+        symbol = symbol.upper()
+        if symbol in self.tracked_symbols:
+            logger.info(f"Symbol already tracked: {symbol}")
+            return True
+            
+        # Verify symbol exists before adding
+        if self.search_coin(symbol):
+            self.tracked_symbols.append(symbol)
+            self._save_tracked_symbols()
+            logger.info(f"Added symbol to track: {symbol}")
+            return True
+        
+        return False
+    
+    def remove_tracked_symbol(self, symbol: str) -> bool:
+        """
+        Remove a symbol from tracking.
+        
+        Args:
+            symbol: The symbol to remove (e.g., 'btc')
+            
+        Returns:
+            True if successfully removed, False otherwise
+        """
+        symbol = symbol.upper()
+        if symbol in self.tracked_symbols:
+            self.tracked_symbols.remove(symbol)
+            self._save_tracked_symbols()
+            logger.info(f"Removed symbol from tracking: {symbol}")
+            return True
+        
+        logger.warning(f"Symbol not tracked: {symbol}")
+        return False
     
     def get_coin_data(self, symbol: str) -> Optional[Dict]:
         """
@@ -28,23 +131,14 @@ class CryptoService:
             Dictionary containing coin data or None if fetch fails
         """
         try:
-            # Map of common symbols to CoinGecko IDs
-            symbol_to_id = {
-                'btc': 'bitcoin',
-                'eth': 'ethereum',
-                'doge': 'dogecoin',
-                'sol': 'solana',
-            }
-            
-            symbol = symbol.lower()
-            coin_id = symbol_to_id.get(symbol)
-            if not coin_id:
-                logger.error(f"Unknown symbol: {symbol}")
+            # Search for coin
+            coin_info = self.search_coin(symbol)
+            if not coin_info:
                 return None
             
             # Fetch coin data
             coin_data = self.client.get_coin_by_id(
-                coin_id,
+                coin_info['id'],
                 localization=False,
                 tickers=False,
                 market_data=True,
