@@ -30,6 +30,14 @@ class SettingsScreen(BaseScreen):
         self.button_width = 200
         self.button_height = 60
         
+        # Load edit icon
+        try:
+            self.edit_icon = pygame.image.load(os.path.join(AppConfig.ASSETS_DIR, 'icons', 'edit.svg'))
+            self.edit_icon = pygame.transform.scale(self.edit_icon, (24, 24))
+        except Exception as e:
+            logger.error(f"Error loading edit icon: {e}")
+            self.edit_icon = None
+        
         # Initialize tracked coins list
         self.tracked_coins = []
         
@@ -133,6 +141,14 @@ class SettingsScreen(BaseScreen):
             top=name_rect.bottom + 5
         )
         surface.blit(symbol_surface, symbol_rect)
+        
+        # Draw edit icon in the bottom right corner
+        if self.edit_icon:
+            edit_icon_rect = self.edit_icon.get_rect(
+                right=rect.right - logo_margin,
+                bottom=rect.bottom - logo_margin
+            )
+            surface.blit(self.edit_icon, edit_icon_rect)
         
         # Draw price change if available
         if 'price_change_24h' in coin:
