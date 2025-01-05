@@ -89,8 +89,8 @@ class SettingsScreen(BaseScreen):
                     0 <= cell_y < self.grid_rows):
                     cell_index = cell_y * self.grid_cols + cell_x
                     if cell_index >= len(self.crypto_service.tracked_symbols):
-                        logger.info("Add button clicked, showing keyboard")
-                        self.is_adding_coin = True
+                        logger.info("Add button clicked, switching to add ticker screen")
+                        self.screen_manager.switch_screen('add_ticker')
         else:
             if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
                 x, y = self._scale_touch_input(event)

@@ -2,6 +2,7 @@ from crypto_tracker.services.display import Display
 from crypto_tracker.services.screen_manager import ScreenManager
 from crypto_tracker.screens.dashboard_screen import DashboardScreen
 from crypto_tracker.screens.settings_screen import SettingsScreen
+from crypto_tracker.screens.add_ticker_screen import AddTickerScreen
 import pygame
 from crypto_tracker.services.crypto_service import CryptoService
 class MarkertTrackerApp():
@@ -15,6 +16,12 @@ class MarkertTrackerApp():
         settings_screen = SettingsScreen(self.display)
         settings_screen.crypto_service = self.crypto_service  # Pass crypto service
         self.screen_manager.add_screen('settings', settings_screen)
+        
+        # Add ticker screen
+        add_ticker_screen = AddTickerScreen(self.display)
+        add_ticker_screen.crypto_service = self.crypto_service
+        self.screen_manager.add_screen('add_ticker', add_ticker_screen)
+        
         self.screen_manager.switch_screen('dashboard')
 
     def run(self):
