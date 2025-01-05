@@ -155,12 +155,12 @@ class TickerScreen(BaseScreen):
         )
         self.display.surface.blit(name_surface, name_rect)
         
-        # Draw symbol below name (larger)
+        # Draw symbol below name (larger but light weight)
         symbol_text = current_coin['symbol'].upper()
-        symbol_surface = self.fonts['title-md'].render(symbol_text, True, (128, 128, 128))  # Increased to title-md
+        symbol_surface = self.fonts['light'].render(symbol_text, True, (128, 128, 128))  # Changed to light font
         symbol_rect = symbol_surface.get_rect(
             left=20,
-            top=name_rect.bottom + 8  # Adjusted spacing
+            top=name_rect.bottom + 8
         )
         self.display.surface.blit(symbol_surface, symbol_rect)
         
