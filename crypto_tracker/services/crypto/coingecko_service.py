@@ -43,7 +43,7 @@ class CoinGeckoService:
                 community_data=False,
                 developer_data=False,
                 sparkline=True
-            }
+            )
 
             print(coin_data)
 
