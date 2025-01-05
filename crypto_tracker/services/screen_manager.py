@@ -14,8 +14,15 @@ class ScreenManager:
         self.current_screen = None
         logger.info("ScreenManager initialized")
     
-    def add_screen(self, name: str, screen_class: Any) -> None:
-        """Add a screen to the manager."""
+    def add_screen(self, name: str, screen_class: Any, is_singleton: bool = True) -> None:
+        """
+        Add a screen to the manager.
+        
+        Args:
+            name: The name of the screen
+            screen_class: The screen class to instantiate
+            is_singleton: Kept for backward compatibility, no longer used
+        """
         screen = screen_class(self.display)
         self.screens[name] = screen
         screen.screen_manager = self
