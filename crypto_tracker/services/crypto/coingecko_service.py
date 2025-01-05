@@ -1,7 +1,6 @@
 from pycoingecko import CoinGeckoAPI
 from typing import Optional, Dict, List
 from ...utils.logger import get_logger
-import time
 
 logger = get_logger(__name__)
 
@@ -47,12 +46,11 @@ class CoinGeckoService:
 
             print(coin_data)
 
-            # Return, id, name, symbol, image, 24h price change, sparkline for 7d
             return {
                 'id': coin_data['id'],
                 'name': coin_data['name'],
                 'symbol': coin_data['symbol'],
-                'image': coin_data['image']['large'],
+                'image': coin_data['image']['small'],
                 'price_change_24h': coin_data['market_data']['price_change_percentage_24h'],
                 'sparkline_7d': coin_data['market_data']['sparkline_7d']['price']
             }

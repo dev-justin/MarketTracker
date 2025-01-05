@@ -25,7 +25,7 @@ class AppConfig:
     # DATA_DIR
     DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
     CACHE_DIR = os.path.join(DATA_DIR, 'cache')
-    TRACKED_COINS_FILE = os.path.join(DATA_DIR, 'tracked_coins.json')
+    CRYPTO_STORAGE_FILE = os.path.join(DATA_DIR, 'crypto_storage.json')
 
     # Icon settings
     ICON_SIZE = 48  # Size for coin icons
