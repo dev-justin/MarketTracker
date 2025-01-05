@@ -33,7 +33,7 @@ class SettingsScreen(BaseScreen):
         # Load edit icon
         try:
             self.edit_icon = pygame.image.load(os.path.join(AppConfig.ASSETS_DIR, 'icons', 'edit.svg'))
-            self.edit_icon = pygame.transform.scale(self.edit_icon, (24, 24))
+            self.edit_icon = pygame.transform.scale(self.edit_icon, (46, 46))
         except Exception as e:
             logger.error(f"Error loading edit icon: {e}")
             self.edit_icon = None
@@ -142,25 +142,13 @@ class SettingsScreen(BaseScreen):
         )
         surface.blit(symbol_surface, symbol_rect)
         
-        # Draw edit icon in the bottom right corner
+        # Draw edit icon centered on the right side
         if self.edit_icon:
             edit_icon_rect = self.edit_icon.get_rect(
                 right=rect.right - logo_margin,
-                bottom=rect.bottom - logo_margin
-            )
-            surface.blit(self.edit_icon, edit_icon_rect)
-        
-        # Draw price change if available
-        if 'price_change_24h' in coin:
-            change = coin['price_change_24h']
-            change_color = AppConfig.GREEN if change >= 0 else AppConfig.RED
-            change_text = f"{change:+.2f}%"
-            change_surface = self.fonts['sm'].render(change_text, True, change_color)
-            change_rect = change_surface.get_rect(
-                right=rect.right - logo_margin,
                 centery=rect.centery
             )
-            surface.blit(change_surface, change_rect)
+            surface.blit(self.edit_icon, edit_icon_rect)
         
         # Draw favorite star if favorited
         if coin.get('favorite', False):
