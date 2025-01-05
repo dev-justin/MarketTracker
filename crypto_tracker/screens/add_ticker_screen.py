@@ -83,9 +83,8 @@ class AddTickerScreen(BaseScreen):
             self.button_width,
             self.button_height
         )
-        pygame.draw.rect(surface, AppConfig.KEY_BG_COLOR, self.cancel_rect, 0, border_radius=10)
-        pygame.draw.rect(surface, AppConfig.CANCEL_BUTTON_COLOR, self.cancel_rect, 2, border_radius=10)
-        cancel_text = self.fonts['bold-md'].render("Cancel", True, AppConfig.CANCEL_BUTTON_COLOR)
+        pygame.draw.rect(surface, AppConfig.RED, self.cancel_rect, 0, border_radius=10)
+        cancel_text = self.fonts['bold-md'].render("Cancel", True, AppConfig.WHITE)
         cancel_text_rect = cancel_text.get_rect(center=self.cancel_rect.center)
         surface.blit(cancel_text, cancel_text_rect)
         
@@ -98,12 +97,10 @@ class AddTickerScreen(BaseScreen):
         )
         
         # Use active or inactive color based on whether there's input
-        save_color = (AppConfig.DONE_BUTTON_ACTIVE_COLOR if self.new_symbol 
-                     else AppConfig.DONE_BUTTON_INACTIVE_COLOR)
+        save_color = AppConfig.GREEN if self.new_symbol else AppConfig.GRAY
         
-        pygame.draw.rect(surface, AppConfig.KEY_BG_COLOR, self.save_rect, 0, border_radius=10)
-        pygame.draw.rect(surface, save_color, self.save_rect, 2, border_radius=10)
-        save_text = self.fonts['bold-md'].render("Save", True, save_color)
+        pygame.draw.rect(surface, save_color, self.save_rect, 0, border_radius=10)
+        save_text = self.fonts['bold-md'].render("Save", True, AppConfig.WHITE)
         save_text_rect = save_text.get_rect(center=self.save_rect.center)
         surface.blit(save_text, save_text_rect)
     
@@ -115,19 +112,19 @@ class AddTickerScreen(BaseScreen):
             for row in self.key_rects:
                 for key, rect in row:
                     if rect.collidepoint(x, y):
-                        if key == '⌫':
+                        if key == 'DEL':
                             if self.new_symbol:
                                 self.new_symbol = self.new_symbol[:-1]
+                                logger.debug(f"Backspace pressed, current input: {self.new_symbol}")
                         elif len(self.new_symbol) < 5:
                             self.new_symbol += key
-                        logger.debug(f"Key pressed: {key}, current input: {self.new_symbol}")
+                            logger.debug(f"Key pressed: {key}, current input: {self.new_symbol}")
                         return
             
             # Check if save button was pressed
-            if self.save_rect.collidepoint(x, y):
-                if self.new_symbol:
-                    logger.info(f"Adding new coin: {self.new_symbol}")
-                    self.crypto_service.add_tracked_symbol(self.new_symbol)
+            if self.save_rect.collidepoint(x, y) and self.new_symbol:
+                logger.info(f"Adding new coin: {self.new_symbol}")
+                self.crypto_service.add_tracked_symbol(self.new_symbol)
                 self.screen_manager.switch_screen('settings')
             # Check if cancel button was pressed
             elif self.cancel_rect.collidepoint(x, y):
@@ -138,7 +135,7 @@ class AddTickerScreen(BaseScreen):
         self.display.surface.fill(self.background_color)
         
         # Draw "Enter Ticker" text
-        title_text = self.fonts['title-lg'].render("Enter Ticker", True, AppConfig.WHITE)
+        title_text = self.fonts['title-md'].render("Enter Ticker", True, AppConfig.WHITE)
         title_rect = title_text.get_rect(centerx=self.width//2, top=20)
         self.display.surface.blit(title_text, title_rect)
         
