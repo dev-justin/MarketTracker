@@ -2,18 +2,17 @@ import pygame
 from datetime import datetime
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
-from .base import Screen
+from .base_screen import BaseScreen
 import time
 
 logger = get_logger(__name__)
 
-class DashboardScreen(Screen):
+class DashboardScreen(BaseScreen):
     """Screen for displaying the current day and time."""
     
-    def __init__(self, screen_manager) -> None:
+    def __init__(self) -> None:
         """Initialize the dashboard screen."""
-        super().__init__(screen_manager)
-        
+
         # Display settings
         self.padding = 20
         
