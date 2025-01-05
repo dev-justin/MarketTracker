@@ -113,7 +113,7 @@ class SettingsScreen(BaseScreen):
         name_text = coin.get('name', '')
         if len(name_text) > 15:  # Truncate long names
             name_text = name_text[:13] + '...'
-        name_surface = self.fonts['sm'].render(name_text, True, AppConfig.WHITE)
+        name_surface = self.fonts['lg'].render(name_text, True, AppConfig.WHITE)
         name_rect = name_surface.get_rect(
             left=text_start_x,
             top=rect.top + logo_margin
@@ -122,7 +122,7 @@ class SettingsScreen(BaseScreen):
         
         # Draw coin symbol
         symbol_text = coin.get('symbol', '').upper()
-        symbol_surface = self.fonts['bold-sm'].render(symbol_text, True, AppConfig.GRAY)
+        symbol_surface = self.fonts['lg'].render(symbol_text, True, AppConfig.GRAY)
         symbol_rect = symbol_surface.get_rect(
             left=text_start_x,
             top=name_rect.bottom + 5
@@ -131,7 +131,7 @@ class SettingsScreen(BaseScreen):
         
         # Draw edit icon (using "⚙" as a placeholder)
         edit_text = "Edit"
-        edit_surface = self.fonts['md'].render(edit_text, True, AppConfig.GRAY)
+        edit_surface = self.fonts['lg'].render(edit_text, True, AppConfig.GRAY)
         edit_rect = edit_surface.get_rect(
             right=rect.right - logo_margin,
             centery=rect.centery
