@@ -21,6 +21,14 @@ class AppConfig:
     ASSETS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'assets')
     FONT_DIR = os.path.join(ASSETS_DIR, 'fonts')
     ICONS_DIR = os.path.join(ASSETS_DIR, 'icons')
+
+    # DATA_DIR
+    DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
+    CACHE_DIR = os.path.join(DATA_DIR, 'cache')
+    TRACKED_COINS_FILE = os.path.join(DATA_DIR, 'tracked_coins.json')
+
+    # Icon settings
+    ICON_SIZE = 48  # Size for coin icons
     
     # Icon settings
     ICON_SIZE = 48  # Size for coin icons

@@ -14,19 +14,16 @@ class CryptoService:
     def __init__(self):
         """Initialize the crypto service."""
         self.client = CoinGeckoAPI()
-        self.cache_dir = os.path.join(AppConfig.ASSETS_DIR, 'cache')
-        self.data_dir = os.path.join(AppConfig.ASSETS_DIR, 'data')
-        os.makedirs(self.cache_dir, exist_ok=True)
-        os.makedirs(self.data_dir, exist_ok=True)
-        self.tracked_file = os.path.join(self.data_dir, 'tracked_coins.json')
+        os.makedirs(AppConfig.CACHE_DIR, exist_ok=True)
+        os.makedirs(AppConfig.DATA_DIR, exist_ok=True)
         self.tracked_symbols = self._load_tracked_symbols()
         logger.info("CryptoService initialized")
     
     def _load_tracked_symbols(self) -> List[str]:
         """Load tracked symbols from file."""
         try:
-            if os.path.exists(self.tracked_file):
-                with open(self.tracked_file, 'r') as f:
+            if os.path.exists(AppConfig.TRACKED_COINS_FILE):
+                with open(AppConfig.TRACKED_COINS_FILE, 'r') as f:
                     symbols = json.load(f)
                     logger.info(f"Loaded tracked symbols: {symbols}")
                     return symbols
@@ -39,7 +36,7 @@ class CryptoService:
     def _save_tracked_symbols(self):
         """Save tracked symbols to file."""
         try:
-            with open(self.tracked_file, 'w') as f:
+            with open(AppConfig.TRACKED_COINS_FILE, 'w') as f:
                 json.dump(self.tracked_symbols, f, indent=2)
             logger.info(f"Saved tracked symbols: {self.tracked_symbols}")
         except Exception as e:
@@ -154,7 +151,7 @@ class CryptoService:
             image_url = coin_data['image']['large']
             
             # Download and cache the logo
-            logo_path = os.path.join(self.cache_dir, f"{symbol.lower()}_logo.png")
+            logo_path = os.path.join(AppConfig.CACHE_DIR, f"{symbol.lower()}_logo.png")
             if not os.path.exists(logo_path):
                 response = requests.get(image_url)
                 if response.status_code == 200:
