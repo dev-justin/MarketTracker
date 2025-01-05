@@ -95,9 +95,8 @@ class TickerScreen(BaseScreen):
         if 'sparkline_7d' in current_coin and current_coin['sparkline_7d']:
             prices = current_coin['sparkline_7d']
             if prices:
-                # Create a surface for the gradient and sparkline
-                sparkline_surface = pygame.Surface((self.width, self.sparkline_height))
-                sparkline_surface.set_alpha(128)  # Make it semi-transparent
+                # Create a surface for the gradient and sparkline with alpha channel
+                sparkline_surface = pygame.Surface((self.width, self.sparkline_height), pygame.SRCALPHA)
                 
                 # Calculate sparkline dimensions
                 sparkline_rect = pygame.Rect(
@@ -123,10 +122,19 @@ class TickerScreen(BaseScreen):
                 
                 # Draw sparkline with gradient
                 if len(points) > 1:
+                    # Calculate 7d performance
+                    price_change_7d = (prices[-1] - prices[0]) / prices[0] * 100
+                    is_positive = price_change_7d >= 0
+                    
                     # Create gradient colors
-                    line_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
-                    gradient_top = (*line_color[:3], 50)  # Semi-transparent
-                    gradient_bottom = (*line_color[:3], 0)  # Fully transparent
+                    if is_positive:
+                        gradient_top = (0, 255, 0, 40)  # Semi-transparent green
+                        gradient_middle = (0, 255, 0, 20)  # More transparent green
+                        line_color = (0, 255, 0, 255)  # Solid green
+                    else:
+                        gradient_top = (255, 0, 0, 40)  # Semi-transparent red
+                        gradient_middle = (255, 0, 0, 20)  # More transparent red
+                        line_color = (255, 0, 0, 255)  # Solid red
                     
                     # Create gradient fill points by adding bottom corners
                     fill_points = points + [
@@ -135,10 +143,22 @@ class TickerScreen(BaseScreen):
                     ]
                     
                     # Draw gradient fill
-                    pygame.draw.polygon(sparkline_surface, gradient_top, fill_points)
+                    for i in range(sparkline_rect.height):
+                        progress = i / sparkline_rect.height
+                        if progress < 0.5:
+                            # Interpolate between top and middle
+                            alpha = int(gradient_top[3] + (gradient_middle[3] - gradient_top[3]) * (progress * 2))
+                            color = (*gradient_top[:3], alpha)
+                        else:
+                            # Interpolate between middle and transparent
+                            alpha = int(gradient_middle[3] * (2 - progress * 2))
+                            color = (*gradient_middle[:3], alpha)
+                        
+                        # Draw horizontal line for gradient
+                        pygame.draw.line(sparkline_surface, color, (0, i), (self.width, i))
                     
-                    # Draw the actual line
-                    pygame.draw.aalines(sparkline_surface, line_color, False, points, 2)  # Made line thicker
+                    # Draw the actual line on top
+                    pygame.draw.lines(sparkline_surface, line_color, False, points, 3)  # Thicker line
                     
                     # Position and draw the sparkline surface
                     self.display.surface.blit(
