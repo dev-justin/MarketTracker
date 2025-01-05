@@ -9,24 +9,22 @@ logger = get_logger(__name__)
 
 class DashboardScreen(BaseScreen):
     """Screen for displaying the current day and time."""
-    
-    def __init__(self) -> None:
-        """Initialize the dashboard screen."""
 
-        # Display settings
-        self.padding = 20
+
+    # Display settings
+    PADDING = 20
         
-        # Background gradient colors
-        self.gradient_top = (13, 17, 23)     # Dark navy
-        self.gradient_bottom = (22, 27, 34)  # Slightly lighter navy
+    # Background gradient colors
+    GRADIENT_TOP = (13, 17, 23)     # Dark navy
+    GRADIENT_BOTTOM = (22, 27, 34)  # Slightly lighter navy
         
-        # Touch handling
-        self.swipe_start_y = None
-        self.swipe_threshold = AppConfig.SWIPE_THRESHOLD
-        self.last_tap_time = 0
-        self.double_tap_threshold = AppConfig.DOUBLE_TAP_THRESHOLD
+    # Touch handling
+    SWIPE_START_Y = None
+    SWIPE_THRESHOLD = AppConfig.SWIPE_THRESHOLD
+    LAST_TAP_TIME = 0
+    DOUBLE_TAP_THRESHOLD = AppConfig.DOUBLE_TAP_THRESHOLD
         
-        logger.info("DashboardScreen initialized")
+    logger.info("DashboardScreen initialized")
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """
