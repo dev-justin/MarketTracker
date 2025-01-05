@@ -57,7 +57,10 @@ class TickerScreen(BaseScreen):
         gestures = self.gesture_handler.handle_touch_event(event)
         
         if gestures['swipe_up']:
-            logger.info("Swipe up detected, returning to dashboard")
+            logger.info("Swipe up detected, returning to settings")
+            self.screen_manager.switch_screen('settings')
+        elif gestures['swipe_down']:
+            logger.info("Swipe down detected, returning to dashboard")
             self.screen_manager.switch_screen('dashboard')
         elif gestures['double_tap_left']:
             logger.info("Double tap left detected, switching to previous coin")
