@@ -22,7 +22,7 @@ class AddTickerScreen(BaseScreen):
             ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
             ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
             ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-            ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '⌫']
+            ['Z', 'X', 'C', 'V', 'B', 'N', 'M', 'DEL']
         ]
         self.setup_keyboard()
         
@@ -30,8 +30,9 @@ class AddTickerScreen(BaseScreen):
     
     def setup_keyboard(self):
         """Calculate keyboard layout dimensions."""
-        keyboard_height = self.height // 2  # Take up bottom half of screen
-        key_padding = 5
+        keyboard_height = self.height * 0.4  # Take up 40% of screen height
+        keyboard_top = self.height * 0.4     # Start keyboard at 40% down the screen
+        key_padding = 8
         num_rows = len(self.keys)
         
         # Calculate key sizes
@@ -41,7 +42,7 @@ class AddTickerScreen(BaseScreen):
         
         # Store key rectangles for hit detection
         self.key_rects = []
-        y = self.height - keyboard_height + key_padding
+        y = keyboard_top
         for row in self.keys:
             row_width = len(row) * self.key_width + (len(row) - 1) * key_padding
             x = (self.width - row_width) // 2
@@ -71,7 +72,9 @@ class AddTickerScreen(BaseScreen):
         # Calculate button positions
         total_width = (2 * self.button_width) + self.button_spacing
         start_x = (self.width - total_width) // 2
-        button_y = self.key_rects[-1][0][1].bottom + 20  # Below keyboard
+        
+        # Position buttons at 85% of screen height
+        button_y = int(self.height * 0.85)
         
         # Cancel button (left)
         self.cancel_rect = pygame.Rect(
@@ -132,11 +135,11 @@ class AddTickerScreen(BaseScreen):
         title_rect = title_text.get_rect(centerx=self.width//2, top=20)
         self.display.surface.blit(title_text, title_rect)
         
-        # Draw input box
+        # Draw input box at 20% of screen height
         input_width = 200
         input_height = 50
         input_x = (self.width - input_width) // 2
-        input_y = self.height // 4  # Position in top quarter
+        input_y = int(self.height * 0.2)
         
         pygame.draw.rect(self.display.surface, self.grid_color,
                         (input_x, input_y, input_width, input_height), 2, border_radius=10)
