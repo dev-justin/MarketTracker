@@ -18,7 +18,6 @@ class AddTickerScreen(BaseScreen):
         
         # Keyboard layout
         self.keys = [
-            ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
             ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
             ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
             ['Z', 'X', 'C', 'V', 'B', 'N', 'M', 'DEL']
@@ -29,9 +28,9 @@ class AddTickerScreen(BaseScreen):
     
     def setup_keyboard(self):
         """Calculate keyboard layout dimensions."""
-        keyboard_height = self.height * 0.4  # Take up 40% of screen height
-        keyboard_top = self.height * 0.4     # Start keyboard at 40% down the screen
-        key_padding = 8
+        keyboard_height = self.height * 0.5  # Take up 40% of screen height
+        keyboard_top = self.height * 0.5     # Start keyboard at 40% down the screen
+        key_padding = 10
         num_rows = len(self.keys)
         
         # Calculate key sizes
@@ -135,7 +134,7 @@ class AddTickerScreen(BaseScreen):
         self.display.surface.fill(self.background_color)
         
         # Draw "Enter Ticker" text
-        title_text = self.fonts['title-md'].render("Enter Ticker", True, AppConfig.WHITE)
+        title_text = self.fonts['title-sm'].render("Add New Ticker", True, AppConfig.WHITE)
         title_rect = title_text.get_rect(centerx=self.width//2, top=20)
         self.display.surface.blit(title_text, title_rect)
         
