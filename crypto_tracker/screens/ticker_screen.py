@@ -19,6 +19,19 @@ class TickerScreen(BaseScreen):
         self.sparkline_height = int(self.height * 0.7)  # 70% of screen height
         self.sparkline_padding = 0
         
+        # Load trend icons
+        try:
+            self.trend_up_icon = pygame.image.load(os.path.join(AppConfig.ASSETS_DIR, 'icons', 'trending-up.svg'))
+            self.trend_down_icon = pygame.image.load(os.path.join(AppConfig.ASSETS_DIR, 'icons', 'trending-down.svg'))
+            # Scale icons to match text height
+            icon_size = 32
+            self.trend_up_icon = pygame.transform.scale(self.trend_up_icon, (icon_size, icon_size))
+            self.trend_down_icon = pygame.transform.scale(self.trend_down_icon, (icon_size, icon_size))
+        except Exception as e:
+            logger.error(f"Error loading trend icons: {e}")
+            self.trend_up_icon = None
+            self.trend_down_icon = None
+        
         # Load initial coin data
         self.refresh_coins()
         
@@ -121,17 +134,35 @@ class TickerScreen(BaseScreen):
         )
         self.display.surface.blit(symbol_surface, symbol_rect)
         
-        # Draw percentage change with arrow (below symbol)
+        # Draw percentage change with trend icon (below symbol)
         change_24h = current_coin['price_change_24h']
-        arrow = "↗" if change_24h >= 0 else "↘"
         change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
-        change_text = f"{arrow} {abs(change_24h):.1f}%"
-        change_surface = self.fonts['title-md'].render(change_text, True, change_color)
-        change_rect = change_surface.get_rect(
-            left=20,
-            top=symbol_rect.bottom + 10
-        )
-        self.display.surface.blit(change_surface, change_rect)
+        
+        # Draw trend icon
+        trend_icon = self.trend_up_icon if change_24h >= 0 else self.trend_down_icon
+        if trend_icon:
+            # Color the trend icon
+            colored_icon = trend_icon.copy()
+            for x in range(colored_icon.get_width()):
+                for y in range(colored_icon.get_height()):
+                    color = colored_icon.get_at((x, y))
+                    if color.a > 0:  # If pixel is not transparent
+                        colored_icon.set_at((x, y), change_color)
+            
+            trend_rect = colored_icon.get_rect(
+                left=20,
+                top=symbol_rect.bottom + 10
+            )
+            self.display.surface.blit(colored_icon, trend_rect)
+            
+            # Draw percentage next to icon
+            change_text = f"{abs(change_24h):.1f}%"
+            change_surface = self.fonts['title-md'].render(change_text, True, change_color)
+            change_rect = change_surface.get_rect(
+                left=trend_rect.right + 5,
+                centery=trend_rect.centery
+            )
+            self.display.surface.blit(change_surface, change_rect)
         
         # Draw sparkline if price history is available
         if 'sparkline_7d' in current_coin and current_coin['sparkline_7d']:
