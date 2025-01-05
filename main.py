@@ -3,12 +3,12 @@ from crypto_tracker.services.screen_manager import ScreenManager
 from crypto_tracker.screens.dashboard_screen import DashboardScreen
 from crypto_tracker.screens.settings_screen import SettingsScreen
 import pygame
-
+from crypto_tracker.services.crypto_service import CryptoService
 class MarkertTrackerApp():
     def __init__(self):
         self.display = Display()
         self.screen_manager = ScreenManager()
-
+        self.crypto_service = CryptoService()
         btc_data = self.crypto_service.get_coin_data('btc')
         if btc_data:
             print(f"\nFetched Bitcoin data:")
