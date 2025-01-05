@@ -38,9 +38,9 @@ class SettingsScreen(BaseScreen):
             # Get touch position
             x, y = self._scale_touch_input(event)
             
-            # Check if plus button was clicked
-            if self.plus_button_rect.collidepoint(x, y):
-                logger.info("Plus button clicked, switching to add ticker screen")
+            # Check if add button was clicked
+            if self.add_button_rect.collidepoint(x, y):
+                logger.info("Add button clicked, switching to add ticker screen")
                 self.screen_manager.switch_screen('add_ticker')
 
     def _draw_coin_cell(self, surface: pygame.Surface, y: int, symbol: str):
