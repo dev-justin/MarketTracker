@@ -130,7 +130,7 @@ class SettingsScreen(BaseScreen):
         surface.blit(symbol_surface, symbol_rect)
         
         # Draw edit icon (using "⚙" as a placeholder)
-        edit_text = "⚙"
+        edit_text = "Edit"
         edit_surface = self.fonts['md'].render(edit_text, True, AppConfig.GRAY)
         edit_rect = edit_surface.get_rect(
             right=rect.right - logo_margin,
