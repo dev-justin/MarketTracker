@@ -3,6 +3,7 @@ from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 from .base_screen import BaseScreen
 from ..services.crypto.crypto_manager import CryptoManager
+import os
 
 logger = get_logger(__name__)
 
@@ -18,8 +19,8 @@ class EditTickerScreen(BaseScreen):
         self.button_height = AppConfig.BUTTON_HEIGHT
         self.button_spacing = AppConfig.BUTTON_MARGIN
         
-        # Create buttons
-        button_y = self.height - self.button_height - 20
+        # Create buttons with increased height
+        button_y = self.height - (self.button_height + 30)  # More space from bottom
         self.back_rect = pygame.Rect(
             20,
             button_y,
@@ -92,30 +93,63 @@ class EditTickerScreen(BaseScreen):
         # Fill background
         self.display.surface.fill(self.background_color)
         
-        # Draw coin info
-        title_text = self.fonts['title-md'].render(f"Edit {self.current_coin['symbol']}", True, AppConfig.WHITE)
-        title_rect = title_text.get_rect(centerx=self.width//2, top=20)
-        self.display.surface.blit(title_text, title_rect)
+        # Draw coin logo if available
+        logo_size = 128  # Much larger logo
+        try:
+            logo_path = os.path.join(AppConfig.CACHE_DIR, f"{self.current_coin['symbol'].lower()}_logo.png")
+            if os.path.exists(logo_path):
+                logo = pygame.image.load(logo_path)
+                logo = pygame.transform.scale(logo, (logo_size, logo_size))
+                logo_rect = logo.get_rect(
+                    centerx=self.width // 2,
+                    centery=self.height // 3  # Position in upper third
+                )
+                self.display.surface.blit(logo, logo_rect)
+        except Exception as e:
+            logger.error(f"Error loading logo for {self.current_coin['symbol']}: {e}")
         
-        name_text = self.fonts['medium'].render(self.current_coin['name'], True, AppConfig.WHITE)
-        name_rect = name_text.get_rect(centerx=self.width//2, top=title_rect.bottom + 20)
+        # Draw coin name larger and below logo
+        name_text = self.fonts['title-lg'].render(self.current_coin['name'], True, AppConfig.WHITE)
+        name_rect = name_text.get_rect(
+            centerx=self.width // 2,
+            top=self.height // 2  # Center vertically
+        )
         self.display.surface.blit(name_text, name_rect)
         
-        # Draw buttons
-        pygame.draw.rect(self.display.surface, AppConfig.CANCEL_BUTTON_COLOR, self.back_rect)
+        # Draw symbol below name
+        symbol_text = self.fonts['title-md'].render(self.current_coin['symbol'].upper(), True, AppConfig.GRAY)
+        symbol_rect = symbol_text.get_rect(
+            centerx=self.width // 2,
+            top=name_rect.bottom + 20
+        )
+        self.display.surface.blit(symbol_text, symbol_rect)
+        
+        # Draw buttons with rounded corners and borders
+        corner_radius = 10
+        
+        # Back button
+        pygame.draw.rect(self.display.surface, AppConfig.CANCEL_BUTTON_COLOR, self.back_rect, border_radius=corner_radius)
+        pygame.draw.rect(self.display.surface, AppConfig.WHITE, self.back_rect, 2, border_radius=corner_radius)  # White border
         back_text = self.fonts['medium'].render("Back", True, AppConfig.WHITE)
         back_text_rect = back_text.get_rect(center=self.back_rect.center)
         self.display.surface.blit(back_text, back_text_rect)
         
-        pygame.draw.rect(self.display.surface, AppConfig.DELETE_BUTTON_COLOR, self.delete_rect)
+        # Delete button
+        pygame.draw.rect(self.display.surface, AppConfig.DELETE_BUTTON_COLOR, self.delete_rect, border_radius=corner_radius)
+        pygame.draw.rect(self.display.surface, AppConfig.WHITE, self.delete_rect, 2, border_radius=corner_radius)  # White border
         delete_text = self.fonts['medium'].render("Delete", True, AppConfig.WHITE)
         delete_text_rect = delete_text.get_rect(center=self.delete_rect.center)
         self.display.surface.blit(delete_text, delete_text_rect)
         
+        # Favorite button
         favorite_color = AppConfig.FAVORITE_ACTIVE_COLOR if self.current_coin.get('favorite') else AppConfig.FAVORITE_INACTIVE_COLOR
-        pygame.draw.rect(self.display.surface, favorite_color, self.favorite_rect)
-        favorite_text = self.fonts['medium'].render("Favorite", True, AppConfig.WHITE)
-        favorite_text_rect = favorite_text.get_rect(center=self.favorite_rect.center)
-        self.display.surface.blit(favorite_text, favorite_text_rect)
+        pygame.draw.rect(self.display.surface, favorite_color, self.favorite_rect, border_radius=corner_radius)
+        pygame.draw.rect(self.display.surface, AppConfig.WHITE, self.favorite_rect, 2, border_radius=corner_radius)  # White border
+        
+        # Add star icon to favorite button
+        favorite_text = "★ Favorite" if self.current_coin.get('favorite') else "☆ Favorite"
+        favorite_text_surface = self.fonts['medium'].render(favorite_text, True, AppConfig.WHITE)
+        favorite_text_rect = favorite_text_surface.get_rect(center=self.favorite_rect.center)
+        self.display.surface.blit(favorite_text_surface, favorite_text_rect)
         
         self.update_screen() 
