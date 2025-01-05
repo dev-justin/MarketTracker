@@ -6,23 +6,147 @@ from typing import Optional, Dict, List
 from ..utils.logger import get_logger
 import os
 from ..config.settings import AppConfig
+from abc import ABC, abstractmethod
 
 logger = get_logger(__name__)
 
+class CryptoDataCache:
+    """Handles caching of cryptocurrency data."""
+    
+    def __init__(self, cache_duration: int = 60):
+        self.cache = {}
+        self.cache_duration = cache_duration
+    
+    def get(self, key: str) -> Optional[Dict]:
+        """Get data from cache if valid."""
+        if key not in self.cache:
+            return None
+            
+        cache_age = time.time() - self.cache[key]['timestamp']
+        if cache_age >= self.cache_duration:
+            return None
+            
+        return self.cache[key]['data']
+    
+    def set(self, key: str, data: Dict):
+        """Store data in cache."""
+        self.cache[key] = {
+            'data': data,
+            'timestamp': time.time()
+        }
 
+class CryptoAPIClient(ABC):
+    """Abstract base class for cryptocurrency API clients."""
+    
+    @abstractmethod
+    def get_coin_data(self, coin_id: str) -> Optional[Dict]:
+        """Fetch coin data from API."""
+        pass
+    
+    @abstractmethod
+    def search_coin(self, symbol: str) -> Optional[Dict]:
+        """Search for a coin by symbol."""
+        pass
+
+class CoinGeckoClient(CryptoAPIClient):
+    """CoinGecko API implementation."""
+    
+    def __init__(self):
+        self.client = CoinGeckoAPI()
+    
+    def get_coin_data(self, coin_id: str) -> Optional[Dict]:
+        try:
+            return self.client.get_coin_by_id(
+                coin_id,
+                localization=False,
+                tickers=False,
+                market_data=True,
+                community_data=False,
+                developer_data=False,
+                sparkline=True
+            )
+        except Exception as e:
+            logger.error(f"Error fetching coin data: {e}")
+            return None
+    
+    def search_coin(self, symbol: str) -> Optional[Dict]:
+        try:
+            search_results = self.client.search(symbol.lower())
+            for coin in search_results.get('coins', []):
+                if coin['symbol'].lower() == symbol.lower():
+                    return {
+                        'id': coin['id'],
+                        'symbol': coin['symbol'].upper(),
+                        'name': coin['name']
+                    }
+            return None
+        except Exception as e:
+            logger.error(f"Error searching coin: {e}")
+            return None
 
 class CryptoService:
-    """Service for fetching cryptocurrency data."""
+    """Service for managing cryptocurrency data and caching."""
     
     def __init__(self):
         """Initialize the crypto service."""
-        self.client = CoinGeckoAPI()
-        self.cache = {}  # In-memory cache for coin data
-        self.cache_duration = 60  # Cache duration in seconds
+        self.api_client = CoinGeckoClient()
+        self.cache = CryptoDataCache()
+        self.tracked_symbols = self._load_tracked_symbols()
         os.makedirs(AppConfig.CACHE_DIR, exist_ok=True)
         os.makedirs(AppConfig.DATA_DIR, exist_ok=True)
-        self.tracked_symbols = self._load_tracked_symbols()
         logger.info("CryptoService initialized")
+    
+    def get_coin_data(self, symbol: str) -> Optional[Dict]:
+        """Get coin data with caching."""
+        # Check cache first
+        cached_data = self.cache.get(symbol)
+        if cached_data:
+            logger.debug(f"Using cached data for {symbol}")
+            return cached_data
+        
+        # Search for coin if not in cache
+        coin_info = self.api_client.search_coin(symbol)
+        if not coin_info:
+            return None
+        
+        # Fetch fresh data
+        coin_data = self.api_client.get_coin_data(coin_info['id'])
+        if not coin_data:
+            return None
+        
+        # Process and cache the data
+        result = self._process_coin_data(coin_data)
+        if result:
+            self.cache.set(symbol, result)
+            logger.info(f"Cached fresh data for {symbol}")
+        
+        return result
+    
+    def _process_coin_data(self, coin_data: Dict) -> Optional[Dict]:
+        """Process raw coin data into standard format."""
+        try:
+            symbol = coin_data['symbol'].upper()
+            
+            # Download and cache logo
+            logo_path = os.path.join(AppConfig.CACHE_DIR, f"{symbol.lower()}_logo.png")
+            if not os.path.exists(logo_path):
+                response = requests.get(coin_data['image']['large'])
+                if response.status_code == 200:
+                    with open(logo_path, 'wb') as f:
+                        f.write(response.content)
+                    logger.debug(f"Cached logo for {symbol}")
+            
+            return {
+                'symbol': symbol,
+                'name': coin_data['name'],
+                'price': coin_data['market_data']['current_price']['usd'],
+                'price_change_24h': round(coin_data['market_data']['price_change_percentage_24h'], 2),
+                'sparkline_7d': coin_data['market_data']['sparkline_7d']['price'],
+                'logo_path': logo_path,
+            }
+        except Exception as e:
+            logger.error(f"Error processing coin data: {e}")
+            return None
     
     def _is_cache_valid(self, symbol: str) -> bool:
         """Check if cached data is still valid."""
@@ -54,37 +178,6 @@ class CryptoService:
             logger.info(f"Saved tracked symbols: {self.tracked_symbols}")
         except Exception as e:
             logger.error(f"Error saving tracked symbols: {e}")
-    
-    def search_coin(self, symbol: str) -> Optional[Dict]:
-        """
-        Search for a coin by symbol.
-        
-        Args:
-            symbol: The coin symbol to search for (e.g., 'btc')
-            
-        Returns:
-            Dictionary with coin ID and name if found, None otherwise
-        """
-        try:
-            # Search CoinGecko
-            symbol = symbol.lower()
-            search_results = self.client.search(symbol)
-            
-            # Look for exact symbol match in coins
-            for coin in search_results.get('coins', []):
-                if coin['symbol'].lower() == symbol:
-                    return {
-                        'id': coin['id'],
-                        'symbol': coin['symbol'].upper(),
-                        'name': coin['name']
-                    }
-            
-            logger.warning(f"No exact match found for symbol: {symbol}")
-            return None
-            
-        except Exception as e:
-            logger.error(f"Error searching for coin: {e}")
-            return None
     
     def add_tracked_symbol(self, symbol: str) -> bool:
         """
@@ -130,80 +223,33 @@ class CryptoService:
         logger.warning(f"Symbol not tracked: {symbol}")
         return False
     
-    def get_coin_data(self, symbol: str) -> Optional[Dict]:
+    def search_coin(self, symbol: str) -> Optional[Dict]:
         """
-        Fetch coin data including price, name, logo, and historical data.
-        Uses caching to reduce API calls.
+        Search for a coin by symbol.
         
         Args:
-            symbol: The coin symbol (e.g., 'btc')
+            symbol: The coin symbol to search for (e.g., 'btc')
             
         Returns:
-            Dictionary containing:
-            - symbol: Coin symbol (e.g., 'BTC')
-            - name: Full coin name (e.g., 'Bitcoin')
-            - price: Current price in USD
-            - price_change_24h: 24h price change percentage
-            - sparkline_7d: List of 7-day price data points
-            - logo_path: Path to cached logo image
+            Dictionary with coin ID and name if found, None otherwise
         """
-        # Check cache first
-        if self._is_cache_valid(symbol):
-            logger.debug(f"Using cached data for {symbol}")
-            return self.cache[symbol]['data']
-        
         try:
-            # Search for coin
-            coin_info = self.search_coin(symbol)
-            if not coin_info:
-                return None
+            # Search CoinGecko
+            symbol = symbol.lower()
+            search_results = self.client.search(symbol)
             
-            # Fetch coin data with sparkline
-            coin_data = self.client.get_coin_by_id(
-                coin_info['id'],
-                localization=False,
-                tickers=False,
-                market_data=True,
-                community_data=False,
-                developer_data=False,
-                sparkline=True
-            )
+            # Look for exact symbol match in coins
+            for coin in search_results.get('coins', []):
+                if coin['symbol'].lower() == symbol:
+                    return {
+                        'id': coin['id'],
+                        'symbol': coin['symbol'].upper(),
+                        'name': coin['name']
+                    }
             
-            # Extract relevant data
-            price = coin_data['market_data']['current_price']['usd']
-            price_change_24h = coin_data['market_data']['price_change_percentage_24h']
-            name = coin_data['name']
-            symbol = coin_data['symbol'].upper()
-            image_url = coin_data['image']['large']
-            sparkline_7d = coin_data['market_data']['sparkline_7d']['price']
-            
-            # Download and cache the logo
-            logo_path = os.path.join(AppConfig.CACHE_DIR, f"{symbol.lower()}_logo.png")
-            if not os.path.exists(logo_path):
-                response = requests.get(image_url)
-                if response.status_code == 200:
-                    with open(logo_path, 'wb') as f:
-                        f.write(response.content)
-                    logger.debug(f"Cached logo for {symbol}")
-            
-            result = {
-                'symbol': symbol,
-                'name': name,
-                'price': price,
-                'price_change_24h': round(price_change_24h, 2),
-                'sparkline_7d': sparkline_7d,
-                'logo_path': logo_path,
-            }
-            
-            # Update cache
-            self.cache[symbol] = {
-                'data': result,
-                'timestamp': time.time()
-            }
-            
-            logger.info(f"Fetched fresh data for {symbol}")
-            return result
+            logger.warning(f"No exact match found for symbol: {symbol}")
+            return None
             
         except Exception as e:
-            logger.error(f"Error fetching coin data: {e}")
+            logger.error(f"Error searching for coin: {e}")
             return None 

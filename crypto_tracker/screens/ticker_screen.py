@@ -162,7 +162,7 @@ class TickerScreen(BaseScreen):
         seconds_until_update = max(0, int(self.update_interval - time_since_update))
         
         countdown_text = f"Next update in {seconds_until_update}s"
-        countdown_surface = self.fonts['light-sm'].render(countdown_text, True, AppConfig.GRAY)
+        countdown_surface = self.fonts['light-xs'].render(countdown_text, True, AppConfig.GRAY)
         countdown_rect = countdown_surface.get_rect(
             bottom=self.height - 20,
             right=self.width - 20
