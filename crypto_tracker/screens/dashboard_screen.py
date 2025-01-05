@@ -23,32 +23,61 @@ class DashboardScreen(BaseScreen):
         logger.info("DashboardScreen initialized")
     
     def get_dominant_color(self, logo_surface):
-        """Extract the dominant color from a logo."""
+        """Extract the dominant color from a logo using pure pygame."""
         try:
-            # Get surface data
+            # Get surface size
             width, height = logo_surface.get_size()
-            pixels = pygame.surfarray.pixels3d(logo_surface)
             
-            # Calculate average color of non-black pixels
+            # Sample points across the image
+            sample_size = 10  # Sample every 10th pixel
             r_total, g_total, b_total = 0, 0, 0
             pixel_count = 0
             
-            for x in range(width):
-                for y in range(height):
-                    r, g, b = pixels[x][y]
-                    # Skip black/very dark pixels
-                    if r + g + b > 60:  # Threshold for considering a pixel
-                        r_total += r
-                        g_total += g
-                        b_total += b
-                        pixel_count += 1
+            # Lock surface for direct pixel access
+            logo_surface.lock()
+            
+            # Sample pixels
+            for x in range(0, width, sample_size):
+                for y in range(0, height, sample_size):
+                    try:
+                        color = logo_surface.get_at((x, y))
+                        # Skip transparent or very dark pixels
+                        if color.a > 128 and sum(color[:3]) > 60:
+                            r_total += color.r
+                            g_total += color.g
+                            b_total += color.b
+                            pixel_count += 1
+                    except:
+                        continue
+            
+            # Unlock surface
+            logo_surface.unlock()
             
             if pixel_count > 0:
-                return (
+                # Calculate average color
+                avg_color = (
                     int(r_total / pixel_count),
                     int(g_total / pixel_count),
                     int(b_total / pixel_count)
                 )
+                
+                # Enhance saturation
+                max_component = max(avg_color)
+                min_component = min(avg_color)
+                if max_component > min_component:
+                    # Increase saturation by spreading the color components
+                    saturation_factor = 1.5
+                    mid_value = sum(avg_color) / 3
+                    enhanced_color = tuple(
+                        int(min(255, max(0, 
+                            mid_value + (c - mid_value) * saturation_factor
+                        )))
+                        for c in avg_color
+                    )
+                    return enhanced_color
+                
+                return avg_color
+            
             return (128, 128, 128)  # Default gray if no valid pixels
             
         except Exception as e:
