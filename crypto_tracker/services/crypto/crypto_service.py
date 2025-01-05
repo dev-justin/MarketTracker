@@ -3,9 +3,9 @@ import requests
 import json
 import time
 from typing import Optional, Dict, List
-from ..utils.logger import get_logger
+from ...utils.logger import get_logger
 import os
-from ..config.settings import AppConfig
+from ...config.settings import AppConfig
 from abc import ABC, abstractmethod
 
 logger = get_logger(__name__)

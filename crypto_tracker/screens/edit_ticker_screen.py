@@ -2,162 +2,120 @@ import pygame
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 from .base_screen import BaseScreen
-import json
-import os
+from ..services.crypto.tracked_coins_service import TrackedCoinsService
 
 logger = get_logger(__name__)
 
 class EditTickerScreen(BaseScreen):
-    """Screen for editing ticker properties like favorite status or deleting it."""
-    
-    def __init__(self, display, ticker_id: str) -> None:
-        """Initialize the edit ticker screen."""
+    def __init__(self, display) -> None:
         super().__init__(display)
-        self.ticker_id = ticker_id
         self.background_color = AppConfig.BLACK
-        self.current_ticker = None
-        self.is_favorite = False
-        self.tracked_coins = []
+        self.tracked_coins_service = TrackedCoinsService()
+        self.current_coin = None
         
-        # Load current ticker data
-        self.load_ticker_data()
+        # Button dimensions
+        self.button_width = AppConfig.BUTTON_WIDTH
+        self.button_height = AppConfig.BUTTON_HEIGHT
+        self.button_spacing = AppConfig.BUTTON_MARGIN
         
-        # Button dimensions and positions
-        button_y = self.height - AppConfig.BUTTON_AREA_HEIGHT
-        self.buttons = {
-            'favorite': {
-                'rect': pygame.Rect(
-                    self.width // 2 - AppConfig.BUTTON_WIDTH - AppConfig.BUTTON_MARGIN,
-                    button_y,
-                    AppConfig.BUTTON_WIDTH,
-                    AppConfig.BUTTON_HEIGHT
-                ),
-                'color': AppConfig.EDIT_BUTTON_COLOR,
-                'text': 'Unfavorite' if self.is_favorite else 'Favorite'
-            },
-            'delete': {
-                'rect': pygame.Rect(
-                    self.width // 2 + AppConfig.BUTTON_MARGIN,
-                    button_y,
-                    AppConfig.BUTTON_WIDTH,
-                    AppConfig.BUTTON_HEIGHT
-                ),
-                'color': AppConfig.DELETE_BUTTON_COLOR,
-                'text': 'Delete'
-            }
-        }
+        # Create buttons
+        button_y = self.height - self.button_height - 20
+        self.back_rect = pygame.Rect(
+            20,
+            button_y,
+            self.button_width,
+            self.button_height
+        )
+        self.delete_rect = pygame.Rect(
+            self.width - self.button_width - 20,
+            button_y,
+            self.button_width,
+            self.button_height
+        )
+        self.favorite_rect = pygame.Rect(
+            (self.width - self.button_width) // 2,
+            button_y,
+            self.button_width,
+            self.button_height
+        )
         
-        logger.info(f"EditTickerScreen initialized for ticker {ticker_id}")
+        logger.info("EditTickerScreen initialized")
     
-    def load_ticker_data(self) -> None:
-        """Load the current ticker data from tracked_coins.json."""
-        try:
-            if os.path.exists(AppConfig.TRACKED_COINS_FILE):
-                with open(AppConfig.TRACKED_COINS_FILE, 'r') as f:
-                    data = json.load(f)
-                    # Ensure proper data structure
-                    self.tracked_coins = []
-                    for item in data:
-                        if isinstance(item, dict) and 'id' in item and 'symbol' in item:
-                            if 'favorite' not in item:
-                                item['favorite'] = False
-                            self.tracked_coins.append(item)
-                        elif isinstance(item, str):
-                            # Convert old format to new format
-                            self.tracked_coins.append({
-                                'id': item.lower(),
-                                'symbol': item.upper(),
-                                'favorite': False
-                            })
-                    
-                    # Find current ticker
-                    self.current_ticker = next(
-                        (coin for coin in self.tracked_coins if coin.get('id') == self.ticker_id),
-                        None
-                    )
-                    self.is_favorite = self.current_ticker.get('favorite', False) if self.current_ticker else False
-            else:
-                self.tracked_coins = []
-                self.current_ticker = None
-                self.is_favorite = False
-                
-        except Exception as e:
-            logger.error(f"Error loading ticker data: {e}")
-            self.tracked_coins = []
-            self.current_ticker = None
-            self.is_favorite = False
+    def load_coin(self, symbol: str) -> None:
+        """Load coin data for editing."""
+        self.current_coin = self.tracked_coins_service.get_coin(symbol)
+        if not self.current_coin:
+            logger.error(f"Could not load coin: {symbol}")
+            self.screen_manager.switch_screen('settings')
     
-    def save_ticker_data(self) -> None:
-        """Save the current ticker data to tracked_coins.json."""
-        try:
-            os.makedirs(os.path.dirname(AppConfig.TRACKED_COINS_FILE), exist_ok=True)
-            with open(AppConfig.TRACKED_COINS_FILE, 'w') as f:
-                json.dump(self.tracked_coins, f, indent=2)
-            logger.info("Ticker data saved successfully")
-        except Exception as e:
-            logger.error(f"Error saving ticker data: {e}")
+    def delete_coin(self) -> None:
+        """Delete the current coin."""
+        if self.current_coin and self.tracked_coins_service.remove_coin(self.current_coin['symbol']):
+            logger.info(f"Deleted coin: {self.current_coin['symbol']}")
+            self.screen_manager.switch_screen('settings')
     
     def toggle_favorite(self) -> None:
-        """Toggle the favorite status of the current ticker."""
-        if self.current_ticker:
-            self.current_ticker['favorite'] = not self.current_ticker.get('favorite', False)
-            self.is_favorite = self.current_ticker['favorite']
-            self.buttons['favorite']['text'] = 'Unfavorite' if self.is_favorite else 'Favorite'
-            self.save_ticker_data()
-            logger.info(f"Toggled favorite status for {self.ticker_id} to {self.is_favorite}")
-    
-    def delete_ticker(self) -> None:
-        """Delete the current ticker from tracked coins."""
-        if self.current_ticker:
-            self.tracked_coins = [coin for coin in self.tracked_coins if coin.get('id') != self.ticker_id]
-            self.save_ticker_data()
-            logger.info(f"Deleted ticker {self.ticker_id}")
-            self.screen_manager.switch_screen('settings')
+        """Toggle favorite status for current coin."""
+        if self.current_coin:
+            self.tracked_coins_service.toggle_favorite(self.current_coin['symbol'])
+            # Refresh current coin data
+            self.current_coin = self.tracked_coins_service.get_coin(self.current_coin['symbol'])
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
+        if not self.current_coin:
+            return
+            
         gestures = self.gesture_handler.handle_touch_event(event)
         
-        if event.type == pygame.FINGERDOWN:
-            x = event.x * self.width
-            y = event.y * self.height
-            
-            # Check button clicks
-            for button_name, button in self.buttons.items():
-                if button['rect'].collidepoint(x, y):
-                    if button_name == 'favorite':
-                        self.toggle_favorite()
-                    elif button_name == 'delete':
-                        self.delete_ticker()
-        
-        # Handle swipe to go back
-        if gestures['swipe_right']:
-            logger.info("Swipe right detected, returning to settings")
+        if gestures['swipe_down']:
+            logger.info("Swipe down detected, returning to settings")
             self.screen_manager.switch_screen('settings')
+        elif event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
+            x, y = self._scale_touch_input(event)
+            
+            if self.back_rect.collidepoint(x, y):
+                logger.info("Back button clicked")
+                self.screen_manager.switch_screen('settings')
+            elif self.delete_rect.collidepoint(x, y):
+                logger.info("Delete button clicked")
+                self.delete_coin()
+            elif self.favorite_rect.collidepoint(x, y):
+                logger.info("Favorite button clicked")
+                self.toggle_favorite()
     
     def draw(self) -> None:
         """Draw the edit ticker screen."""
+        if not self.current_coin:
+            return
+            
         # Fill background
         self.display.surface.fill(self.background_color)
         
-        if self.current_ticker:
-            # Draw ticker symbol
-            title_text = f"Edit {self.current_ticker.get('symbol', '').upper()}"
-            title_surface = self.fonts['title-md'].render(title_text, True, AppConfig.WHITE)
-            title_rect = title_surface.get_rect(centerx=self.width // 2, top=20)
-            self.display.surface.blit(title_surface, title_rect)
-            
-            # Draw buttons
-            for button in self.buttons.values():
-                pygame.draw.rect(self.display.surface, button['color'], button['rect'])
-                text_surface = self.fonts['medium'].render(button['text'], True, AppConfig.WHITE)
-                text_rect = text_surface.get_rect(center=button['rect'].center)
-                self.display.surface.blit(text_surface, text_rect)
-        else:
-            # Draw error message if ticker not found
-            error_text = "Ticker not found"
-            error_surface = self.fonts['title-md'].render(error_text, True, AppConfig.RED)
-            error_rect = error_surface.get_rect(center=(self.width // 2, self.height // 2))
-            self.display.surface.blit(error_surface, error_rect)
+        # Draw coin info
+        title_text = self.fonts['title-md'].render(f"Edit {self.current_coin['symbol']}", True, AppConfig.WHITE)
+        title_rect = title_text.get_rect(centerx=self.width//2, top=20)
+        self.display.surface.blit(title_text, title_rect)
+        
+        name_text = self.fonts['medium'].render(self.current_coin['name'], True, AppConfig.WHITE)
+        name_rect = name_text.get_rect(centerx=self.width//2, top=title_rect.bottom + 20)
+        self.display.surface.blit(name_text, name_rect)
+        
+        # Draw buttons
+        pygame.draw.rect(self.display.surface, AppConfig.CANCEL_BUTTON_COLOR, self.back_rect)
+        back_text = self.fonts['medium'].render("Back", True, AppConfig.WHITE)
+        back_text_rect = back_text.get_rect(center=self.back_rect.center)
+        self.display.surface.blit(back_text, back_text_rect)
+        
+        pygame.draw.rect(self.display.surface, AppConfig.DELETE_BUTTON_COLOR, self.delete_rect)
+        delete_text = self.fonts['medium'].render("Delete", True, AppConfig.WHITE)
+        delete_text_rect = delete_text.get_rect(center=self.delete_rect.center)
+        self.display.surface.blit(delete_text, delete_text_rect)
+        
+        favorite_color = AppConfig.FAVORITE_ACTIVE_COLOR if self.current_coin.get('favorite') else AppConfig.FAVORITE_INACTIVE_COLOR
+        pygame.draw.rect(self.display.surface, favorite_color, self.favorite_rect)
+        favorite_text = self.fonts['medium'].render("Favorite", True, AppConfig.WHITE)
+        favorite_text_rect = favorite_text.get_rect(center=self.favorite_rect.center)
+        self.display.surface.blit(favorite_text, favorite_text_rect)
         
         self.update_screen() 
