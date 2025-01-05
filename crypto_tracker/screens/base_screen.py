@@ -50,3 +50,7 @@ class BaseScreen:
             display: The pygame surface to draw on
         """
         raise NotImplementedError("Screens must implement draw") 
+    
+    def update_screen(self) -> None:
+        """Update the screen."""
+        pygame.display.flip()
