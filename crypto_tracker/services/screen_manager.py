@@ -31,5 +31,5 @@ class ScreenManager:
     def update_screen(self):
         """Draw the current screen."""
         if self.current_screen:
-            self.current_screen.draw(self.display.surface)
+            self.current_screen.draw()
             self.display.flip() 
