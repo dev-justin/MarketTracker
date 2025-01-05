@@ -14,20 +14,20 @@ class AppConfig:
     FPS = 30
     
     # Colors
-    BLACK = (0, 0, 0)
+    BLACK = (18, 21, 26)  # Darker background
     WHITE = (255, 255, 255)
-    GRAY = (128, 128, 128)
-    RED = (255, 0, 0)
-    GREEN = (0, 255, 0)
-    BLUE = (0, 0, 255)
+    GRAY = (128, 138, 157)  # Softer gray
+    RED = (255, 88, 88)  # Softer red
+    GREEN = (39, 174, 96)  # Softer green
+    BLUE = (45, 156, 219)  # Softer blue
     
     # Button colors
-    CANCEL_BUTTON_COLOR = (200, 50, 50)
-    DELETE_BUTTON_COLOR = (200, 50, 50)
-    DONE_BUTTON_ACTIVE_COLOR = (50, 200, 50)
-    DONE_BUTTON_INACTIVE_COLOR = (100, 100, 100)
-    FAVORITE_ACTIVE_COLOR = (255, 215, 0)  # Gold
-    FAVORITE_INACTIVE_COLOR = (100, 100, 100)
+    CANCEL_BUTTON_COLOR = (35, 38, 45)  # Subtle button background
+    DELETE_BUTTON_COLOR = (220, 53, 69)  # Danger red
+    DONE_BUTTON_ACTIVE_COLOR = (39, 174, 96)  # Success green
+    DONE_BUTTON_INACTIVE_COLOR = (45, 48, 55)  # Disabled state
+    FAVORITE_ACTIVE_COLOR = (255, 193, 7)  # Warmer gold
+    FAVORITE_INACTIVE_COLOR = (128, 138, 157)  # Matching gray
     
     # Input colors
     INPUT_BG_COLOR = (30, 30, 30)
@@ -38,9 +38,9 @@ class AppConfig:
     KEY_BORDER_COLOR = (60, 60, 60)
     
     # Cell colors
-    CELL_BG_COLOR = (30, 30, 30)
-    CELL_BORDER_COLOR = (60, 60, 60)
-    CELL_HIGHLIGHT_COLOR = (0, 255, 0, 80)
+    CELL_BG_COLOR = (25, 28, 34)  # Slightly lighter than background
+    CELL_BORDER_COLOR = (35, 38, 45)  # Subtle border
+    CELL_HIGHLIGHT_COLOR = (45, 48, 55)  # Highlight when selected
     
     # Button dimensions
     BUTTON_WIDTH = 80

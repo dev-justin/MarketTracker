@@ -86,11 +86,10 @@ class SettingsScreen(BaseScreen):
         
         # Draw rounded rectangle background
         pygame.draw.rect(surface, AppConfig.CELL_BG_COLOR, rect, border_radius=self.corner_radius)
-        pygame.draw.rect(surface, AppConfig.CELL_BORDER_COLOR, rect, 1, border_radius=self.corner_radius)
         
         # Draw coin logo if available
-        logo_size = 40
-        logo_margin = 10
+        logo_size = 48
+        logo_margin = 15
         if 'image' in coin and coin['image']:
             try:
                 logo_path = os.path.join(AppConfig.CACHE_DIR, f"{coin['symbol'].lower()}_logo.png")
@@ -113,7 +112,7 @@ class SettingsScreen(BaseScreen):
         name_text = coin.get('name', '')
         if len(name_text) > 15:  # Truncate long names
             name_text = name_text[:13] + '...'
-        name_surface = self.fonts['lg'].render(name_text, True, AppConfig.WHITE)
+        name_surface = self.fonts['md'].render(name_text, True, AppConfig.WHITE)
         name_rect = name_surface.get_rect(
             left=text_start_x,
             top=rect.top + logo_margin
@@ -122,21 +121,24 @@ class SettingsScreen(BaseScreen):
         
         # Draw coin symbol
         symbol_text = coin.get('symbol', '').upper()
-        symbol_surface = self.fonts['lg'].render(symbol_text, True, AppConfig.GRAY)
+        symbol_surface = self.fonts['sm'].render(symbol_text, True, AppConfig.GRAY)
         symbol_rect = symbol_surface.get_rect(
             left=text_start_x,
             top=name_rect.bottom + 5
         )
         surface.blit(symbol_surface, symbol_rect)
         
-        # Draw edit icon (using "⚙" as a placeholder)
-        edit_text = "Edit"
-        edit_surface = self.fonts['lg'].render(edit_text, True, AppConfig.GRAY)
-        edit_rect = edit_surface.get_rect(
-            right=rect.right - logo_margin,
-            centery=rect.centery
-        )
-        surface.blit(edit_surface, edit_rect)
+        # Draw price change if available
+        if 'price_change_24h' in coin:
+            change = coin['price_change_24h']
+            change_color = AppConfig.GREEN if change >= 0 else AppConfig.RED
+            change_text = f"{change:+.2f}%"
+            change_surface = self.fonts['sm'].render(change_text, True, change_color)
+            change_rect = change_surface.get_rect(
+                right=rect.right - logo_margin,
+                centery=rect.centery
+            )
+            surface.blit(change_surface, change_rect)
         
         # Draw favorite star if favorited
         if coin.get('favorite', False):
@@ -156,10 +158,10 @@ class SettingsScreen(BaseScreen):
         self.display.surface.fill(self.background_color)
         
         # Draw header
-        header_text = "Settings"
+        header_text = "My Portfolio"
         header_surface = self.fonts['title-md'].render(header_text, True, AppConfig.WHITE)
         header_rect = header_surface.get_rect(
-            centerx=self.width // 2,
+            left=self.padding,
             top=self.padding
         )
         self.display.surface.blit(header_surface, header_rect)
@@ -188,10 +190,9 @@ class SettingsScreen(BaseScreen):
             self.button_height
         )
         pygame.draw.rect(self.display.surface, AppConfig.CELL_BG_COLOR, self.add_button_rect, border_radius=self.corner_radius)
-        pygame.draw.rect(self.display.surface, AppConfig.CELL_BORDER_COLOR, self.add_button_rect, 1, border_radius=self.corner_radius)
         
-        button_text = "Add Ticker"
-        button_surface = self.fonts['medium'].render(button_text, True, AppConfig.WHITE)
+        button_text = "Add Coin"
+        button_surface = self.fonts['md'].render(button_text, True, AppConfig.WHITE)
         button_text_rect = button_surface.get_rect(center=self.add_button_rect.center)
         self.display.surface.blit(button_surface, button_text_rect)
         
