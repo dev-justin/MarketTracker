@@ -18,8 +18,8 @@ class SettingsScreen(BaseScreen):
         self.padding = 20
         
         # Button dimensions
-        self.button_width = AppConfig.BUTTON_WIDTH
-        self.button_height = AppConfig.BUTTON_HEIGHT
+        self.button_width = 200
+        self.button_height = 60
         
         # Coin cell dimensions
         self.cell_height = 70
@@ -72,7 +72,7 @@ class SettingsScreen(BaseScreen):
         pygame.draw.rect(self.display.surface, AppConfig.CELL_BG_COLOR, header_rect)
         
         # Draw "Settings" text (left-aligned)
-        settings_text = self.fonts['bold-lg'].render("Settings", True, AppConfig.WHITE)
+        settings_text = self.fonts['regular-lg'].render("Settings", True, AppConfig.WHITE)
         settings_rect = settings_text.get_rect(left=self.padding, centery=self.header_height//2)
         self.display.surface.blit(settings_text, settings_rect)
         
@@ -84,7 +84,7 @@ class SettingsScreen(BaseScreen):
             self.button_height
         )
         pygame.draw.rect(self.display.surface, AppConfig.GREEN, self.add_button_rect, 0, border_radius=10)
-        add_text = self.fonts['bold-md'].render("Add Ticker", True, AppConfig.WHITE)
+        add_text = self.fonts['md'].render("Add Ticker", True, AppConfig.WHITE)
         add_text_rect = add_text.get_rect(center=self.add_button_rect.center)
         self.display.surface.blit(add_text, add_text_rect)
         
