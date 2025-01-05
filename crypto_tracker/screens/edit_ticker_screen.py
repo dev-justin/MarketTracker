@@ -14,6 +14,14 @@ class EditTickerScreen(BaseScreen):
         self.crypto_manager = CryptoManager()
         self.current_coin = None
         
+        # Load star icon
+        try:
+            self.star_icon = pygame.image.load(os.path.join(AppConfig.ASSETS_DIR, 'icons', 'star.svg'))
+            self.star_icon = pygame.transform.scale(self.star_icon, (24, 24))
+        except Exception as e:
+            logger.error(f"Error loading star icon: {e}")
+            self.star_icon = None
+        
         # Button dimensions - narrower for right side
         self.button_width = int(self.width * 0.4)  # 40% of screen width
         self.button_height = 50  # Fixed height
@@ -139,10 +147,35 @@ class EditTickerScreen(BaseScreen):
         corner_radius = self.button_height // 2  # Make buttons fully rounded
         
         # Favorite button (top)
-        pygame.draw.rect(self.display.surface, button_bg_color, self.favorite_rect, border_radius=corner_radius)
-        favorite_text = "Favorite" if not self.current_coin.get('favorite') else "Favorited"
+        is_favorited = self.current_coin.get('favorite', False)
+        favorite_bg_color = (60, 60, 60) if is_favorited else button_bg_color  # Slightly lighter when active
+        pygame.draw.rect(self.display.surface, favorite_bg_color, self.favorite_rect, border_radius=corner_radius)
+        
+        # Draw star icon and text
+        if self.star_icon:
+            # Create a copy of the star icon surface to modify its color
+            star_surface = self.star_icon.copy()
+            if is_favorited:
+                # Change the color to gold for favorited state
+                gold_color = (255, 215, 0)  # RGB for gold
+                pixels = pygame.PixelArray(star_surface)
+                pixels.replace((50, 50, 50), gold_color)  # Replace dark gray with gold
+                del pixels
+            
+            # Position star icon to the left of text
+            star_rect = star_surface.get_rect(
+                right=self.favorite_rect.centerx - 5,
+                centery=self.favorite_rect.centery
+            )
+            self.display.surface.blit(star_surface, star_rect)
+        
+        # Draw favorite text
+        favorite_text = "Favorited" if is_favorited else "Favorite"
         favorite_text_surface = self.fonts['medium'].render(favorite_text, True, AppConfig.WHITE)
-        favorite_text_rect = favorite_text_surface.get_rect(center=self.favorite_rect.center)
+        favorite_text_rect = favorite_text_surface.get_rect(
+            left=self.favorite_rect.centerx + 5,
+            centery=self.favorite_rect.centery
+        )
         self.display.surface.blit(favorite_text_surface, favorite_text_rect)
         
         # Delete button (middle)
