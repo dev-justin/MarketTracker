@@ -15,8 +15,8 @@ class TickerScreen(BaseScreen):
         self.coins = []
         
         # Sparkline dimensions
-        self.sparkline_height = 100
-        self.sparkline_padding = 40  # Padding from sides
+        self.sparkline_height = self.height // 2  # 50% of screen height
+        self.sparkline_padding = 0  # No padding for full width
         
         # Load initial coin data
         self.refresh_coins()
@@ -95,12 +95,15 @@ class TickerScreen(BaseScreen):
         if 'sparkline_7d' in current_coin and current_coin['sparkline_7d']:
             prices = current_coin['sparkline_7d']
             if prices:
+                # Create a surface for the gradient and sparkline
+                sparkline_surface = pygame.Surface((self.width, self.sparkline_height))
+                sparkline_surface.set_alpha(128)  # Make it semi-transparent
+                
                 # Calculate sparkline dimensions
-                sparkline_width = self.width - (self.sparkline_padding * 2)
                 sparkline_rect = pygame.Rect(
-                    self.sparkline_padding,
-                    change_rect.bottom + 30,
-                    sparkline_width,
+                    0,
+                    0,
+                    self.width,
                     self.sparkline_height
                 )
                 
@@ -112,17 +115,36 @@ class TickerScreen(BaseScreen):
                 # Calculate points
                 points = []
                 for i, price in enumerate(prices):
-                    x = sparkline_rect.left + (i * sparkline_width / (len(prices) - 1))
-                    # Normalize price to sparkline height
+                    x = i * self.width / (len(prices) - 1)
+                    # Normalize price to sparkline height, starting from bottom
                     normalized_price = (price - min_price) / price_range if price_range > 0 else 0.5
-                    y = sparkline_rect.bottom - (normalized_price * self.sparkline_height)
+                    y = sparkline_rect.height - (normalized_price * sparkline_rect.height)
                     points.append((x, y))
                 
-                # Draw sparkline
+                # Draw sparkline with gradient
                 if len(points) > 1:
-                    # Draw line with anti-aliasing
+                    # Create gradient colors
                     line_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
-                    pygame.draw.aalines(self.display.surface, line_color, False, points)
+                    gradient_top = (*line_color[:3], 50)  # Semi-transparent
+                    gradient_bottom = (*line_color[:3], 0)  # Fully transparent
+                    
+                    # Create gradient fill points by adding bottom corners
+                    fill_points = points + [
+                        (self.width, sparkline_rect.height),  # Bottom right
+                        (0, sparkline_rect.height)  # Bottom left
+                    ]
+                    
+                    # Draw gradient fill
+                    pygame.draw.polygon(sparkline_surface, gradient_top, fill_points)
+                    
+                    # Draw the actual line
+                    pygame.draw.aalines(sparkline_surface, line_color, False, points, 2)  # Made line thicker
+                    
+                    # Position and draw the sparkline surface
+                    self.display.surface.blit(
+                        sparkline_surface,
+                        (0, self.height - self.sparkline_height)
+                    )
         
         # Draw navigation hints
         if len(self.coins) > 1:
