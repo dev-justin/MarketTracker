@@ -35,9 +35,9 @@ class DashboardScreen(BaseScreen):
         # Handle double tap to return to ticker screen
         if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
             current_time = time.time()
-            if current_time - self.last_tap_time < self.double_tap_threshold:
+            if current_time - last_tap_time < double_tap_threshold:
                 logger.info("Double tap detected, returning to ticker screen")
-            self.last_tap_time = current_time
+            last_tap_time = current_time
         
         # Handle swipe up to settings
         if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
@@ -45,7 +45,7 @@ class DashboardScreen(BaseScreen):
             logger.debug(f"Touch start at y={y}")
         elif event.type == AppConfig.EVENT_TYPES['FINGER_UP'] and swipe_start_y is not None:
             swipe_distance = swipe_start_y - y
-            swipe_threshold = self.height * self.SWIPE_THRESHOLD
+            swipe_threshold = self.height * swipe_threshold
             if swipe_distance > swipe_threshold:
                 logger.info("Swipe up detected, switching to settings")
             swipe_start_y = None
