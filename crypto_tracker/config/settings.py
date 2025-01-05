@@ -1,7 +1,10 @@
 import os
-import pygame
 
 class AppConfig:
+    # Timezone
+    TIMEZONE = 'America/New_York'
+
+
     # Display settings
     DISPLAY_WIDTH = 800
     DISPLAY_HEIGHT = 480

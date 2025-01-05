@@ -3,7 +3,7 @@ from datetime import datetime
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 from .base_screen import BaseScreen
-
+from zoneinfo import ZoneInfo
 logger = get_logger(__name__)
 
 class DashboardScreen(BaseScreen):
@@ -32,17 +32,18 @@ class DashboardScreen(BaseScreen):
             ]
             pygame.draw.line(self.display.surface, color, (0, y), (self.width, y))
         
-        # Get current time in local timezone
+        # Get current time 
         now = datetime.now()
+        local_time = now.astimezone(ZoneInfo(AppConfig.TIMEZONE))
         
         # Draw time
-        time_text = now.strftime("%I:%M %p").lstrip("0")
+        time_text = local_time.strftime("%I:%M %p").lstrip("0")
         time_surface = self.fonts['title-xl'].render(time_text, True, AppConfig.WHITE)
         time_rect = time_surface.get_rect(center=(self.width // 2, self.height // 2))
         self.display.surface.blit(time_surface, time_rect)
         
         # Draw date
-        date_text = now.strftime("%A, %B %d")
+        date_text = local_time.strftime("%A, %B %d")
         date_surface = self.fonts['title-md'].render(date_text, True, AppConfig.WHITE)
         date_rect = date_surface.get_rect(center=(self.width // 2, time_rect.top - 50))
         self.display.surface.blit(date_surface, date_rect)
