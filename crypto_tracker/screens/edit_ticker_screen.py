@@ -14,28 +14,33 @@ class EditTickerScreen(BaseScreen):
         self.crypto_manager = CryptoManager()
         self.current_coin = None
         
-        # Button dimensions - make them larger
-        self.button_width = int(AppConfig.BUTTON_WIDTH * 1.2)  # 20% wider
-        self.button_height = int(AppConfig.BUTTON_HEIGHT * 1.5)  # 50% taller
-        self.button_spacing = AppConfig.BUTTON_MARGIN * 2
+        # Button dimensions - make them similar to example
+        self.button_width = int(self.width * 0.45)  # 45% of screen width
+        self.button_height = 60  # Fixed height
+        self.button_spacing = 20
         
-        # Create buttons with increased height and better spacing
-        button_y = self.height - (self.button_height + 50)  # More space from bottom
+        # Create buttons with modern layout
+        first_row_y = self.height - (self.button_height * 2 + self.button_spacing + 40)  # Two rows of buttons
+        second_row_y = first_row_y + self.button_height + self.button_spacing
+        
+        # First row - Back and Delete
         self.back_rect = pygame.Rect(
-            30,  # More padding from left
-            button_y,
+            20,  # Left padding
+            first_row_y,
             self.button_width,
             self.button_height
         )
         self.delete_rect = pygame.Rect(
-            self.width - self.button_width - 30,  # More padding from right
-            button_y,
+            self.width - self.button_width - 20,  # Right padding
+            first_row_y,
             self.button_width,
             self.button_height
         )
+        
+        # Second row - Favorite (centered)
         self.favorite_rect = pygame.Rect(
             (self.width - self.button_width) // 2,
-            button_y,
+            second_row_y,
             self.button_width,
             self.button_height
         )
@@ -124,28 +129,29 @@ class EditTickerScreen(BaseScreen):
         )
         self.display.surface.blit(symbol_text, symbol_rect)
         
-        # Draw buttons with more rounded corners
-        corner_radius = 20  # Increased corner radius
+        # Common button style
+        button_bg_color = (45, 45, 45)  # Dark gray background
+        corner_radius = 15
+        icon_padding = 10  # Space between icon and text
         
-        # Back button
-        pygame.draw.rect(self.display.surface, AppConfig.CANCEL_BUTTON_COLOR, self.back_rect, border_radius=corner_radius)
-        back_text = self.fonts['title-md'].render("Back", True, AppConfig.WHITE)  # Larger font
-        back_text_rect = back_text.get_rect(center=self.back_rect.center)
-        self.display.surface.blit(back_text, back_text_rect)
+        # Back button with icon
+        pygame.draw.rect(self.display.surface, button_bg_color, self.back_rect, border_radius=corner_radius)
+        back_text = "← Back"
+        back_text_surface = self.fonts['medium'].render(back_text, True, AppConfig.WHITE)
+        back_text_rect = back_text_surface.get_rect(center=self.back_rect.center)
+        self.display.surface.blit(back_text_surface, back_text_rect)
         
-        # Delete button
-        pygame.draw.rect(self.display.surface, AppConfig.DELETE_BUTTON_COLOR, self.delete_rect, border_radius=corner_radius)
-        delete_text = self.fonts['title-md'].render("Delete", True, AppConfig.WHITE)  # Larger font
-        delete_text_rect = delete_text.get_rect(center=self.delete_rect.center)
-        self.display.surface.blit(delete_text, delete_text_rect)
+        # Delete button with icon
+        pygame.draw.rect(self.display.surface, button_bg_color, self.delete_rect, border_radius=corner_radius)
+        delete_text = "🗑 Delete"
+        delete_text_surface = self.fonts['medium'].render(delete_text, True, AppConfig.WHITE)
+        delete_text_rect = delete_text_surface.get_rect(center=self.delete_rect.center)
+        self.display.surface.blit(delete_text_surface, delete_text_rect)
         
         # Favorite button
-        favorite_color = AppConfig.FAVORITE_ACTIVE_COLOR if self.current_coin.get('favorite') else AppConfig.FAVORITE_INACTIVE_COLOR
-        pygame.draw.rect(self.display.surface, favorite_color, self.favorite_rect, border_radius=corner_radius)
-        
-        # Add star icon to favorite button with larger text
+        pygame.draw.rect(self.display.surface, button_bg_color, self.favorite_rect, border_radius=corner_radius)
         favorite_text = "★ Favorite" if self.current_coin.get('favorite') else "☆ Favorite"
-        favorite_text_surface = self.fonts['title-md'].render(favorite_text, True, AppConfig.WHITE)  # Larger font
+        favorite_text_surface = self.fonts['medium'].render(favorite_text, True, AppConfig.WHITE)
         favorite_text_rect = favorite_text_surface.get_rect(center=self.favorite_rect.center)
         self.display.surface.blit(favorite_text_surface, favorite_text_rect)
         
