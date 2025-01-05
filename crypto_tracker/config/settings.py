@@ -69,9 +69,9 @@ class AppConfig:
     # Font sizes
     FONT_SIZES = {
         'xs': 12,
-        'small': 14,
-        'medium': 18,
-        'large': 24,
+        'sm': 14,
+        'md': 18,
+        'lg': 24,
         'xl': 28,
         'title-sm': 32,
         'title-md': 36,
