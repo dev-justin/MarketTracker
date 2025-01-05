@@ -23,9 +23,13 @@ class TickerScreen(BaseScreen):
         self.last_update_time = 0  # Track when we last updated
         self.update_interval = 60  # Update every 60 seconds
         self.coingecko = CoinGeckoAPI()
+        self.error_message = None
         
         # Load tracked coins
         self.load_tracked_coins()
+        
+        # Initial data load
+        self.update_all_coins()
         
         logger.info("TickerScreen initialized")
     
@@ -49,15 +53,19 @@ class TickerScreen(BaseScreen):
                                 'symbol': item.upper(),
                                 'favorite': False
                             })
+                logger.info(f"Loaded {len(self.tracked_coins)} tracked coins")
             else:
                 self.tracked_coins = []
+                logger.warning("No tracked coins file found")
         except Exception as e:
             logger.error(f"Error loading tracked coins: {e}")
             self.tracked_coins = []
+            self.error_message = "Error loading coins"
     
     def update_all_coins(self):
         """Update data for all tracked coins."""
         if not self.tracked_coins:
+            logger.info("No coins to update")
             return
             
         logger.info("Updating all coins with fresh data")
@@ -67,6 +75,7 @@ class TickerScreen(BaseScreen):
                 coin_id = coin.get('id')
                 if coin_id:
                     try:
+                        logger.info(f"Fetching data for {coin_id}")
                         data = self.coingecko.get_coin_by_id(
                             coin_id,
                             localization=False,
@@ -76,14 +85,24 @@ class TickerScreen(BaseScreen):
                             developer_data=False,
                             sparkline=True
                         )
-                        self.coin_data[coin_id] = data
+                        if data:
+                            self.coin_data[coin_id] = data
+                            logger.info(f"Successfully updated {coin_id}")
+                        else:
+                            logger.error(f"No data received for {coin_id}")
                     except Exception as e:
                         logger.error(f"Error fetching data for {coin_id}: {e}")
+                        self.error_message = f"Error fetching {coin_id}"
             
             # Reset timer after updating all coins
             self.last_update_time = pygame.time.get_ticks() / 1000
+            
+            # Update current coin
+            self.update_current_coin()
+            
         except Exception as e:
             logger.error(f"Error updating coins: {e}")
+            self.error_message = "Error updating data"
     
     def update_current_coin(self):
         """Update the current coin data."""
@@ -103,8 +122,10 @@ class TickerScreen(BaseScreen):
             coin_id = coin.get('id')
             if coin_id in self.coin_data:
                 self.current_coin = self.coin_data[coin_id]
+                logger.debug(f"Current coin set to {coin_id}")
             else:
                 self.current_coin = None
+                logger.warning(f"No data available for {coin_id}")
     
     def next_coin(self):
         """Switch to the next coin."""
@@ -138,6 +159,7 @@ class TickerScreen(BaseScreen):
     def _draw_price_section(self, surface: pygame.Surface):
         """Draw the price and change information."""
         if not self.current_coin:
+            logger.warning("No current coin data to draw")
             return
             
         try:
@@ -150,9 +172,15 @@ class TickerScreen(BaseScreen):
             )
             surface.blit(symbol_surface, symbol_rect)
             
+            # Get market data safely
+            market_data = self.current_coin.get('market_data', {})
+            if not market_data:
+                logger.error("No market data available")
+                return
+                
             # Draw current price
-            price = self.current_coin['market_data']['current_price'].get('usd', 0)
-            price_text = f"${price:,.2f}"
+            current_price = market_data.get('current_price', {}).get('usd', 0)
+            price_text = f"${current_price:,.2f}"
             price_surface = self.fonts['title-lg'].render(price_text, True, AppConfig.WHITE)
             price_rect = price_surface.get_rect(
                 centerx=self.width // 2,
@@ -161,7 +189,7 @@ class TickerScreen(BaseScreen):
             surface.blit(price_surface, price_rect)
             
             # Draw 24h change
-            change = self.current_coin['market_data']['price_change_percentage_24h']
+            change = market_data.get('price_change_percentage_24h', 0)
             change_color = AppConfig.GREEN if change >= 0 else AppConfig.RED
             change_text = f"{change:+.2f}%"
             change_surface = self.fonts['title-sm'].render(change_text, True, change_color)
@@ -173,6 +201,7 @@ class TickerScreen(BaseScreen):
             
         except Exception as e:
             logger.error(f"Error drawing price section: {e}")
+            self.error_message = "Error displaying price"
     
     def _draw_chart(self, surface: pygame.Surface):
         """Draw the price chart."""
@@ -180,9 +209,13 @@ class TickerScreen(BaseScreen):
             return
             
         try:
-            # Get sparkline data
-            prices = self.current_coin['market_data']['sparkline_7d']['price']
+            # Get sparkline data safely
+            market_data = self.current_coin.get('market_data', {})
+            sparkline_data = market_data.get('sparkline_7d', {})
+            prices = sparkline_data.get('price', [])
+            
             if not prices:
+                logger.warning("No price data for chart")
                 return
                 
             # Calculate chart dimensions
@@ -215,6 +248,7 @@ class TickerScreen(BaseScreen):
             
         except Exception as e:
             logger.error(f"Error drawing chart: {e}")
+            self.error_message = "Error displaying chart"
     
     def _draw_update_countdown(self, surface: pygame.Surface):
         """Draw the time until next update."""
@@ -254,11 +288,17 @@ class TickerScreen(BaseScreen):
             # Check if we need to update data
             self.update_current_coin()
             
-            # Draw price section
-            self._draw_price_section(self.display.surface)
-            
-            # Draw chart
-            self._draw_chart(self.display.surface)
+            if self.error_message:
+                # Draw error message
+                error_surface = self.fonts['title-sm'].render(self.error_message, True, AppConfig.RED)
+                error_rect = error_surface.get_rect(center=(self.width // 2, self.height // 2))
+                self.display.surface.blit(error_surface, error_rect)
+            else:
+                # Draw price section
+                self._draw_price_section(self.display.surface)
+                
+                # Draw chart
+                self._draw_chart(self.display.surface)
             
             # Draw update countdown
             self._draw_update_countdown(self.display.surface)
