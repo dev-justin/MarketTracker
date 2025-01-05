@@ -200,27 +200,25 @@ class DashboardScreen(BaseScreen):
                         )
                         self.display.surface.blit(name_surface, name_rect)
                         
-                        # Draw price and change
+                        # Draw price with larger font
                         price_text = f"${coin['current_price']:,.2f}"
-                        change_24h = coin['price_change_24h']
-                        change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
-                        
-                        # Price
-                        price_font = pygame.font.Font(AppConfig.FONT_PATHS['regular'], AppConfig.FONT_SIZES['md'])
+                        price_font = pygame.font.Font(AppConfig.FONT_PATHS['regular'], AppConfig.FONT_SIZES['title-md'])  # Increased size
                         price_surface = price_font.render(price_text, True, AppConfig.WHITE)
                         price_rect = price_surface.get_rect(
-                            left=box_rect.left + 15,
-                            bottom=box_rect.bottom - 15
+                            left=logo_rect.right + 15,  # Align with name
+                            top=name_rect.bottom + 8  # Space after name
                         )
                         self.display.surface.blit(price_surface, price_rect)
                         
-                        # Change percentage
+                        # Change percentage next to price
+                        change_24h = coin['price_change_24h']
+                        change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
                         change_text = f"{change_24h:+.1f}%"
-                        change_font = pygame.font.Font(AppConfig.FONT_PATHS['regular'], AppConfig.FONT_SIZES['md'])
+                        change_font = pygame.font.Font(AppConfig.FONT_PATHS['regular'], AppConfig.FONT_SIZES['lg'])  # Increased size
                         change_surface = change_font.render(change_text, True, change_color)
                         change_rect = change_surface.get_rect(
                             right=box_rect.right - 15,
-                            centery=price_rect.centery
+                            centery=price_rect.centery  # Align with price vertically
                         )
                         self.display.surface.blit(change_surface, change_rect)
                         
