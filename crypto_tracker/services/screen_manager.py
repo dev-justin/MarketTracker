@@ -41,6 +41,16 @@ class ScreenManager:
         self.current_screen.on_screen_enter()
         logger.info(f"Switched to screen: {name}")
     
+    def handle_event(self, event: pygame.event.Event) -> None:
+        """Handle pygame events by passing them to the current screen."""
+        if self.current_screen:
+            self.current_screen.handle_event(event)
+    
+    def update_screen(self) -> None:
+        """Update the current screen."""
+        if self.current_screen:
+            self.current_screen.draw()
+    
     def get_current_screen(self) -> Optional[Any]:
         """Get the current screen."""
         return self.current_screen
