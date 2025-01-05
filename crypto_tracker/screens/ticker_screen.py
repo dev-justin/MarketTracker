@@ -15,9 +15,9 @@ class TickerScreen(BaseScreen):
         self.current_index = 0
         self.coins = []
         
-        # Sparkline dimensions - make it larger
-        self.sparkline_height = int(self.height * 0.8)  # 80% of screen height
-        self.sparkline_padding = 0  # Remove padding since we removed month labels
+        # Sparkline dimensions
+        self.sparkline_height = int(self.height * 0.7)  # 70% of screen height
+        self.sparkline_padding = 0
         
         # Load initial coin data
         self.refresh_coins()
@@ -72,33 +72,64 @@ class TickerScreen(BaseScreen):
         
         current_coin = self.coins[self.current_index]
         
-        # Draw crypto amount (large, centered) at top
-        amount_text = f"{current_coin['current_price']:.8f} {current_coin['symbol']}"
-        amount_surface = self.fonts['title-xl'].render(amount_text, True, AppConfig.WHITE)
-        amount_rect = amount_surface.get_rect(
-            centerx=self.width//2,
+        # Draw coin logo in top right if available
+        logo_size = 64
+        logo_margin = 20
+        logo_rect = None
+        try:
+            logo_path = os.path.join(AppConfig.CACHE_DIR, f"{current_coin['symbol'].lower()}_logo.png")
+            if os.path.exists(logo_path):
+                logo = pygame.image.load(logo_path)
+                logo = pygame.transform.scale(logo, (logo_size, logo_size))
+                logo_rect = logo.get_rect(
+                    right=self.width - logo_margin,
+                    top=logo_margin
+                )
+                self.display.surface.blit(logo, logo_rect)
+        except Exception as e:
+            logger.error(f"Error loading logo for {current_coin['symbol']}: {e}")
+        
+        # Draw price in top left (large)
+        price_text = f"${current_coin['current_price']:,.2f}"
+        price_surface = self.fonts['title-xl'].render(price_text, True, AppConfig.WHITE)
+        # Scale up the price text
+        scaled_price_surface = pygame.transform.scale(
+            price_surface,
+            (int(price_surface.get_width() * 1.2), int(price_surface.get_height() * 1.2))
+        )
+        price_rect = scaled_price_surface.get_rect(
+            left=20,
             top=20
         )
-        self.display.surface.blit(amount_surface, amount_rect)
+        self.display.surface.blit(scaled_price_surface, price_rect)
         
-        # Draw USD value below
-        usd_value = f"(${current_coin['current_price']:,.2f})"
-        usd_surface = self.fonts['light'].render(usd_value, True, (128, 128, 128))
-        usd_rect = usd_surface.get_rect(
-            centerx=self.width//2,
-            top=amount_rect.bottom + 5
+        # Draw coin name and symbol below price
+        name_text = f"{current_coin['name']}"
+        name_surface = self.fonts['light'].render(name_text, True, AppConfig.WHITE)
+        name_rect = name_surface.get_rect(
+            left=20,
+            top=price_rect.bottom + 10
         )
-        self.display.surface.blit(usd_surface, usd_rect)
+        self.display.surface.blit(name_surface, name_rect)
         
-        # Draw percentage change with arrow
+        # Draw symbol below name
+        symbol_text = current_coin['symbol'].upper()
+        symbol_surface = self.fonts['light'].render(symbol_text, True, (128, 128, 128))  # Gray color
+        symbol_rect = symbol_surface.get_rect(
+            left=20,
+            top=name_rect.bottom + 5
+        )
+        self.display.surface.blit(symbol_surface, symbol_rect)
+        
+        # Draw percentage change with arrow (below symbol)
         change_24h = current_coin['price_change_24h']
         arrow = "↗" if change_24h >= 0 else "↘"
         change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
         change_text = f"{arrow} {abs(change_24h):.1f}%"
         change_surface = self.fonts['title-md'].render(change_text, True, change_color)
         change_rect = change_surface.get_rect(
-            centerx=self.width//2,
-            top=usd_rect.bottom + 10
+            left=20,
+            top=symbol_rect.bottom + 10
         )
         self.display.surface.blit(change_surface, change_rect)
         
