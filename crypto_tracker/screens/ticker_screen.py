@@ -92,8 +92,8 @@ class TickerScreen(BaseScreen):
         self.display.surface.blit(change_surface, change_rect)
         
         # Draw sparkline if price history is available
-        if 'sparkline_in_7d' in current_coin and current_coin['sparkline_in_7d'].get('price'):
-            prices = current_coin['sparkline_in_7d']['price']
+        if 'sparkline_7d' in current_coin and current_coin['sparkline_7d']:
+            prices = current_coin['sparkline_7d']
             if prices:
                 # Calculate sparkline dimensions
                 sparkline_width = self.width - (self.sparkline_padding * 2)

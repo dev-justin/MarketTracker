@@ -59,7 +59,12 @@ class CryptoManager:
                 for coin in tracked_coins:
                     updated_data = self.coingecko.get_coin_data(coin['id'], force_refresh=True)
                     if updated_data:
+                        # Preserve favorite state and other stored data while updating prices
+                        favorite_state = coin.get('favorite', False)
                         coin.update(updated_data)
+                        coin['favorite'] = favorite_state
+                # Save updated data
+                self.storage._save_tracked_coins()
                 logger.debug("Updated prices for all tracked coins")
             except Exception as e:
                 logger.error(f"Error updating prices: {e}")

@@ -72,7 +72,7 @@ class CoinGeckoService:
                 'image': coin_data['image']['small'],
                 'current_price': coin_data['market_data']['current_price']['usd'],
                 'price_change_24h': coin_data['market_data']['price_change_percentage_24h'],
-                'sparkline_7d': coin_data['market_data']['sparkline_7d']['price'],
+                'sparkline_7d': coin_data['market_data'].get('sparkline_7d', {}).get('price', []),
                 'last_updated': coin_data['market_data']['last_updated']
             }
             
