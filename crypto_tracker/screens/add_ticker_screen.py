@@ -44,17 +44,20 @@ class AddTickerScreen(BaseScreen):
         """Handle keyboard text changes."""
         self.error_message = None
     
-    def add_ticker(self, symbol: str) -> None:
-        """Add a new ticker to tracked coins."""
-        try:
-            if self.crypto_manager.add_coin(symbol):
-                logger.info(f"Successfully added ticker: {symbol}")
-                self.error_message = None
-                return
+    def add_ticker(self) -> None:
+        """Add a new ticker."""
+        symbol = self.keyboard.get_text().strip().upper()
+        if not symbol:
+            self.error_message = "Please enter a symbol"
+            return
             
-            logger.warning(f"Could not find coin: {symbol}")
-            self.error_message = "Coin not found"
-                
+        try:
+            success = self.crypto_manager.add_coin(symbol)
+            if success:
+                logger.info(f"Successfully added ticker: {symbol}")
+                self.screen_manager.switch_screen('settings')
+            else:
+                self.error_message = f"Could not find coin: {symbol}"
         except Exception as e:
             logger.error(f"Error adding ticker: {e}")
             self.error_message = "Error adding ticker"
@@ -77,7 +80,7 @@ class AddTickerScreen(BaseScreen):
             elif self.save_rect.collidepoint(x, y):
                 logger.info("Save button clicked")
                 if self.keyboard.get_text():
-                    self.add_ticker(self.keyboard.get_text())
+                    self.add_ticker()
                     if not self.error_message:
                         self.screen_manager.switch_screen('settings')
             else:

@@ -19,6 +19,14 @@ class BaseScreen(ABC):
         self.fonts = display.fonts
         logger.info(f"{self.__class__.__name__} initialized")
     
+    def on_screen_enter(self) -> None:
+        """Called when entering the screen. Override in subclasses."""
+        pass
+    
+    def on_screen_exit(self) -> None:
+        """Called when exiting the screen. Override in subclasses."""
+        pass
+    
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
         pass

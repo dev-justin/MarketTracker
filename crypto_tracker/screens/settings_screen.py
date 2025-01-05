@@ -35,6 +35,11 @@ class SettingsScreen(BaseScreen):
         
         logger.info("SettingsScreen initialized")
     
+    def on_screen_enter(self) -> None:
+        """Called when entering the screen."""
+        logger.info("Refreshing tracked coins list")
+        self.load_tracked_coins()
+    
     def load_tracked_coins(self) -> None:
         """Load tracked coins from json file."""
         try:
