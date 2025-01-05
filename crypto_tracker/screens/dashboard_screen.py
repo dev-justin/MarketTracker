@@ -56,28 +56,28 @@ class DashboardScreen(BaseScreen):
                 logger.info("Swipe up detected, switching to settings")
             self.swipe_start_y = None
     
-    def draw(self, surface: pygame.Surface) -> None:
+    def draw(self) -> None:
         """Draw the dashboard screen."""
         # Draw background gradient
         for y in range(self.height):
             progress = y / self.height
             color = [
-                int(self.gradient_top[i] + (self.gradient_bottom[i] - self.gradient_top[i]) * progress)
+                int(self.GRADIENT_TOP[i] + (self.GRADIENT_BOTTOM[i] - self.GRADIENT_TOP[i]) * progress)
                 for i in range(3)
             ]
-            pygame.draw.line(surface, color, (0, y), (self.width, y))
+            pygame.draw.line(self.display.surface, color, (0, y), (self.width, y))
         
         # Get current time in local timezone
-        now = datetime.now(self.local_tz)
+        now = datetime.now()
         
         # Draw time
         time_text = now.strftime("%I:%M %p").lstrip("0")
         time_surface = self.fonts['title-xl'].render(time_text, True, AppConfig.WHITE)
         time_rect = time_surface.get_rect(center=(self.width // 2, self.height // 2))
-        surface.blit(time_surface, time_rect)
+        self.display.surface.blit(time_surface, time_rect)
         
         # Draw date
         date_text = now.strftime("%A, %B %d")
         date_surface = self.fonts['title-md'].render(date_text, True, AppConfig.WHITE)
         date_rect = date_surface.get_rect(center=(self.width // 2, time_rect.top - 50))
-        surface.blit(date_surface, date_rect) 
+        self.display.surface.blit(date_surface, date_rect) 
