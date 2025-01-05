@@ -81,3 +81,6 @@ class DashboardScreen(BaseScreen):
         date_surface = self.fonts['title-md'].render(date_text, True, AppConfig.WHITE)
         date_rect = date_surface.get_rect(center=(self.width // 2, time_rect.top - 50))
         self.display.surface.blit(date_surface, date_rect) 
+
+        # Flip the display
+        pygame.display.flip()
