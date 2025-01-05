@@ -15,6 +15,9 @@ class EditTickerScreen(BaseScreen):
         super().__init__(display)
         self.ticker_id = ticker_id
         self.background_color = AppConfig.BLACK
+        self.current_ticker = None
+        self.is_favorite = False
+        self.tracked_coins = []
         
         # Load current ticker data
         self.load_ticker_data()
@@ -51,21 +54,33 @@ class EditTickerScreen(BaseScreen):
         try:
             if os.path.exists(AppConfig.TRACKED_COINS_FILE):
                 with open(AppConfig.TRACKED_COINS_FILE, 'r') as f:
-                    self.tracked_coins = json.load(f)
-                    # Initialize favorite status if not present
-                    for coin in self.tracked_coins:
-                        if 'favorite' not in coin and coin['id'] == self.ticker_id:
-                            coin['favorite'] = False
+                    data = json.load(f)
+                    # Ensure proper data structure
+                    self.tracked_coins = []
+                    for item in data:
+                        if isinstance(item, dict) and 'id' in item and 'symbol' in item:
+                            if 'favorite' not in item:
+                                item['favorite'] = False
+                            self.tracked_coins.append(item)
+                        elif isinstance(item, str):
+                            # Convert old format to new format
+                            self.tracked_coins.append({
+                                'id': item.lower(),
+                                'symbol': item.upper(),
+                                'favorite': False
+                            })
+                    
+                    # Find current ticker
+                    self.current_ticker = next(
+                        (coin for coin in self.tracked_coins if coin.get('id') == self.ticker_id),
+                        None
+                    )
+                    self.is_favorite = self.current_ticker.get('favorite', False) if self.current_ticker else False
             else:
                 self.tracked_coins = []
-            
-            # Find current ticker
-            self.current_ticker = next(
-                (coin for coin in self.tracked_coins if coin['id'] == self.ticker_id),
-                None
-            )
-            self.is_favorite = self.current_ticker.get('favorite', False) if self.current_ticker else False
-            
+                self.current_ticker = None
+                self.is_favorite = False
+                
         except Exception as e:
             logger.error(f"Error loading ticker data: {e}")
             self.tracked_coins = []
@@ -94,13 +109,15 @@ class EditTickerScreen(BaseScreen):
     def delete_ticker(self) -> None:
         """Delete the current ticker from tracked coins."""
         if self.current_ticker:
-            self.tracked_coins = [coin for coin in self.tracked_coins if coin['id'] != self.ticker_id]
+            self.tracked_coins = [coin for coin in self.tracked_coins if coin.get('id') != self.ticker_id]
             self.save_ticker_data()
             logger.info(f"Deleted ticker {self.ticker_id}")
             self.screen_manager.switch_screen('settings')
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
+        gestures = self.gesture_handler.handle_touch_event(event)
+        
         if event.type == pygame.FINGERDOWN:
             x = event.x * self.width
             y = event.y * self.height
@@ -114,7 +131,6 @@ class EditTickerScreen(BaseScreen):
                         self.delete_ticker()
         
         # Handle swipe to go back
-        gestures = self.gesture_handler.handle_touch_event(event)
         if gestures['swipe_right']:
             logger.info("Swipe right detected, returning to settings")
             self.screen_manager.switch_screen('settings')
@@ -124,17 +140,24 @@ class EditTickerScreen(BaseScreen):
         # Fill background
         self.display.surface.fill(self.background_color)
         
-        # Draw ticker ID
-        title_text = f"Edit {self.ticker_id.upper()}"
-        title_surface = self.fonts['title-md'].render(title_text, True, AppConfig.WHITE)
-        title_rect = title_surface.get_rect(centerx=self.width // 2, top=20)
-        self.display.surface.blit(title_surface, title_rect)
-        
-        # Draw buttons
-        for button in self.buttons.values():
-            pygame.draw.rect(self.display.surface, button['color'], button['rect'])
-            text_surface = self.fonts['medium'].render(button['text'], True, AppConfig.WHITE)
-            text_rect = text_surface.get_rect(center=button['rect'].center)
-            self.display.surface.blit(text_surface, text_rect)
+        if self.current_ticker:
+            # Draw ticker symbol
+            title_text = f"Edit {self.current_ticker.get('symbol', '').upper()}"
+            title_surface = self.fonts['title-md'].render(title_text, True, AppConfig.WHITE)
+            title_rect = title_surface.get_rect(centerx=self.width // 2, top=20)
+            self.display.surface.blit(title_surface, title_rect)
+            
+            # Draw buttons
+            for button in self.buttons.values():
+                pygame.draw.rect(self.display.surface, button['color'], button['rect'])
+                text_surface = self.fonts['medium'].render(button['text'], True, AppConfig.WHITE)
+                text_rect = text_surface.get_rect(center=button['rect'].center)
+                self.display.surface.blit(text_surface, text_rect)
+        else:
+            # Draw error message if ticker not found
+            error_text = "Ticker not found"
+            error_surface = self.fonts['title-md'].render(error_text, True, AppConfig.RED)
+            error_rect = error_surface.get_rect(center=(self.width // 2, self.height // 2))
+            self.display.surface.blit(error_surface, error_rect)
         
         self.update_screen() 
