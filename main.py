@@ -7,7 +7,7 @@ from crypto_tracker.services.crypto_service import CryptoService
 class MarkertTrackerApp():
     def __init__(self):
         self.display = Display()
-        self.screen_manager = ScreenManager(self.display)
+        self.screen_manager = ScreenManager()
         self.crypto_service = CryptoService()
 
         # Initialize screens
