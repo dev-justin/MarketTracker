@@ -72,7 +72,7 @@ class SettingsScreen(BaseScreen):
         pygame.draw.rect(self.display.surface, AppConfig.CELL_BG_COLOR, header_rect)
         
         # Draw "Settings" text (left-aligned)
-        settings_text = self.fonts['regular-lg'].render("Settings", True, AppConfig.WHITE)
+        settings_text = self.fonts['lg'].render("Settings", True, AppConfig.WHITE)
         settings_rect = settings_text.get_rect(left=self.padding, centery=self.header_height//2)
         self.display.surface.blit(settings_text, settings_rect)
         
