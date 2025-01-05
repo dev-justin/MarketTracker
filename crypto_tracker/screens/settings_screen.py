@@ -33,41 +33,43 @@ class SettingsScreen(BaseScreen):
         self.is_adding_coin = False
         self.new_symbol = ""
         
-        # Keyboard layout
-        self.keys = [
-            ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
-            ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-            ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-            ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '⌫']
-        ]
-        self.setup_keyboard()
+        # Button dimensions
+        self.button_width = 120
+        self.button_height = 50
+        self.button_spacing = 20
         
         logger.info("SettingsScreen initialized")
     
-    def setup_keyboard(self):
-        """Calculate keyboard layout dimensions."""
-        keyboard_height = self.height // 2  # Take up bottom half of screen
-        key_padding = 5
-        num_rows = len(self.keys)
+    def _draw_buttons(self, surface: pygame.Surface):
+        """Draw Cancel and Save buttons."""
+        # Calculate button positions
+        total_width = (2 * self.button_width) + self.button_spacing
+        start_x = (self.width - total_width) // 2
+        button_y = self.height - self.button_height - 30  # 30px from bottom
         
-        # Calculate key sizes
-        max_keys_in_row = max(len(row) for row in self.keys)
-        self.key_width = (self.width - (key_padding * (max_keys_in_row + 1))) // max_keys_in_row
-        self.key_height = (keyboard_height - (key_padding * (num_rows + 1))) // num_rows
+        # Cancel button (left)
+        self.cancel_rect = pygame.Rect(
+            start_x,
+            button_y,
+            self.button_width,
+            self.button_height
+        )
+        pygame.draw.rect(surface, (255, 0, 0), self.cancel_rect, 2, border_radius=10)
+        cancel_text = self.fonts['bold-md'].render("Cancel", True, (255, 0, 0))
+        cancel_text_rect = cancel_text.get_rect(center=self.cancel_rect.center)
+        surface.blit(cancel_text, cancel_text_rect)
         
-        # Store key rectangles for hit detection
-        self.key_rects = []
-        y = self.height - keyboard_height + key_padding
-        for row in self.keys:
-            row_width = len(row) * self.key_width + (len(row) - 1) * key_padding
-            x = (self.width - row_width) // 2
-            row_rects = []
-            for key in row:
-                rect = pygame.Rect(x, y, self.key_width, self.key_height)
-                row_rects.append((key, rect))
-                x += self.key_width + key_padding
-            self.key_rects.append(row_rects)
-            y += self.key_height + key_padding
+        # Save button (right)
+        self.save_rect = pygame.Rect(
+            start_x + self.button_width + self.button_spacing,
+            button_y,
+            self.button_width,
+            self.button_height
+        )
+        pygame.draw.rect(surface, self.grid_color, self.save_rect, 2, border_radius=10)
+        save_text = self.fonts['bold-md'].render("Save", True, self.grid_color)
+        save_text_rect = save_text.get_rect(center=self.save_rect.center)
+        surface.blit(save_text, save_text_rect)
 
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
@@ -92,20 +94,9 @@ class SettingsScreen(BaseScreen):
         else:
             if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
                 x, y = self._scale_touch_input(event)
-                # Check for key presses
-                for row in self.key_rects:
-                    for key, rect in row:
-                        if rect.collidepoint(x, y):
-                            if key == '⌫':
-                                if self.new_symbol:
-                                    self.new_symbol = self.new_symbol[:-1]
-                            elif len(self.new_symbol) < 5:
-                                self.new_symbol += key
-                            logger.debug(f"Key pressed: {key}, current input: {self.new_symbol}")
-                            return
                 
-                # Check if done button was pressed
-                if self.done_rect.collidepoint(x, y):
+                # Check if save button was pressed
+                if self.save_rect.collidepoint(x, y):
                     if self.new_symbol:
                         logger.info(f"Adding new coin: {self.new_symbol}")
                         self.crypto_service.add_tracked_symbol(self.new_symbol)
@@ -115,6 +106,12 @@ class SettingsScreen(BaseScreen):
                 elif self.cancel_rect.collidepoint(x, y):
                     self.is_adding_coin = False
                     self.new_symbol = ""
+                # Handle keyboard input
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_BACKSPACE:
+                        self.new_symbol = self.new_symbol[:-1]
+                    elif event.unicode.isalnum() and len(self.new_symbol) < 5:
+                        self.new_symbol += event.unicode.upper()
 
     def _draw_coin_cell(self, surface: pygame.Surface, x: int, y: int, symbol: str = None):
         """Draw a single cell in the grid."""
@@ -149,49 +146,6 @@ class SettingsScreen(BaseScreen):
             pygame.draw.line(surface, plus_color,
                            (center_x, center_y - plus_size//2),
                            (center_x, center_y + plus_size//2), 2)
-
-    def _draw_keyboard(self, surface: pygame.Surface):
-        """Draw the on-screen keyboard."""
-        # Draw each key
-        for row in self.key_rects:
-            for key, rect in row:
-                # Draw key background
-                pygame.draw.rect(surface, self.grid_color, rect, 2, border_radius=5)
-                
-                # Draw key text
-                text = self.fonts['bold-sm'].render(key, True, self.grid_color)
-                text_rect = text.get_rect(center=rect.center)
-                surface.blit(text, text_rect)
-        
-        # Draw Done and Cancel buttons
-        button_height = 40
-        button_width = 100
-        button_spacing = 20
-        button_y = self.key_rects[-1][0][1].bottom + 20  # Below keyboard
-        
-        # Cancel button (left)
-        self.cancel_rect = pygame.Rect(
-            (self.width - 2*button_width - button_spacing)//2,
-            button_y,
-            button_width,
-            button_height
-        )
-        pygame.draw.rect(surface, (255, 0, 0), self.cancel_rect, 2, border_radius=5)
-        cancel_text = self.fonts['bold-sm'].render("Cancel", True, (255, 0, 0))
-        cancel_text_rect = cancel_text.get_rect(center=self.cancel_rect.center)
-        surface.blit(cancel_text, cancel_text_rect)
-        
-        # Done button (right)
-        self.done_rect = pygame.Rect(
-            self.cancel_rect.right + button_spacing,
-            button_y,
-            button_width,
-            button_height
-        )
-        pygame.draw.rect(surface, self.grid_color, self.done_rect, 2, border_radius=5)
-        done_text = self.fonts['bold-sm'].render("Done", True, self.grid_color)
-        done_text_rect = done_text.get_rect(center=self.done_rect.center)
-        surface.blit(done_text, done_text_rect)
 
     def draw(self) -> None:
         """Draw the settings screen."""
@@ -242,7 +196,7 @@ class SettingsScreen(BaseScreen):
             text_rect = text.get_rect(center=(self.width//2, input_y + input_height//2))
             self.display.surface.blit(text, text_rect)
             
-            # Draw keyboard
-            self._draw_keyboard(self.display.surface)
+            # Draw buttons
+            self._draw_buttons(self.display.surface)
         
         self.update_screen() 
