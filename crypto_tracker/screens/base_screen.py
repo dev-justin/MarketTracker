@@ -44,3 +44,7 @@ class BaseScreen(ABC):
             event: The pygame event to handle
         """
         raise NotImplementedError("Screens must implement handle_event")
+    
+    def _scale_touch_input(self, event: pygame.event.Event) -> tuple:
+        """Scale touch input coordinates to screen coordinates."""
+        return (event.x * self.width, event.y * self.height)
