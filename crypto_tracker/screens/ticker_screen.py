@@ -21,6 +21,19 @@ class TickerScreen(BaseScreen):
         
         logger.info("TickerScreen initialized")
     
+    def update_all_coins(self):
+        """Update data for all tracked coins."""
+        if not self.crypto_service or not self.crypto_service.tracked_symbols:
+            return
+            
+        logger.info("Updating all coins with fresh data")
+        # Update all coins
+        for symbol in self.crypto_service.tracked_symbols:
+            self.crypto_service.get_coin_data(symbol)
+        
+        # Reset timer after updating all coins
+        self.last_update_time = pygame.time.get_ticks() / 1000
+    
     def update_current_coin(self):
         """Update the current coin data."""
         if not self.crypto_service or not self.crypto_service.tracked_symbols:
@@ -30,21 +43,20 @@ class TickerScreen(BaseScreen):
         symbol = self.crypto_service.tracked_symbols[self.current_index]
         current_time = pygame.time.get_ticks() / 1000
         
-        # Only update the timer if we're past the update interval
+        # If timer expired, update all coins
         if not self.last_update_time or (current_time - self.last_update_time >= self.update_interval):
-            self.current_coin = self.crypto_service.get_coin_data(symbol)
-            self.last_update_time = current_time
-            logger.info(f"Updated current coin with fresh data: {symbol}")
-        else:
-            # Use cached data without resetting timer
-            self.current_coin = self.crypto_service.get_coin_data(symbol)
-            logger.debug(f"Updated current coin using cached data: {symbol}")
+            self.update_all_coins()
+        
+        # Get current coin data (will use cache if available)
+        self.current_coin = self.crypto_service.get_coin_data(symbol)
+        logger.debug(f"Updated display with coin: {symbol}")
     
     def set_crypto_service(self, service):
         """Set the crypto service and initialize first coin."""
         self.crypto_service = service
         self.last_update_time = pygame.time.get_ticks() / 1000  # Initialize timer
-        self.update_current_coin()
+        self.update_all_coins()  # Initial update of all coins
+        self.update_current_coin()  # Set current coin display
     
     def next_coin(self):
         """Switch to next coin."""
