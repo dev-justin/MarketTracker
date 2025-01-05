@@ -1,8 +1,7 @@
-from typing import Dict, Optional, List
 import pygame
 from datetime import datetime
 from ..config.settings import AppConfig
-from ..constants import EventTypes, ScreenNames
+from ..constants import EventTypes
 from ..utils.logger import get_logger
 from .base import Screen
 import time
