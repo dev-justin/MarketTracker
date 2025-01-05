@@ -48,13 +48,15 @@ class DashboardScreen(BaseScreen):
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
-        is_double_tap, is_swipe_up = self.gesture_handler.handle_touch_event(event, self.height)
-        if is_double_tap:
-            logger.info("Double tap detected, returning to ticker screen")
-            # self.screen_manager.switch_screen('ticker')
-        elif is_swipe_up:
+        # Handle touch events
+        gestures = self.gesture_handler.handle_touch_event(event, self.width, self.height)
+        
+        if gestures['swipe_up']:
             logger.info("Swipe up detected, switching to settings")
             self.screen_manager.switch_screen('settings')
+        elif gestures['swipe_down']:
+            logger.info("Swipe down detected, switching to ticker")
+            self.screen_manager.switch_screen('ticker')
     
     def draw(self) -> None:
         """Draw the dashboard screen."""

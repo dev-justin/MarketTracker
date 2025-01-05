@@ -10,48 +10,76 @@ class GestureHandler:
     
     def __init__(self):
         """Initialize the gesture handler."""
-        self.swipe_start_y = None
         self.last_tap_time = 0
-        self.swipe_threshold = AppConfig.SWIPE_THRESHOLD
-        self.double_tap_threshold = AppConfig.DOUBLE_TAP_THRESHOLD
+        self.last_tap_pos = None
+        self.start_pos = None  # Track start position for swipes
         logger.info("GestureHandler initialized")
     
-    def handle_touch_event(self, event: pygame.event.Event, screen_height: int) -> tuple[bool, bool]:
+    def handle_touch_event(self, event: pygame.event.Event, screen_width: int, screen_height: int) -> dict:
         """
         Handle touch events and detect gestures.
         
         Args:
             event: The pygame event to handle
+            screen_width: The width of the screen for position calculations
             screen_height: The height of the screen for swipe calculations
             
         Returns:
-            Tuple of (is_double_tap, is_swipe_up)
+            Dictionary containing gesture information:
+            {
+                'double_tap_left': bool,  # Double tap on left half of screen
+                'double_tap_right': bool, # Double tap on right half of screen
+                'swipe_up': bool,         # Swipe up gesture
+                'swipe_down': bool        # Swipe down gesture
+            }
         """
-        if event.type not in (AppConfig.EVENT_TYPES['FINGER_DOWN'], AppConfig.EVENT_TYPES['FINGER_UP']):
-            return False, False
-            
-        is_double_tap = False
-        is_swipe_up = False
+        current_time = pygame.time.get_ticks() / 1000  # Convert to seconds
+        gestures = {
+            'double_tap_left': False,
+            'double_tap_right': False,
+            'swipe_up': False,
+            'swipe_down': False
+        }
         
-        # Scale touch coordinates to screen dimensions
-        y = event.y * screen_height
-        
-        # Handle double tap
         if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
-            current_time = time.time()
-            if current_time - self.last_tap_time < self.double_tap_threshold:
-                is_double_tap = True
-                logger.debug("Double tap detected")
+            # Store start position for swipe detection
+            x = event.x * screen_width
+            y = event.y * screen_height
+            self.start_pos = (x, y)
+            
+            # Check for double tap
+            if self.last_tap_pos is not None:
+                time_diff = current_time - self.last_tap_time
+                if time_diff < AppConfig.DOUBLE_TAP_THRESHOLD:
+                    # Determine which side was tapped
+                    if x < screen_width / 2:
+                        gestures['double_tap_left'] = True
+                        logger.debug("Double tap left detected")
+                    else:
+                        gestures['double_tap_right'] = True
+                        logger.debug("Double tap right detected")
+            
             self.last_tap_time = current_time
-            self.swipe_start_y = y
+            self.last_tap_pos = (x, y)
+            
+        elif event.type == AppConfig.EVENT_TYPES['FINGER_UP']:
+            if self.start_pos is not None:
+                end_x = event.x * screen_width
+                end_y = event.y * screen_height
+                start_x, start_y = self.start_pos
+                
+                # Calculate vertical swipe distance as percentage of screen height
+                vertical_swipe = (start_y - end_y) / screen_height
+                
+                # If swiped up more than threshold
+                if vertical_swipe > AppConfig.SWIPE_THRESHOLD:
+                    gestures['swipe_up'] = True
+                    logger.debug("Swipe up detected")
+                # If swiped down more than threshold
+                elif vertical_swipe < -AppConfig.SWIPE_THRESHOLD:
+                    gestures['swipe_down'] = True
+                    logger.debug("Swipe down detected")
+                
+                self.start_pos = None
         
-        # Handle swipe up
-        elif event.type == AppConfig.EVENT_TYPES['FINGER_UP'] and self.swipe_start_y is not None:
-            swipe_distance = self.swipe_start_y - y
-            swipe_threshold = screen_height * self.swipe_threshold
-            if swipe_distance > swipe_threshold:
-                is_swipe_up = True
-                logger.debug("Swipe up detected")
-            self.swipe_start_y = None
-        
-        return is_double_tap, is_swipe_up
+        return gestures
