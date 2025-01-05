@@ -14,33 +14,33 @@ class EditTickerScreen(BaseScreen):
         self.crypto_manager = CryptoManager()
         self.current_coin = None
         
-        # Button dimensions - make them similar to example
-        self.button_width = int(self.width * 0.9)  # 90% of screen width
+        # Button dimensions - narrower for right side
+        self.button_width = int(self.width * 0.4)  # 40% of screen width
         self.button_height = 50  # Fixed height
-        self.button_spacing = 15  # Space between buttons
+        self.button_spacing = 30  # Increased vertical spacing between buttons
         
-        # Calculate positions for stacked buttons
-        bottom_padding = 50  # Increased bottom padding
+        # Calculate positions for stacked buttons on right side
+        right_side_center = int(self.width * 0.75)  # Center of right half
         total_button_height = (self.button_height * 3) + (self.button_spacing * 2)
-        start_y = self.height - total_button_height - bottom_padding
+        start_y = (self.height - total_button_height) // 2  # Center buttons vertically
         
-        # Create buttons with modern layout - stacked vertically
+        # Create buttons with modern layout - stacked vertically on right
         self.favorite_rect = pygame.Rect(
-            (self.width - self.button_width) // 2,
+            right_side_center - (self.button_width // 2),
             start_y,
             self.button_width,
             self.button_height
         )
         
         self.delete_rect = pygame.Rect(
-            (self.width - self.button_width) // 2,
+            right_side_center - (self.button_width // 2),
             start_y + self.button_height + self.button_spacing,
             self.button_width,
             self.button_height
         )
         
         self.back_rect = pygame.Rect(
-            (self.width - self.button_width) // 2,
+            right_side_center - (self.button_width // 2),
             start_y + (self.button_height + self.button_spacing) * 2,
             self.button_width,
             self.button_height
@@ -99,16 +99,20 @@ class EditTickerScreen(BaseScreen):
         # Fill background
         self.display.surface.fill(self.background_color)
         
+        # Left side content center
+        left_side_center = int(self.width * 0.25)  # Center of left half
+        content_start_y = self.height // 2 - 100  # Start content above vertical center
+        
         # Draw coin logo if available
-        logo_size = 80  # Smaller logo
+        logo_size = 80
         try:
             logo_path = os.path.join(AppConfig.CACHE_DIR, f"{self.current_coin['symbol'].lower()}_logo.png")
             if os.path.exists(logo_path):
                 logo = pygame.image.load(logo_path)
                 logo = pygame.transform.scale(logo, (logo_size, logo_size))
                 logo_rect = logo.get_rect(
-                    centerx=self.width // 2,
-                    centery=self.height // 5  # Position even higher
+                    centerx=left_side_center,
+                    centery=content_start_y
                 )
                 self.display.surface.blit(logo, logo_rect)
         except Exception as e:
@@ -117,16 +121,16 @@ class EditTickerScreen(BaseScreen):
         # Draw coin name larger and below logo
         name_text = self.fonts['title-lg'].render(self.current_coin['name'], True, AppConfig.WHITE)
         name_rect = name_text.get_rect(
-            centerx=self.width // 2,
-            top=logo_rect.bottom + 15  # Reduced spacing
+            centerx=left_side_center,
+            top=logo_rect.bottom + 15
         )
         self.display.surface.blit(name_text, name_rect)
         
         # Draw symbol below name
         symbol_text = self.fonts['title-md'].render(self.current_coin['symbol'].upper(), True, AppConfig.GRAY)
         symbol_rect = symbol_text.get_rect(
-            centerx=self.width // 2,
-            top=name_rect.bottom + 8  # Reduced spacing
+            centerx=left_side_center,
+            top=name_rect.bottom + 8
         )
         self.display.surface.blit(symbol_text, symbol_rect)
         
