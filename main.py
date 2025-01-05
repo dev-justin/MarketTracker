@@ -16,7 +16,6 @@ class MarkertTrackerApp():
         while True:
             self.screen_manager.handle_event(pygame.event.poll())
             self.screen_manager.update_screen()
-            self.display.tick(AppConfig.FPS)
 
 def main():
     app = MarkertTrackerApp()
