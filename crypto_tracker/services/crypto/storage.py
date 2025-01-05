@@ -124,12 +124,14 @@ class CryptoStorage:
         Returns the local path to the cached logo.
         """
         try:
-            logo_path = os.path.join(AppConfig.CACHE_DIR, f"{symbol}_logo.png")
+            import requests
+            logo_path = os.path.join(AppConfig.CACHE_DIR, f"{symbol.lower()}_logo.png")
             
             # Only download if not already cached
             if not os.path.exists(logo_path):
                 response = requests.get(url)
                 if response.status_code == 200:
+                    os.makedirs(AppConfig.CACHE_DIR, exist_ok=True)
                     with open(logo_path, 'wb') as f:
                         f.write(response.content)
                     logger.debug(f"Cached logo for {symbol}")

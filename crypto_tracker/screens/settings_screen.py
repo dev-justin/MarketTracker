@@ -93,7 +93,7 @@ class SettingsScreen(BaseScreen):
         logo_margin = 10
         if 'image' in coin and coin['image']:
             try:
-                logo_path = os.path.join(AppConfig.CACHE_DIR, f"{coin['id']}_logo.png")
+                logo_path = os.path.join(AppConfig.CACHE_DIR, f"{coin['symbol'].lower()}_logo.png")
                 if os.path.exists(logo_path):
                     logo = pygame.image.load(logo_path)
                     logo = pygame.transform.scale(logo, (logo_size, logo_size))
@@ -103,7 +103,7 @@ class SettingsScreen(BaseScreen):
                     )
                     surface.blit(logo, logo_rect)
             except Exception as e:
-                logger.error(f"Error loading logo for {coin['id']}: {e}")
+                logger.error(f"Error loading logo for {coin['symbol']}: {e}")
         
         # Draw coin name and symbol
         text_start_x = rect.left + logo_size + (logo_margin * 2)
