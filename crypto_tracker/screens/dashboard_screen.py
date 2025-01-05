@@ -12,12 +12,37 @@ class DashboardScreen(BaseScreen):
     def __init__(self, display) -> None:
         """Initialize the dashboard screen."""
         super().__init__(display)
-        # Colors for gradient
-        self.gradient_top = (0, 0, 0)         # Pure black at top
-        self.gradient_middle = (0, 10, 0)     # Very slight green in middle
-        self.gradient_bottom = (0, 20, 0)     # Slight green at bottom
-        self.glow_color = (0, 255, 0, 50)     # Vibrant green for glow
+        # Colors and effects
+        self.background_color = (0, 0, 0)  # Pure black
+        self.glow_color = (0, 255, 0)      # Bright green
+        self.spots = [
+            {'x': 0.2, 'y': 0.3, 'size': 200, 'alpha': 10},   # Top left area
+            {'x': 0.8, 'y': 0.7, 'size': 250, 'alpha': 8},    # Bottom right area
+            {'x': 0.7, 'y': 0.2, 'size': 180, 'alpha': 12},   # Top right area
+            {'x': 0.3, 'y': 0.8, 'size': 220, 'alpha': 7},    # Bottom left area
+        ]
         logger.info("DashboardScreen initialized")
+    
+    def _draw_glow_spot(self, surface: pygame.Surface, x: int, y: int, size: int, alpha: int) -> None:
+        """Draw a single glowing spot with smooth falloff."""
+        spot_surface = pygame.Surface((size * 2, size * 2), pygame.SRCALPHA)
+        
+        # Create multiple circles with decreasing alpha for smooth glow
+        num_layers = 20
+        for i in range(num_layers):
+            progress = i / num_layers
+            current_size = int(size * (1 - progress))
+            current_alpha = int(alpha * (1 - progress) ** 2)  # Quadratic falloff
+            
+            pygame.draw.circle(
+                spot_surface,
+                (*self.glow_color, current_alpha),
+                (size, size),
+                current_size
+            )
+        
+        # Blit the spot onto the main surface
+        surface.blit(spot_surface, (x - size, y - size), special_flags=pygame.BLEND_ALPHA_SDL2)
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
@@ -29,43 +54,18 @@ class DashboardScreen(BaseScreen):
     
     def draw(self) -> None:
         """Draw the dashboard screen."""
-        # Draw main gradient background
-        for y in range(self.height):
-            progress = y / self.height
-            
-            # Use different color transitions for top and bottom half
-            if progress < 0.7:  # Extend the dark area
-                # Top 70%: black to very slight green
-                p = progress / 0.7  # Normalize to 0-1 for top portion
-                color = [
-                    int(self.gradient_top[i] + (self.gradient_middle[i] - self.gradient_top[i]) * p)
-                    for i in range(3)
-                ]
-            else:
-                # Bottom 30%: slight green to stronger green
-                p = (progress - 0.7) / 0.3  # Normalize to 0-1 for bottom portion
-                color = [
-                    int(self.gradient_middle[i] + (self.gradient_bottom[i] - self.gradient_middle[i]) * p)
-                    for i in range(3)
-                ]
-            
-            pygame.draw.line(self.display.surface, color, (0, y), (self.width, y))
+        # Fill background with black
+        self.display.surface.fill(self.background_color)
         
-        # Add thin glow effect at bottom
-        glow_height = 40  # Reduced height for thinner glow
-        glow_surface = pygame.Surface((self.width, glow_height), pygame.SRCALPHA)
-        for y in range(glow_height):
-            # Use exponential falloff for faster fade
-            progress = y / glow_height
-            alpha = int(255 * (1 - progress) ** 2)  # Square for faster falloff
-            color = (*self.glow_color[:3], int(self.glow_color[3] * (1 - progress) ** 2))
-            pygame.draw.line(glow_surface, color, (0, y), (self.width, y))
-        
-        # Draw a thin, bright line at the bottom
-        pygame.draw.line(self.display.surface, (0, 255, 0), (0, self.height - 1), (self.width, self.height - 1))
-        
-        # Add the glow effect
-        self.display.surface.blit(glow_surface, (0, self.height - glow_height), special_flags=pygame.BLEND_ALPHA_SDL2)
+        # Draw glowing spots
+        for spot in self.spots:
+            self._draw_glow_spot(
+                self.display.surface,
+                int(spot['x'] * self.width),
+                int(spot['y'] * self.height),
+                spot['size'],
+                spot['alpha']
+            )
         
         # Get current time 
         now = datetime.now()
