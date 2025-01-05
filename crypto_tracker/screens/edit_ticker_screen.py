@@ -67,7 +67,8 @@ class EditTickerScreen(BaseScreen):
     
     def load_coin(self, coin_id: str) -> None:
         """Load coin data for editing."""
-        self.current_coin = self.crypto_manager.get_coin_data(coin_id)
+        # Get coin data from storage to ensure we have the favorite state
+        self.current_coin = self.crypto_manager.storage.get_coin(coin_id)
         if not self.current_coin:
             logger.error(f"Could not load coin: {coin_id}")
             self.screen_manager.switch_screen('settings')
@@ -82,8 +83,11 @@ class EditTickerScreen(BaseScreen):
         """Toggle favorite status for current coin."""
         if self.current_coin:
             if self.crypto_manager.toggle_favorite(self.current_coin['id']):
-                # Refresh current coin data
-                self.current_coin = self.crypto_manager.get_coin_data(self.current_coin['id'])
+                # Get updated coin data from storage
+                self.current_coin = self.crypto_manager.storage.get_coin(self.current_coin['id'])
+                logger.info(f"Toggled favorite state for {self.current_coin['symbol']}")
+                # Force redraw to show updated state
+                self.draw()
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
