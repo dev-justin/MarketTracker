@@ -115,17 +115,27 @@ class AddTickerScreen(BaseScreen):
             x, y = self._scale_touch_input(event)
             
             # Check for button clicks
-            if self.cancel_button_rect.collidepoint(x, y):
+            if self.cancel_rect.collidepoint(x, y):
                 logger.info("Cancel button clicked")
                 self.screen_manager.switch_screen('settings')
-            elif self.save_button_rect.collidepoint(x, y):
+            elif self.save_rect.collidepoint(x, y):
                 logger.info("Save button clicked")
-                if self.input_text:
-                    self.crypto_service.add_symbol(self.input_text.upper())
+                if self.new_symbol:
+                    self.crypto_service.add_tracked_symbol(self.new_symbol)
                     self.screen_manager.switch_screen('settings')
             else:
-                # Handle keyboard input
-                self.handle_keyboard_input(x, y)
+                # Check for key presses
+                for row in self.key_rects:
+                    for key, rect in row:
+                        if rect.collidepoint(x, y):
+                            if key == 'DEL':
+                                if self.new_symbol:
+                                    self.new_symbol = self.new_symbol[:-1]
+                                    logger.debug(f"Backspace pressed, current input: {self.new_symbol}")
+                            elif len(self.new_symbol) < 5:
+                                self.new_symbol += key
+                                logger.debug(f"Key pressed: {key}, current input: {self.new_symbol}")
+                            return
     
     def draw(self) -> None:
         # Fill background with black

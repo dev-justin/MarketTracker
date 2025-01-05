@@ -85,7 +85,7 @@ class TickerScreen(BaseScreen):
             logger.error(f"Error loading logo: {e}")
         
         # Draw price
-        price_text = f"${self.current_coin['price']:,.2f}"
+        price_text = f"${self.current_coin['price']}"
         price = self.fonts['title-lg'].render(price_text, True, AppConfig.WHITE)
         price_rect = price.get_rect(left=40, top=40)
         surface.blit(price, price_rect)
@@ -107,12 +107,6 @@ class TickerScreen(BaseScreen):
         min_price = min(prices)
         max_price = max(prices)
         price_range = max_price - min_price
-        
-        # Chart dimensions
-        chart_rect = pygame.Rect(0, self.chart_y, self.width, self.chart_height)
-        
-        # Draw chart background
-        # pygame.draw.rect(surface, AppConfig.CHART_BG_COLOR, chart_rect)
         
         # Calculate points for the line
         points = []
