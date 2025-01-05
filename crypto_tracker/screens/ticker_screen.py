@@ -157,7 +157,7 @@ class TickerScreen(BaseScreen):
         
         # Draw symbol below name (larger but light weight)
         symbol_text = current_coin['symbol'].upper()
-        symbol_surface = self.fonts['light'].render(symbol_text, True, (128, 128, 128))  # Changed to light font
+        symbol_surface = self.fonts['light-title-md'].render(symbol_text, True, (128, 128, 128))  # Changed to light font
         symbol_rect = symbol_surface.get_rect(
             left=20,
             top=name_rect.bottom + 8
