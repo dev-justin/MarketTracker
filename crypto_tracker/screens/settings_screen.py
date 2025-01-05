@@ -38,8 +38,9 @@ class SettingsScreen(BaseScreen):
             logger.error(f"Error loading edit icon: {e}")
             self.edit_icon = None
         
-        # Initialize tracked coins list
+        # Initialize tracked coins list and click areas
         self.tracked_coins = []
+        self.edit_icon_areas = []  # Store edit icon rects and associated coins
         
         # Load tracked coins
         self.load_tracked_coins()
@@ -142,13 +143,14 @@ class SettingsScreen(BaseScreen):
         )
         surface.blit(symbol_surface, symbol_rect)
         
-        # Draw edit icon centered on the right side
+        # Draw edit icon centered on the right side and store its rect
         if self.edit_icon:
             edit_icon_rect = self.edit_icon.get_rect(
                 right=rect.right - logo_margin,
                 centery=rect.centery
             )
             surface.blit(self.edit_icon, edit_icon_rect)
+            return rect, edit_icon_rect, coin
         
         # Draw favorite star if favorited
         if coin.get('favorite', False):
@@ -160,7 +162,7 @@ class SettingsScreen(BaseScreen):
             )
             surface.blit(star_surface, star_rect)
         
-        return rect
+        return rect, None, coin
     
     def draw(self) -> None:
         """Draw the settings screen."""
@@ -179,6 +181,7 @@ class SettingsScreen(BaseScreen):
         # Draw tracked coins in a grid
         current_y = self.header_height + self.padding
         self.coin_rects = []  # Store rects for click detection
+        self.edit_icon_areas = []  # Reset edit icon areas
         
         for i, coin in enumerate(self.tracked_coins):
             if isinstance(coin, dict):
@@ -188,8 +191,10 @@ class SettingsScreen(BaseScreen):
                 if column == 0 and i > 0:
                     current_y += self.cell_height + self.cell_spacing
                 
-                rect = self._draw_coin_cell(self.display.surface, x, current_y, coin)
+                rect, edit_icon_rect, coin = self._draw_coin_cell(self.display.surface, x, current_y, coin)
                 self.coin_rects.append((rect, coin))
+                if edit_icon_rect:
+                    self.edit_icon_areas.append((edit_icon_rect, coin))
         
         # Draw add button at the bottom
         button_y = self.height - self.button_height - self.padding
@@ -223,9 +228,11 @@ class SettingsScreen(BaseScreen):
             if self.add_button_rect.collidepoint(x, y):
                 logger.info("Add button clicked, switching to add ticker screen")
                 self.screen_manager.switch_screen('add_ticker')
+                return
             
-            # Check if any coin cell was clicked
-            for rect, coin in self.coin_rects:
-                if rect.collidepoint(x, y):
-                    logger.info(f"Coin {coin.get('id', 'unknown')} clicked, switching to edit screen")
-                    self.screen_manager.switch_screen('edit_ticker', coin.get('id')) 
+            # Check if any edit icon was clicked
+            for edit_rect, coin in self.edit_icon_areas:
+                if edit_rect.collidepoint(x, y):
+                    logger.info(f"Edit icon clicked for {coin.get('id', 'unknown')}, switching to edit screen")
+                    self.screen_manager.switch_screen('edit_ticker', coin.get('id'))
+                    return 
