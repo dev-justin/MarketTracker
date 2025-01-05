@@ -1,5 +1,4 @@
 import pygame
-from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 
 logger = get_logger(__name__)

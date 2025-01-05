@@ -9,8 +9,7 @@ logger = get_logger(__name__)
 
 class DashboardScreen(BaseScreen):
     """Screen for displaying the current day and time."""
-
-
+    
     # Display settings
     PADDING = 20
         
