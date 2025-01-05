@@ -20,7 +20,7 @@ class EditTickerScreen(BaseScreen):
         self.button_spacing = 15  # Space between buttons
         
         # Calculate positions for stacked buttons
-        bottom_padding = 40
+        bottom_padding = 50  # Increased bottom padding
         total_button_height = (self.button_height * 3) + (self.button_spacing * 2)
         start_y = self.height - total_button_height - bottom_padding
         
@@ -100,7 +100,7 @@ class EditTickerScreen(BaseScreen):
         self.display.surface.fill(self.background_color)
         
         # Draw coin logo if available
-        logo_size = 96  # Smaller logo
+        logo_size = 80  # Smaller logo
         try:
             logo_path = os.path.join(AppConfig.CACHE_DIR, f"{self.current_coin['symbol'].lower()}_logo.png")
             if os.path.exists(logo_path):
@@ -108,7 +108,7 @@ class EditTickerScreen(BaseScreen):
                 logo = pygame.transform.scale(logo, (logo_size, logo_size))
                 logo_rect = logo.get_rect(
                     centerx=self.width // 2,
-                    centery=self.height // 4  # Position higher up
+                    centery=self.height // 5  # Position even higher
                 )
                 self.display.surface.blit(logo, logo_rect)
         except Exception as e:
@@ -118,7 +118,7 @@ class EditTickerScreen(BaseScreen):
         name_text = self.fonts['title-lg'].render(self.current_coin['name'], True, AppConfig.WHITE)
         name_rect = name_text.get_rect(
             centerx=self.width // 2,
-            top=logo_rect.bottom + 20  # Position relative to logo
+            top=logo_rect.bottom + 15  # Reduced spacing
         )
         self.display.surface.blit(name_text, name_rect)
         
@@ -126,7 +126,7 @@ class EditTickerScreen(BaseScreen):
         symbol_text = self.fonts['title-md'].render(self.current_coin['symbol'].upper(), True, AppConfig.GRAY)
         symbol_rect = symbol_text.get_rect(
             centerx=self.width // 2,
-            top=name_rect.bottom + 10  # Reduced spacing
+            top=name_rect.bottom + 8  # Reduced spacing
         )
         self.display.surface.blit(symbol_text, symbol_rect)
         
@@ -136,21 +136,21 @@ class EditTickerScreen(BaseScreen):
         
         # Favorite button (top)
         pygame.draw.rect(self.display.surface, button_bg_color, self.favorite_rect, border_radius=corner_radius)
-        favorite_text = "★ Favorite" if self.current_coin.get('favorite') else "☆ Favorite"
+        favorite_text = "Favorite" if not self.current_coin.get('favorite') else "Favorited"
         favorite_text_surface = self.fonts['medium'].render(favorite_text, True, AppConfig.WHITE)
         favorite_text_rect = favorite_text_surface.get_rect(center=self.favorite_rect.center)
         self.display.surface.blit(favorite_text_surface, favorite_text_rect)
         
         # Delete button (middle)
         pygame.draw.rect(self.display.surface, button_bg_color, self.delete_rect, border_radius=corner_radius)
-        delete_text = "🗑 Delete"
+        delete_text = "Delete"
         delete_text_surface = self.fonts['medium'].render(delete_text, True, AppConfig.WHITE)
         delete_text_rect = delete_text_surface.get_rect(center=self.delete_rect.center)
         self.display.surface.blit(delete_text_surface, delete_text_rect)
         
         # Back button (bottom)
         pygame.draw.rect(self.display.surface, button_bg_color, self.back_rect, border_radius=corner_radius)
-        back_text = "← Back"
+        back_text = "Back"
         back_text_surface = self.fonts['medium'].render(back_text, True, AppConfig.WHITE)
         back_text_rect = back_text_surface.get_rect(center=self.back_rect.center)
         self.display.surface.blit(back_text_surface, back_text_rect)
