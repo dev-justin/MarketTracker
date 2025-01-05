@@ -3,6 +3,7 @@ from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 from .base_screen import BaseScreen
 from ..services.crypto.crypto_manager import CryptoManager
+import os
 
 logger = get_logger(__name__)
 
@@ -70,6 +71,22 @@ class TickerScreen(BaseScreen):
             return
         
         current_coin = self.coins[self.current_index]
+        
+        # Draw coin logo in top right if available
+        logo_size = 64
+        logo_margin = 20
+        try:
+            logo_path = os.path.join(AppConfig.CACHE_DIR, f"{current_coin['symbol'].lower()}_logo.png")
+            if os.path.exists(logo_path):
+                logo = pygame.image.load(logo_path)
+                logo = pygame.transform.scale(logo, (logo_size, logo_size))
+                logo_rect = logo.get_rect(
+                    right=self.width - logo_margin,
+                    top=20
+                )
+                self.display.surface.blit(logo, logo_rect)
+        except Exception as e:
+            logger.error(f"Error loading logo for {current_coin['symbol']}: {e}")
         
         # Draw coin name and symbol
         title_text = f"{current_coin['name']} ({current_coin['symbol']})"
