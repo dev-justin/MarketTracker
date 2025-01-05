@@ -112,7 +112,7 @@ class TickerScreen(BaseScreen):
         chart_rect = pygame.Rect(0, self.chart_y, self.width, self.chart_height)
         
         # Draw chart background
-        pygame.draw.rect(surface, AppConfig.CHART_BG_COLOR, chart_rect)
+        # pygame.draw.rect(surface, AppConfig.CHART_BG_COLOR, chart_rect)
         
         # Calculate points for the line
         points = []
