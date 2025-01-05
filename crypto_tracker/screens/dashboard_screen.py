@@ -36,16 +36,16 @@ class DashboardScreen(BaseScreen):
         now = datetime.now()
         local_time = now.astimezone(ZoneInfo(AppConfig.TIMEZONE))
         
-        # Draw time
-        time_text = local_time.strftime("%I:%M %p").lstrip("0")
-        time_surface = self.fonts['title-xl'].render(time_text, True, AppConfig.WHITE)
-        time_rect = time_surface.get_rect(centerx=self.width // 2, top=20)
-        self.display.surface.blit(time_surface, time_rect)
-        
         # Draw date
         date_text = local_time.strftime("%A, %B %d")
         date_surface = self.fonts['light-lg'].render(date_text, True, AppConfig.WHITE)
-        date_rect = date_surface.get_rect(centerx=self.width // 2, top=time_rect.bottom + 5)
+        date_rect = date_surface.get_rect(centerx=self.width // 2, top=20)
         self.display.surface.blit(date_surface, date_rect)
+        
+        # Draw time
+        time_text = local_time.strftime("%I:%M %p").lstrip("0")
+        time_surface = self.fonts['title-xl'].render(time_text, True, AppConfig.WHITE)
+        time_rect = time_surface.get_rect(centerx=self.width // 2, top=date_rect.bottom + 5)
+        self.display.surface.blit(time_surface, time_rect)
         
         self.update_screen()
