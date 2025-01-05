@@ -21,7 +21,7 @@ class SettingsScreen(BaseScreen):
         is_double_tap, is_swipe_up = self.gesture_handler.handle_touch_event(event, self.height)
         if is_double_tap or is_swipe_up:  # Either gesture returns to dashboard
             logger.info("Returning to dashboard")
-            self.manager.switch_screen('dashboard')
+            self.screen_manager.switch_screen('dashboard')
     
     def draw(self) -> None:
         """Draw the settings screen."""

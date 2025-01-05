@@ -51,10 +51,10 @@ class DashboardScreen(BaseScreen):
         is_double_tap, is_swipe_up = self.gesture_handler.handle_touch_event(event, self.height)
         if is_double_tap:
             logger.info("Double tap detected, returning to ticker screen")
-            # self.manager.switch_screen('ticker')
+            self.screen_manager.switch_screen('ticker')
         elif is_swipe_up:
             logger.info("Swipe up detected, switching to settings")
-            self.manager.switch_screen('settings')
+            self.screen_manager.switch_screen('settings')
     
     def draw(self) -> None:
         """Draw the dashboard screen."""
