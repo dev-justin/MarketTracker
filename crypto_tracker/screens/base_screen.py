@@ -16,6 +16,7 @@ class BaseScreen:
             display: The display instance
         """
         self.display = display
+        self.fonts = display.fonts
         self.width = AppConfig.DISPLAY_WIDTH
         self.height = AppConfig.DISPLAY_HEIGHT
         logger.info("Base screen initialized")
