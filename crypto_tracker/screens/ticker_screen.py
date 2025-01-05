@@ -90,7 +90,7 @@ class TickerScreen(BaseScreen):
         # Draw navigation hints
         if len(self.coins) > 1:
             nav_text = f"{self.current_index + 1} / {len(self.coins)}"
-            nav_surface = self.fonts['small'].render(nav_text, True, AppConfig.GRAY)
+            nav_surface = self.fonts['sm'].render(nav_text, True, AppConfig.GRAY)
             nav_rect = nav_surface.get_rect(centerx=self.width//2, bottom=self.height - 20)
             self.display.surface.blit(nav_surface, nav_rect)
         
