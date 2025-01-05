@@ -40,9 +40,9 @@ class DashboardScreen(BaseScreen):
         # Handle double tap to return to ticker screen
         if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
             current_time = time.time()
-            if current_time - self.last_tap_time < self.double_tap_threshold:
+            if current_time - self.LAST_TAP_TIME < self.DOUBLE_TAP_THRESHOLD:
                 logger.info("Double tap detected, returning to ticker screen")
-            self.last_tap_time = current_time
+            self.LAST_TAP_TIME = current_time
         
         # Handle swipe up to settings
         if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
