@@ -37,7 +37,7 @@ def main():
         screen_manager.add_screen('edit_ticker', EditTickerScreen, is_singleton=False)
         
         # Set initial screen
-        screen_manager.switch_screen('settings')
+        screen_manager.switch_screen('ticker')
         
         # Create data directory if it doesn't exist
         os.makedirs(AppConfig.DATA_DIR, exist_ok=True)

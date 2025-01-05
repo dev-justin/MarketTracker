@@ -90,22 +90,27 @@ class TickerScreen(BaseScreen):
         
         # Draw coin name and symbol
         title_text = f"{current_coin['name']} ({current_coin['symbol']})"
-        title_surface = self.fonts['title-md'].render(title_text, True, AppConfig.WHITE)
+        title_surface = self.fonts['light'].render(title_text, True, AppConfig.WHITE)
         title_rect = title_surface.get_rect(left=20, top=20)  # Left aligned with 20px padding
         self.display.surface.blit(title_surface, title_rect)
         
-        # Draw price (larger)
+        # Draw price (extra large)
         price_text = f"${current_coin['current_price']:,.2f}"
-        price_surface = self.fonts['title-xl'].render(price_text, True, AppConfig.WHITE)  # Using larger font
-        price_rect = price_surface.get_rect(left=20, top=title_rect.bottom + 5)  # Left aligned with small gap
-        self.display.surface.blit(price_surface, price_rect)
+        price_surface = self.fonts['title-xl'].render(price_text, True, AppConfig.WHITE)
+        # Scale up the price text by 1.5x
+        scaled_price_surface = pygame.transform.scale(
+            price_surface,
+            (int(price_surface.get_width() * 1.5), int(price_surface.get_height() * 1.5))
+        )
+        price_rect = scaled_price_surface.get_rect(left=20, top=title_rect.bottom + 5)
+        self.display.surface.blit(scaled_price_surface, price_rect)
         
-        # Draw 24h change
+        # Draw 24h change (larger)
         change_24h = current_coin['price_change_24h']
         change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
         change_text = f"{change_24h:+.2f}% (24h)"
-        change_surface = self.fonts['medium'].render(change_text, True, change_color)
-        change_rect = change_surface.get_rect(left=20, top=price_rect.bottom + 5)  # Left aligned
+        change_surface = self.fonts['title-md'].render(change_text, True, change_color)
+        change_rect = change_surface.get_rect(left=20, top=price_rect.bottom + 5)
         self.display.surface.blit(change_surface, change_rect)
         
         # Draw sparkline if price history is available
