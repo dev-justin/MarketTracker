@@ -79,16 +79,18 @@ class AppConfig:
         'title-xl': 48
     }
     
+    # Touch settings
+    SWIPE_THRESHOLD = 50  # Minimum distance for swipe detection
+    SWIPE_TIME_THRESHOLD = 500  # Maximum time for swipe detection (ms)
+    DOUBLE_TAP_THRESHOLD = 300  # Maximum time between taps (ms)
+    TOUCH_MARGIN = 10  # Touch area margin for hit detection
+    
     # Event types
     EVENT_TYPES = {
         'FINGER_DOWN': 1792,
         'FINGER_UP': 1793,
         'FINGER_MOTION': 1794
     }
-    
-    # Gesture settings
-    SWIPE_THRESHOLD = 50  # Minimum distance for swipe detection
-    SWIPE_TIME_THRESHOLD = 500  # Maximum time for swipe detection (ms)
     
     # Chart settings
     CHART_MARGIN = 20
