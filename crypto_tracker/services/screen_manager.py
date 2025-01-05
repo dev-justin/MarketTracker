@@ -4,31 +4,32 @@ from ..utils.logger import get_logger
 logger = get_logger(__name__)
 
 class ScreenManager:
-    def __init__(self):
-        """Initialize the screen manager."""
+    def __init__(self, display):
+        self.display = display
         self.screens = {}
         self.current_screen = None
         logger.info("ScreenManager initialized")
     
-    def add_screen(self, name: str, screen: object):
+    def add_screen(self, name: str, screen) -> None:
         """Add a screen to the manager."""
         self.screens[name] = screen
-        screen.set_screen_manager(self)
-        logger.debug(f"Added screen: {name}")
+        screen.screen_manager = self
+        logger.info(f"Added screen: {name}")
     
-    def switch_screen(self, screen_name: str):
+    def switch_screen(self, name: str) -> None:
         """Switch to a different screen."""
-        if screen_name not in self.screens:
-            raise ValueError(f"Screen '{screen_name}' not found")
-        self.current_screen = self.screens[screen_name]
-        logger.info(f"Switched to screen: {screen_name}")
+        if name in self.screens:
+            self.current_screen = self.screens[name]
+            logger.info(f"Switched to screen: {name}")
+        else:
+            logger.error(f"Screen not found: {name}")
     
-    def handle_event(self, event: pygame.event.Event):
+    def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
         if self.current_screen:
             self.current_screen.handle_event(event)
-        
-    def update_screen(self):
-        """Draw the current screen."""
+    
+    def update_screen(self) -> None:
+        """Update the current screen."""
         if self.current_screen:
             self.current_screen.draw()

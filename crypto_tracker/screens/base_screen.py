@@ -10,42 +10,30 @@ class BaseScreen(ABC):
     """Base class for all screens in the application."""
     
     def __init__(self, display) -> None:
-        """
-        Initialize the base screen.
-        
-        Args:
-            display: The display instance
-        """
+        """Initialize the base screen."""
         self.display = display
-        self.fonts = display.fonts
+        self.screen_manager = None
+        self.gesture_handler = GestureHandler()
         self.width = AppConfig.DISPLAY_WIDTH
         self.height = AppConfig.DISPLAY_HEIGHT
-        self.gesture_handler = GestureHandler()
-        logger.info("Base screen initialized")
-            
-    def update_screen(self) -> None:
-        """Update the screen."""
-        pygame.display.flip()
-
-    def set_screen_manager(self, screen_manager: object) -> None:
-        """Set the screen manager."""
-        self.screen_manager = screen_manager
-
-    @abstractmethod
-    def draw(self) -> None:
-        """Draw the screen contents."""
-        raise NotImplementedError("Screens must implement draw") 
+        self.fonts = display.fonts
+        logger.info(f"{self.__class__.__name__} initialized")
     
-    @abstractmethod
     def handle_event(self, event: pygame.event.Event) -> None:
-        """
-        Handle pygame events.
-        
-        Args:
-            event: The pygame event to handle
-        """
-        raise NotImplementedError("Screens must implement handle_event")
+        """Handle pygame events."""
+        pass
+    
+    def draw(self) -> None:
+        """Draw the screen."""
+        pass
+    
+    def update_screen(self) -> None:
+        """Update the display."""
+        pygame.display.flip()
     
     def _scale_touch_input(self, event: pygame.event.Event) -> tuple:
-        """Scale touch input coordinates to screen coordinates."""
-        return (event.x * self.width, event.y * self.height)
+        """Scale touch input coordinates to screen dimensions."""
+        return (
+            int(event.x * self.width),
+            int(event.y * self.height)
+        )
