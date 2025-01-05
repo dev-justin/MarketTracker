@@ -160,15 +160,19 @@ class SettingsScreen(BaseScreen):
         )
         surface.blit(symbol_surface, symbol_rect)
         
-        # Draw edit icon centered on the right side and store its rect
+        # Calculate positions for icons on the right
+        icon_margin = 15
+        edit_icon_rect = None
+        
+        # Draw edit icon on the right side
         if self.edit_icon:
             edit_icon_rect = self.edit_icon.get_rect(
-                right=rect.right - logo_margin,
+                right=rect.right - icon_margin,
                 centery=rect.centery
             )
             surface.blit(self.edit_icon, edit_icon_rect)
         
-        # Draw favorite star if favorited
+        # Draw favorite star if favorited (to the left of edit icon)
         if coin.get('favorite', False) and self.star_icon:
             star_surface = self.star_icon.copy()
             # Change color to gold/orange
@@ -180,8 +184,8 @@ class SettingsScreen(BaseScreen):
                         star_surface.set_at((x, y), star_color)
             
             star_rect = star_surface.get_rect(
-                right=rect.right - logo_margin,
-                top=rect.top + logo_margin
+                right=edit_icon_rect.left - icon_margin if edit_icon_rect else rect.right - icon_margin,
+                centery=rect.centery
             )
             surface.blit(star_surface, star_rect)
         
