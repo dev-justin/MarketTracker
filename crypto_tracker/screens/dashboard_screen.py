@@ -20,13 +20,6 @@ class DashboardScreen(BaseScreen):
         Args:
             event: The pygame event to handle
         """
-
-        # Display settings
-        padding = 20
-                
-        # Background gradient colors
-        gradient_top = (13, 17, 23)     # Dark navy
-        gradient_bottom = (22, 27, 34)  # Slightly lighter navy
                 
         # Touch handling
         swipe_start_y = None
@@ -60,11 +53,18 @@ class DashboardScreen(BaseScreen):
     def draw(self) -> None:
         """Draw the dashboard screen."""
 
+        # Display settings
+        padding = 20
+                
+        # Background gradient colors
+        gradient_top = (13, 17, 23)     # Dark navy
+        gradient_bottom = (22, 27, 34)  # Slightly lighter navy
+
         # Draw background gradient
         for y in range(self.height):
             progress = y / self.height
             color = [
-                int(self.GRADIENT_TOP[i] + (self.GRADIENT_BOTTOM[i] - self.GRADIENT_TOP[i]) * progress)
+                int(gradient_top[i] + (gradient_bottom[i] - gradient_top[i]) * progress)
                 for i in range(3)
             ]
             pygame.draw.line(self.display.surface, color, (0, y), (self.width, y))
