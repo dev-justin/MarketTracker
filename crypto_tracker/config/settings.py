@@ -80,10 +80,11 @@ class AppConfig:
     }
     
     # Touch settings
-    SWIPE_THRESHOLD = 50  # Minimum distance for swipe detection
+    SWIPE_THRESHOLD = 0.15  # 15% of screen width/height for swipe detection
     SWIPE_TIME_THRESHOLD = 500  # Maximum time for swipe detection (ms)
     DOUBLE_TAP_THRESHOLD = 300  # Maximum time between taps (ms)
-    TOUCH_MARGIN = 10  # Touch area margin for hit detection
+    TOUCH_MARGIN = 0.05  # 5% touch area margin for hit detection
+    SWIPE_VELOCITY_THRESHOLD = 0.3  # Minimum velocity for swipe detection
     
     # Event types
     EVENT_TYPES = {
