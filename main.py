@@ -57,7 +57,7 @@ def main():
         # pygame.quit()
 
         coingecko = CoinGeckoService()
-        coingecko.search_coin('btc')
+        coingecko.get_coin_data('bitcoin')
         
     except Exception as e:
         logger.error(f"Application error: {e}")

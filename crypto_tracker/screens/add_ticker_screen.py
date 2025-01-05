@@ -3,6 +3,7 @@ from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 from .base_screen import BaseScreen
 from ..services.crypto.tracked_coins_service import TrackedCoinsService
+from ..components.keyboard import VirtualKeyboard
 
 logger = get_logger(__name__)
 
@@ -10,7 +11,6 @@ class AddTickerScreen(BaseScreen):
     def __init__(self, display) -> None:
         super().__init__(display)
         self.background_color = AppConfig.BLACK
-        self.new_symbol = ""
         self.tracked_coins_service = TrackedCoinsService()
         self.error_message = None
         
@@ -19,15 +19,30 @@ class AddTickerScreen(BaseScreen):
         self.button_height = AppConfig.BUTTON_HEIGHT
         self.button_spacing = AppConfig.BUTTON_MARGIN
         
-        # Keyboard layout
-        self.keys = [
-            ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-            ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-            ['Z', 'X', 'C', 'V', 'B', 'N', 'M', 'DEL']
-        ]
-        self.setup_keyboard()
+        # Create keyboard
+        self.keyboard = VirtualKeyboard(self.display.surface, self.fonts)
+        self.keyboard.on_change = self._on_text_change
+        
+        # Create buttons
+        button_y = self.height - self.button_height - 20
+        self.cancel_rect = pygame.Rect(
+            20,
+            button_y,
+            self.button_width,
+            self.button_height
+        )
+        self.save_rect = pygame.Rect(
+            self.width - self.button_width - 20,
+            button_y,
+            self.button_width,
+            self.button_height
+        )
         
         logger.info("AddTickerScreen initialized")
+    
+    def _on_text_change(self, text: str):
+        """Handle keyboard text changes."""
+        self.error_message = None
     
     def add_ticker(self, symbol: str) -> None:
         """Add a new ticker to tracked coins."""
@@ -43,47 +58,6 @@ class AddTickerScreen(BaseScreen):
         except Exception as e:
             logger.error(f"Error adding ticker: {e}")
             self.error_message = "Error adding ticker"
-    
-    def setup_keyboard(self):
-        """Calculate keyboard layout dimensions."""
-        keyboard_height = self.height * 0.5 
-        keyboard_top = self.height * 0.35 
-        key_padding = 10
-        num_rows = len(self.keys)
-        
-        # Calculate key sizes
-        max_keys_in_row = max(len(row) for row in self.keys)
-        self.key_width = (self.width - (key_padding * (max_keys_in_row + 1))) // max_keys_in_row
-        self.key_height = (keyboard_height - (key_padding * (num_rows + 1))) // num_rows
-        
-        # Store key rectangles for hit detection
-        self.key_rects = []
-        y = keyboard_top
-        for row in self.keys:
-            row_width = len(row) * self.key_width + (len(row) - 1) * key_padding
-            x = (self.width - row_width) // 2
-            row_rects = []
-            for key in row:
-                rect = pygame.Rect(x, y, self.key_width, self.key_height)
-                row_rects.append((key, rect))
-                x += self.key_width + key_padding
-            self.key_rects.append(row_rects)
-            y += self.key_height + key_padding
-        
-        # Create save and cancel buttons
-        button_y = self.height - self.button_height - 20
-        self.cancel_rect = pygame.Rect(
-            20,
-            button_y,
-            self.button_width,
-            self.button_height
-        )
-        self.save_rect = pygame.Rect(
-            self.width - self.button_width - 20,
-            button_y,
-            self.button_width,
-            self.button_height
-        )
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
@@ -102,24 +76,13 @@ class AddTickerScreen(BaseScreen):
                 self.screen_manager.switch_screen('settings')
             elif self.save_rect.collidepoint(x, y):
                 logger.info("Save button clicked")
-                if self.new_symbol:
-                    self.add_ticker(self.new_symbol)
+                if self.keyboard.get_text():
+                    self.add_ticker(self.keyboard.get_text())
                     if not self.error_message:
                         self.screen_manager.switch_screen('settings')
             else:
-                # Check for key presses
-                for row in self.key_rects:
-                    for key, rect in row:
-                        if rect.collidepoint(x, y):
-                            if key == 'DEL':
-                                if self.new_symbol:
-                                    self.new_symbol = self.new_symbol[:-1]
-                                    logger.debug(f"Backspace pressed, current input: {self.new_symbol}")
-                            elif len(self.new_symbol) < 5:
-                                self.new_symbol += key
-                                logger.debug(f"Key pressed: {key}, current input: {self.new_symbol}")
-                            self.error_message = None
-                            return
+                # Handle keyboard input
+                self.keyboard.handle_input(x, y)
     
     def draw(self) -> None:
         """Draw the add ticker screen."""
@@ -141,8 +104,9 @@ class AddTickerScreen(BaseScreen):
         pygame.draw.rect(self.display.surface, AppConfig.INPUT_BG_COLOR, input_rect)
         pygame.draw.rect(self.display.surface, AppConfig.CELL_BORDER_COLOR, input_rect, 1)
         
-        if self.new_symbol:
-            input_text = self.fonts['medium'].render(self.new_symbol, True, AppConfig.WHITE)
+        current_text = self.keyboard.get_text()
+        if current_text:
+            input_text = self.fonts['medium'].render(current_text, True, AppConfig.WHITE)
         else:
             input_text = self.fonts['medium'].render("Enter Symbol", True, AppConfig.PLACEHOLDER_COLOR)
         
@@ -159,14 +123,7 @@ class AddTickerScreen(BaseScreen):
             self.display.surface.blit(error_surface, error_rect)
         
         # Draw keyboard
-        for row in self.key_rects:
-            for key, rect in row:
-                pygame.draw.rect(self.display.surface, AppConfig.KEY_BG_COLOR, rect)
-                pygame.draw.rect(self.display.surface, AppConfig.KEY_BORDER_COLOR, rect, 1)
-                
-                key_text = self.fonts['medium'].render(key, True, AppConfig.WHITE)
-                key_text_rect = key_text.get_rect(center=rect.center)
-                self.display.surface.blit(key_text, key_text_rect)
+        self.keyboard.draw()
         
         # Draw buttons
         pygame.draw.rect(self.display.surface, AppConfig.CANCEL_BUTTON_COLOR, self.cancel_rect)
@@ -174,7 +131,7 @@ class AddTickerScreen(BaseScreen):
         cancel_text_rect = cancel_text.get_rect(center=self.cancel_rect.center)
         self.display.surface.blit(cancel_text, cancel_text_rect)
         
-        save_color = AppConfig.DONE_BUTTON_ACTIVE_COLOR if self.new_symbol else AppConfig.DONE_BUTTON_INACTIVE_COLOR
+        save_color = AppConfig.DONE_BUTTON_ACTIVE_COLOR if self.keyboard.get_text() else AppConfig.DONE_BUTTON_INACTIVE_COLOR
         pygame.draw.rect(self.display.surface, save_color, self.save_rect)
         save_text = self.fonts['medium'].render("Save", True, AppConfig.WHITE)
         save_text_rect = save_text.get_rect(center=self.save_rect.center)
