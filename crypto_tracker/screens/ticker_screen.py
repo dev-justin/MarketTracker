@@ -97,23 +97,39 @@ class TickerScreen(BaseScreen):
     
     def _draw_chart(self, surface: pygame.Surface):
         """Draw the 7-day price chart."""
-        if not self.current_coin:
+        if not self.current_coin or not self.current_coin.get('sparkline_7d'):
             return
             
-        # Draw chart background
+        # Get sparkline data
+        prices = self.current_coin['sparkline_7d']
+        
+        # Calculate min and max for scaling
+        min_price = min(prices)
+        max_price = max(prices)
+        price_range = max_price - min_price
+        
+        # Chart dimensions
         chart_rect = pygame.Rect(0, self.chart_y, self.width, self.chart_height)
+        
+        # Draw chart background
         pygame.draw.rect(surface, AppConfig.CHART_BG_COLOR, chart_rect)
         
-        # Draw chart grid lines
-        for i in range(6):  # 5 horizontal lines
-            y = self.chart_y + (i * self.chart_height // 5)
-            pygame.draw.line(surface, AppConfig.CHART_GRID_COLOR,
-                           (0, y), (self.width, y), 1)
+        # Calculate points for the line
+        points = []
+        for i, price in enumerate(prices):
+            # X coordinate: spread points across chart width
+            x = int(i * self.width / (len(prices) - 1))
+            
+            # Y coordinate: scale price to chart height
+            # Subtract from chart_height to flip the Y axis (pygame Y increases downward)
+            normalized_price = (price - min_price) / price_range if price_range > 0 else 0.5
+            y = self.chart_y + self.chart_height - int(normalized_price * self.chart_height)
+            
+            points.append((x, y))
         
-        for i in range(8):  # 7 vertical lines
-            x = i * self.width // 7
-            pygame.draw.line(surface, AppConfig.CHART_GRID_COLOR,
-                           (x, self.chart_y), (x, self.height), 1)
+        # Draw the line
+        if len(points) > 1:
+            pygame.draw.lines(surface, AppConfig.GREEN, False, points, 2)
     
     def draw(self) -> None:
         # Fill background

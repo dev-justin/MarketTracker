@@ -171,7 +171,7 @@ class CryptoService:
                 'symbol': symbol,
                 'name': name,
                 'price': price,
-                'price_change_24h': price_change_24h,
+                'price_change_24h': round(price_change_24h),
                 'sparkline_7d': sparkline_7d,
                 'logo_path': logo_path,
             }
