@@ -5,19 +5,17 @@ from ..utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-class Screen:
+class BaseScreen:
     """Base class for all screens in the application."""
     
-    def __init__(self, screen_manager) -> None:
+    def __init__(self, display) -> None:
         """
         Initialize the base screen.
         
         Args:
-            screen_manager: The screen manager instance
+            display: The display instance
         """
-        self.manager = screen_manager
-        self.display = screen_manager.display
-        self.crypto_api = screen_manager.crypto_api
+        self.display = display
         self.width = AppConfig.DISPLAY_WIDTH
         self.height = AppConfig.DISPLAY_HEIGHT
         logger.info("Base screen initialized")
