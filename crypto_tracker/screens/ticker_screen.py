@@ -85,7 +85,7 @@ class TickerScreen(BaseScreen):
             logger.error(f"Error loading logo: {e}")
         
         # Draw price
-        price_text = f"${self.current_coin['price']}"
+        price_text = f"${self.current_coin['price']:.2f}"
         price = self.fonts['title-lg'].render(price_text, True, AppConfig.WHITE)
         price_rect = price.get_rect(left=40, top=40)
         surface.blit(price, price_rect)

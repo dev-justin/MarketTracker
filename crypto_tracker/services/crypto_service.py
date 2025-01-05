@@ -1,6 +1,7 @@
 from pycoingecko import CoinGeckoAPI
 import requests
 import json
+import time
 from typing import Optional, Dict, List
 from ..utils.logger import get_logger
 import os
@@ -14,10 +15,20 @@ class CryptoService:
     def __init__(self):
         """Initialize the crypto service."""
         self.client = CoinGeckoAPI()
+        self.cache = {}  # In-memory cache for coin data
+        self.cache_duration = 60  # Cache duration in seconds
         os.makedirs(AppConfig.CACHE_DIR, exist_ok=True)
         os.makedirs(AppConfig.DATA_DIR, exist_ok=True)
         self.tracked_symbols = self._load_tracked_symbols()
         logger.info("CryptoService initialized")
+    
+    def _is_cache_valid(self, symbol: str) -> bool:
+        """Check if cached data is still valid."""
+        if symbol not in self.cache:
+            return False
+        
+        cache_age = time.time() - self.cache[symbol]['timestamp']
+        return cache_age < self.cache_duration
     
     def _load_tracked_symbols(self) -> List[str]:
         """Load tracked symbols from file."""
@@ -120,6 +131,7 @@ class CryptoService:
     def get_coin_data(self, symbol: str) -> Optional[Dict]:
         """
         Fetch coin data including price, name, logo, and historical data.
+        Uses caching to reduce API calls.
         
         Args:
             symbol: The coin symbol (e.g., 'btc')
@@ -133,6 +145,11 @@ class CryptoService:
             - sparkline_7d: List of 7-day price data points
             - logo_path: Path to cached logo image
         """
+        # Check cache first
+        if self._is_cache_valid(symbol):
+            logger.debug(f"Using cached data for {symbol}")
+            return self.cache[symbol]['data']
+        
         try:
             # Search for coin
             coin_info = self.search_coin(symbol)
@@ -171,12 +188,18 @@ class CryptoService:
                 'symbol': symbol,
                 'name': name,
                 'price': price,
-                'price_change_24h': round(price_change_24h),
+                'price_change_24h': round(price_change_24h, 2),
                 'sparkline_7d': sparkline_7d,
                 'logo_path': logo_path,
             }
             
-            logger.info(f"Fetched data for {symbol}: {result}")
+            # Update cache
+            self.cache[symbol] = {
+                'data': result,
+                'timestamp': time.time()
+            }
+            
+            logger.info(f"Fetched fresh data for {symbol}")
             return result
             
         except Exception as e:
