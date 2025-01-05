@@ -5,6 +5,9 @@ import os
 class AppConfig:
     """Global application configuration."""
     
+    # General settings
+    TIMEZONE = 'America/New_York'  # Default timezone for timestamps
+    
     # Display settings
     DISPLAY_WIDTH = 320
     DISPLAY_HEIGHT = 480
