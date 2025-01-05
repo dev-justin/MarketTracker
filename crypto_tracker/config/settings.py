@@ -68,12 +68,14 @@ class AppConfig:
     
     # Font sizes
     FONT_SIZES = {
+        'xs': 12,
         'small': 14,
         'medium': 18,
         'large': 24,
-        'title-sm': 28,
-        'title-md': 32,
-        'title-lg': 40,
+        'xl': 28,
+        'title-sm': 32,
+        'title-md': 36,
+        'title-lg': 42,
         'title-xl': 48
     }
     
