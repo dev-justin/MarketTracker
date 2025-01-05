@@ -20,7 +20,7 @@ class ScreenManager:
         """Switch to a different screen."""
         if screen_name not in self.screens:
             raise ValueError(f"Screen '{screen_name}' not found")
-        self.current_screen = screen_name
+        self.current_screen = self.screens[screen_name]
         logger.info(f"Switched to screen: {screen_name}")
     
     def handle_event(self, event: pygame.event.Event):
@@ -31,6 +31,5 @@ class ScreenManager:
     def update_screen(self):
         """Draw the current screen."""
         if self.current_screen:
-            self.display.fill(AppConfig.BLACK)
             self.current_screen.draw(self.display.surface)
             self.display.flip() 
