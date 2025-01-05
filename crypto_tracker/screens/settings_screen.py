@@ -26,6 +26,23 @@ class SettingsScreen(BaseScreen):
         self.cell_spacing = 15
         self.corner_radius = 10
         
+        # Load star icon
+        try:
+            self.star_icon = pygame.image.load(os.path.join(AppConfig.ASSETS_DIR, 'icons', 'star.svg'))
+            # Convert the surface to include alpha channel
+            self.star_icon = self.star_icon.convert_alpha()
+            self.star_icon = pygame.transform.scale(self.star_icon, (24, 24))
+            
+            # Create a mask to remove the white background
+            white = (255, 255, 255, 255)
+            for x in range(self.star_icon.get_width()):
+                for y in range(self.star_icon.get_height()):
+                    if self.star_icon.get_at((x, y)) == white:
+                        self.star_icon.set_at((x, y), (0, 0, 0, 0))  # Make white pixels transparent
+        except Exception as e:
+            logger.error(f"Error loading star icon: {e}")
+            self.star_icon = None
+        
         # Button dimensions
         self.button_width = 200
         self.button_height = 60
@@ -150,19 +167,25 @@ class SettingsScreen(BaseScreen):
                 centery=rect.centery
             )
             surface.blit(self.edit_icon, edit_icon_rect)
-            return rect, edit_icon_rect, coin
         
         # Draw favorite star if favorited
-        if coin.get('favorite', False):
-            star_text = "★"
-            star_surface = self.fonts['md'].render(star_text, True, AppConfig.FAVORITE_ACTIVE_COLOR)
+        if coin.get('favorite', False) and self.star_icon:
+            star_surface = self.star_icon.copy()
+            # Change color to gold/orange
+            star_color = (255, 165, 0)
+            for x in range(star_surface.get_width()):
+                for y in range(star_surface.get_height()):
+                    color = star_surface.get_at((x, y))
+                    if color.a > 0:  # If pixel is not transparent
+                        star_surface.set_at((x, y), star_color)
+            
             star_rect = star_surface.get_rect(
                 right=rect.right - logo_margin,
                 top=rect.top + logo_margin
             )
             surface.blit(star_surface, star_rect)
         
-        return rect, None, coin
+        return rect, edit_icon_rect, coin
     
     def draw(self) -> None:
         """Draw the settings screen."""

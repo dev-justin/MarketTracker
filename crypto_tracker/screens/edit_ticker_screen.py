@@ -17,7 +17,16 @@ class EditTickerScreen(BaseScreen):
         # Load star icon
         try:
             self.star_icon = pygame.image.load(os.path.join(AppConfig.ASSETS_DIR, 'icons', 'star.svg'))
+            # Convert the surface to include alpha channel
+            self.star_icon = self.star_icon.convert_alpha()
             self.star_icon = pygame.transform.scale(self.star_icon, (24, 24))
+            
+            # Create a mask to remove the white background
+            white = (255, 255, 255, 255)
+            for x in range(self.star_icon.get_width()):
+                for y in range(self.star_icon.get_height()):
+                    if self.star_icon.get_at((x, y)) == white:
+                        self.star_icon.set_at((x, y), (0, 0, 0, 0))  # Make white pixels transparent
         except Exception as e:
             logger.error(f"Error loading star icon: {e}")
             self.star_icon = None
@@ -156,11 +165,20 @@ class EditTickerScreen(BaseScreen):
             # Create a copy of the star icon surface to modify its color
             star_surface = self.star_icon.copy()
             if is_favorited:
-                # Change the color to match the button
-                star_color = (255, 255, 255)  # White star on orange background
-                pixels = pygame.PixelArray(star_surface)
-                pixels.replace((50, 50, 50), star_color)  # Replace dark gray with white
-                del pixels
+                # Change the color to gold/orange
+                star_color = (255, 165, 0)  # Orange to match button
+                for x in range(star_surface.get_width()):
+                    for y in range(star_surface.get_height()):
+                        color = star_surface.get_at((x, y))
+                        if color.a > 0:  # If pixel is not transparent
+                            star_surface.set_at((x, y), star_color)
+            else:
+                # Set to dark gray for unfavorited state
+                for x in range(star_surface.get_width()):
+                    for y in range(star_surface.get_height()):
+                        color = star_surface.get_at((x, y))
+                        if color.a > 0:  # If pixel is not transparent
+                            star_surface.set_at((x, y), (50, 50, 50))
             
             # Position star icon to the left of text
             star_rect = star_surface.get_rect(
