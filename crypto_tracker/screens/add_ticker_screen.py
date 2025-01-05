@@ -4,7 +4,7 @@ import os
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 from .base_screen import BaseScreen
-from pycoingecko import CoinGeckoAPI
+from ..services.crypto_service import CryptoService
 
 logger = get_logger(__name__)
 
@@ -13,7 +13,7 @@ class AddTickerScreen(BaseScreen):
         super().__init__(display)
         self.background_color = AppConfig.BLACK
         self.new_symbol = ""
-        self.coingecko = CoinGeckoAPI()
+        self.crypto_service = CryptoService()
         self.error_message = None
         
         # Button dimensions
@@ -31,67 +31,17 @@ class AddTickerScreen(BaseScreen):
         
         logger.info("AddTickerScreen initialized")
     
-    def find_coin_id(self, symbol: str) -> str:
-        """Find the CoinGecko ID for a given symbol."""
-        try:
-            # Search for the coin
-            search_results = self.coingecko.search(symbol)
-            coins = search_results.get('coins', [])
-            
-            # Find exact symbol match (case-insensitive)
-            symbol = symbol.upper()
-            for coin in coins:
-                if coin.get('symbol', '').upper() == symbol:
-                    return coin.get('id')
-            
-            return None
-        except Exception as e:
-            logger.error(f"Error searching for coin {symbol}: {e}")
-            return None
-    
     def add_ticker(self, symbol: str) -> None:
         """Add a new ticker to tracked coins."""
         try:
-            # Load existing coins
-            tracked_coins = []
-            if os.path.exists(AppConfig.TRACKED_COINS_FILE):
-                with open(AppConfig.TRACKED_COINS_FILE, 'r') as f:
-                    tracked_coins = json.load(f)
-            
-            # Find coin ID using CoinGecko search
-            coin_id = self.find_coin_id(symbol)
-            if not coin_id:
-                logger.warning(f"Could not find coin: {symbol}")
-                self.error_message = "Coin not found"
+            # Add symbol using crypto service
+            if self.crypto_service.add_tracked_symbol(symbol):
+                logger.info(f"Successfully added ticker: {symbol}")
+                self.error_message = None
                 return
             
-            # Add new coin with proper structure
-            new_coin = {
-                'id': coin_id,
-                'symbol': symbol.upper(),
-                'favorite': False
-            }
-            
-            # Check if coin already exists
-            if not any(coin.get('id') == new_coin['id'] for coin in tracked_coins):
-                # Verify coin exists and get current data
-                try:
-                    self.coingecko.get_coin_by_id(coin_id)
-                    tracked_coins.append(new_coin)
-                    
-                    # Save updated list
-                    os.makedirs(os.path.dirname(AppConfig.TRACKED_COINS_FILE), exist_ok=True)
-                    with open(AppConfig.TRACKED_COINS_FILE, 'w') as f:
-                        json.dump(tracked_coins, f, indent=2)
-                    logger.info(f"Added new ticker: {symbol} ({coin_id})")
-                    self.error_message = None
-                except Exception as e:
-                    logger.error(f"Error verifying coin {coin_id}: {e}")
-                    self.error_message = "Invalid coin"
-                    return
-            else:
-                logger.warning(f"Ticker already exists: {symbol}")
-                self.error_message = "Already exists"
+            logger.warning(f"Could not find coin: {symbol}")
+            self.error_message = "Coin not found"
                 
         except Exception as e:
             logger.error(f"Error adding ticker: {e}")

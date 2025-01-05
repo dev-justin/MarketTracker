@@ -156,28 +156,28 @@ class CryptoService:
         cache_age = time.time() - self.cache[symbol]['timestamp']
         return cache_age < self.cache_duration
     
-    def _load_tracked_symbols(self) -> List[str]:
-        """Load tracked symbols from file."""
+    def _load_tracked_symbols(self) -> List[Dict]:
+        """Load tracked coins from file."""
         try:
             if os.path.exists(AppConfig.TRACKED_COINS_FILE):
                 with open(AppConfig.TRACKED_COINS_FILE, 'r') as f:
-                    symbols = json.load(f)
-                    logger.info(f"Loaded tracked symbols: {symbols}")
-                    return symbols
+                    tracked_coins = json.load(f)
+                    logger.info(f"Loaded tracked coins: {[coin.get('symbol') for coin in tracked_coins]}")
+                    return tracked_coins
         except Exception as e:
-            logger.error(f"Error loading tracked symbols: {e}")
+            logger.error(f"Error loading tracked coins: {e}")
         
         # Default to empty list if file doesn't exist or error occurs
         return []
     
     def _save_tracked_symbols(self):
-        """Save tracked symbols to file."""
+        """Save tracked coins to file."""
         try:
             with open(AppConfig.TRACKED_COINS_FILE, 'w') as f:
                 json.dump(self.tracked_symbols, f, indent=2)
-            logger.info(f"Saved tracked symbols: {self.tracked_symbols}")
+            logger.info(f"Saved tracked coins: {[coin.get('symbol') for coin in self.tracked_symbols]}")
         except Exception as e:
-            logger.error(f"Error saving tracked symbols: {e}")
+            logger.error(f"Error saving tracked coins: {e}")
     
     def add_tracked_symbol(self, symbol: str) -> bool:
         """
@@ -189,19 +189,72 @@ class CryptoService:
         Returns:
             True if successfully added, False otherwise
         """
-        symbol = symbol.upper()
-        if symbol in self.tracked_symbols:
-            logger.info(f"Symbol already tracked: {symbol}")
+        try:
+            # Search for coin details
+            coin_info = self.api_client.search_coin(symbol)
+            if not coin_info:
+                logger.warning(f"Could not find coin: {symbol}")
+                return False
+            
+            # Get full coin data
+            coin_data = self.api_client.get_coin_data(coin_info['id'])
+            if not coin_data:
+                logger.warning(f"Could not fetch data for coin: {symbol}")
+                return False
+            
+            # Process and prepare coin data for storage
+            processed_data = {
+                'id': coin_info['id'],
+                'symbol': coin_info['symbol'],
+                'name': coin_info['name'],
+                'logo_path': self._cache_coin_logo(coin_data),
+                'favorite': False
+            }
+            
+            # Load existing tracked coins
+            tracked_coins = []
+            if os.path.exists(AppConfig.TRACKED_COINS_FILE):
+                with open(AppConfig.TRACKED_COINS_FILE, 'r') as f:
+                    tracked_coins = json.load(f)
+            
+            # Check if coin already exists
+            if not any(coin.get('id') == processed_data['id'] for coin in tracked_coins):
+                tracked_coins.append(processed_data)
+                # Save updated list
+                with open(AppConfig.TRACKED_COINS_FILE, 'w') as f:
+                    json.dump(tracked_coins, f, indent=2)
+                logger.info(f"Added new coin to track: {processed_data['name']} ({processed_data['symbol']})")
+                return True
+            
+            logger.info(f"Coin already tracked: {symbol}")
             return True
             
-        # Verify symbol exists before adding
-        if self.search_coin(symbol):
-            self.tracked_symbols.append(symbol)
-            self._save_tracked_symbols()
-            logger.info(f"Added symbol to track: {symbol}")
-            return True
-        
-        return False
+        except Exception as e:
+            logger.error(f"Error adding tracked symbol: {e}")
+            return False
+    
+    def _cache_coin_logo(self, coin_data: Dict) -> str:
+        """Cache coin logo and return the local path."""
+        try:
+            if not coin_data.get('image', {}).get('large'):
+                return ""
+                
+            symbol = coin_data['symbol'].lower()
+            logo_path = os.path.join(AppConfig.CACHE_DIR, f"{symbol}_logo.png")
+            
+            # Download and cache logo if not exists
+            if not os.path.exists(logo_path):
+                response = requests.get(coin_data['image']['large'])
+                if response.status_code == 200:
+                    with open(logo_path, 'wb') as f:
+                        f.write(response.content)
+                    logger.debug(f"Cached logo for {symbol}")
+            
+            return logo_path
+            
+        except Exception as e:
+            logger.error(f"Error caching logo: {e}")
+            return ""
     
     def remove_tracked_symbol(self, symbol: str) -> bool:
         """
