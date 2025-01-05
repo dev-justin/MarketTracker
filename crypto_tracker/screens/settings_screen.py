@@ -29,8 +29,9 @@ class SettingsScreen(BaseScreen):
         self.grid_start_x = (self.width - (self.cell_width * self.grid_cols)) // 2
         self.grid_start_y = 100  # Start below title
         
+        # Input state
         self.is_adding_coin = False
-        self.new_symbol = ""  # For storing symbol being typed
+        self.new_symbol = ""
         
         logger.info("SettingsScreen initialized")
     
@@ -71,16 +72,18 @@ class SettingsScreen(BaseScreen):
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
         if self.is_adding_coin:
-            # Handle keyboard input
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
-                    # Add the coin and exit keyboard mode
                     if self.new_symbol:
+                        logger.info(f"Adding new coin: {self.new_symbol}")
                         self.crypto_service.add_tracked_symbol(self.new_symbol)
                     self.is_adding_coin = False
                     self.new_symbol = ""
                 elif event.key == pygame.K_BACKSPACE:
                     self.new_symbol = self.new_symbol[:-1]
+                elif event.key == pygame.K_ESCAPE:
+                    self.is_adding_coin = False
+                    self.new_symbol = ""
                 elif event.unicode.isalnum() and len(self.new_symbol) < 5:
                     self.new_symbol += event.unicode.upper()
         else:
@@ -99,7 +102,7 @@ class SettingsScreen(BaseScreen):
                     0 <= cell_y < self.grid_rows):
                     cell_index = cell_y * self.grid_cols + cell_x
                     if cell_index >= len(self.crypto_service.tracked_symbols):
-                        logger.info("Add button clicked")
+                        logger.info("Add button clicked, showing keyboard")
                         self.is_adding_coin = True
     
     def draw(self) -> None:
@@ -143,7 +146,7 @@ class SettingsScreen(BaseScreen):
             pygame.draw.rect(self.display.surface, self.grid_color,
                            (input_x, input_y, input_width, input_height), 2, border_radius=10)
             
-            # Draw entered text
+            # Draw entered text or placeholder
             if self.new_symbol:
                 text = self.fonts['bold-lg'].render(self.new_symbol, True, AppConfig.WHITE)
             else:
