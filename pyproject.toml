@@ -6,9 +6,6 @@ requires-python = ">=3.8"
 dependencies = [
     "pygame",
     "pycoingecko",
-    "python-dotenv",
-    "requests",
-    "pytz"
 ]
 
 [build-system]

@@ -5,9 +5,8 @@ from ..utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+"""Service for managing shared display resources."""
 class Display:
-    """Service for managing shared display resources."""
-    
     def __init__(self):
         """Initialize the display service."""
         self._setup_runtime_dir()
@@ -57,31 +56,3 @@ class Display:
             'light-sm': pygame.font.Font(AppConfig.FONT_PATHS['light'], AppConfig.FONT_SIZES['sm']),
             'light-xs': pygame.font.Font(AppConfig.FONT_PATHS['light'], AppConfig.FONT_SIZES['xs'])
         }
-    
-    def create_text(self, text: str, font_key: str, color: tuple) -> pygame.Surface:
-        """Create text surface using the specified font."""
-        return self.fonts[font_key].render(text, True, color)
-    
-    def get_size(self) -> tuple:
-        """Get the display dimensions."""
-        return self.surface.get_size()
-    
-    def fill(self, color: tuple):
-        """Fill the display with a color."""
-        self.surface.fill(color)
-    
-    def blit(self, surface: pygame.Surface, position: tuple):
-        """Draw a surface onto the display."""
-        self.surface.blit(surface, position)
-    
-    def flip(self):
-        """Update the full display."""
-        pygame.display.flip()
-    
-    def tick(self, fps: int):
-        """Control the frame rate."""
-        self.clock.tick(fps)
-    
-    def cleanup(self):
-        """Clean up pygame resources."""
-        pygame.quit() 
