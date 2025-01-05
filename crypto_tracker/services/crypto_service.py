@@ -9,6 +9,8 @@ from ..config.settings import AppConfig
 
 logger = get_logger(__name__)
 
+
+
 class CryptoService:
     """Service for fetching cryptocurrency data."""
     

@@ -16,6 +16,8 @@ class TickerScreen(BaseScreen):
         self.last_touch_time = 0
         self.current_coin = None
         self.crypto_service = None  # Will be set by main app
+        self.last_update_time = 0  # Track when we last updated
+        self.update_interval = 60  # Update every 60 seconds
         
         logger.info("TickerScreen initialized")
     
@@ -27,6 +29,7 @@ class TickerScreen(BaseScreen):
             
         symbol = self.crypto_service.tracked_symbols[self.current_index]
         self.current_coin = self.crypto_service.get_coin_data(symbol)
+        self.last_update_time = pygame.time.get_ticks() / 1000  # Convert to seconds
         logger.info(f"Updated current coin: {symbol}")
     
     def set_crypto_service(self, service):
@@ -128,7 +131,30 @@ class TickerScreen(BaseScreen):
         if len(points) > 1:
             pygame.draw.lines(surface, AppConfig.GREEN, False, points, 2)
     
+    def _draw_update_countdown(self, surface: pygame.Surface):
+        """Draw the countdown until next update."""
+        if not self.last_update_time:
+            return
+            
+        current_time = pygame.time.get_ticks() / 1000
+        time_since_update = current_time - self.last_update_time
+        seconds_until_update = max(0, int(self.update_interval - time_since_update))
+        
+        countdown_text = f"Next update in {seconds_until_update}s"
+        countdown_surface = self.fonts['light-sm'].render(countdown_text, True, AppConfig.GRAY)
+        countdown_rect = countdown_surface.get_rect(
+            bottom=self.height - 20,
+            right=self.width - 20
+        )
+        surface.blit(countdown_surface, countdown_rect)
+    
     def draw(self) -> None:
+        # Check if we need to update data
+        current_time = pygame.time.get_ticks() / 1000
+        if current_time - self.last_update_time >= self.update_interval:
+            logger.debug("Auto-updating coin data")
+            self.update_current_coin()
+        
         # Fill background
         self.display.surface.fill(self.background_color)
         
@@ -141,5 +167,6 @@ class TickerScreen(BaseScreen):
             # Draw price section and chart
             self._draw_price_section(self.display.surface)
             self._draw_chart(self.display.surface)
+            self._draw_update_countdown(self.display.surface)
         
         self.update_screen() 
