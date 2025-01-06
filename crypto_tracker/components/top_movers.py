@@ -20,8 +20,9 @@ class TopMovers:
         self.scroll_offset = 0
         self.scroll_speed = 1.2
         self.mover_width = 340
+        self.mover_spacing = 20  # Add spacing between items
         self.last_update_time = 0
-        self.update_interval = 10000  # Reduced to 10 seconds
+        self.update_interval = 10000  # 10 seconds
         self.circle_color = (45, 45, 45)
         
         # Dimensions
@@ -64,21 +65,26 @@ class TopMovers:
         
         # Update scroll position
         self.scroll_offset -= self.scroll_speed
-        item_width = self.mover_width
+        item_width = self.mover_width + self.mover_spacing
         
         # Reset scroll when we've scrolled one full item width
         if abs(self.scroll_offset) >= item_width:
-            self.scroll_offset = 0
+            self.scroll_offset += item_width  # Instead of resetting to 0, add item width
             # Rotate the list to create infinite scroll effect
             self.movers.append(self.movers.pop(0))
         
-        # Draw items (we only need to draw 2 items at a time for smooth transition)
-        for i in range(2):
+        # Draw items (we need to draw 3 items for smooth transition)
+        for i in range(3):
             x = 20 + (i * item_width) + self.scroll_offset
-            coin = self.movers[i]
-            rank = i + 1 if i == 0 else ((i - 1) % len(self.movers)) + 1
+            idx = i % len(self.movers)
+            coin = self.movers[idx]
             
-            self._draw_mover_item(x, coin, rank)
+            # Always use the original index for ranking (based on 24h change)
+            rank = idx + 1  # Rank from 1-5 based on original sort order
+            
+            # Only draw if it would be visible
+            if -item_width <= x <= display_width:
+                self._draw_mover_item(x, coin, rank)
         
         # Reset clip
         self.display.surface.set_clip(None)
