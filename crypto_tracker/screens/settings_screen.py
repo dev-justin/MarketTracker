@@ -115,14 +115,22 @@ class SettingsScreen(BaseScreen):
         )
         surface.blit(symbol_surface, symbol_rect)
         
-        # Draw edit icon
-        edit_icon = self.assets.get_icon('edit', size=(32, 32))
+        # Draw edit icon (larger)
+        edit_icon = self.assets.get_icon('edit', size=(48, 48))  # Increased from 32 to 48
         if edit_icon:
-            edit_icon_rect = edit_icon.get_rect(
-                right=rect.right - 15,
-                centery=rect.centery
+            # Create a larger touch area for the edit icon
+            edit_touch_size = 60  # Even larger touch area
+            edit_icon_rect = pygame.Rect(
+                rect.right - edit_touch_size - 10,  # 10px from right edge
+                rect.centery - edit_touch_size // 2,
+                edit_touch_size,
+                edit_touch_size
             )
-            surface.blit(edit_icon, edit_icon_rect)
+            
+            # Center the icon within its touch area
+            icon_x = edit_icon_rect.centerx - edit_icon.get_width() // 2
+            icon_y = edit_icon_rect.centery - edit_icon.get_height() // 2
+            surface.blit(edit_icon, (icon_x, icon_y))
         else:
             edit_icon_rect = None
         
