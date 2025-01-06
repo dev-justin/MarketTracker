@@ -1,9 +1,12 @@
 """Service for interacting with Yahoo Finance API."""
 
-import yfinance as yf
+import yf
+import requests
 from typing import Optional, Dict, List
 from ...utils.logger import get_logger
+from ...config.settings import AppConfig
 import time
+import os
 
 logger = get_logger(__name__)
 
@@ -15,6 +18,22 @@ class StockService:
         self.cache_duration = 60  # 60 seconds cache
         logger.info("StockService initialized")
     
+    def _download_logo(self, symbol: str, logo_url: str) -> str:
+        """Download and cache the stock logo."""
+        try:
+            logo_path = os.path.join(AppConfig.CACHE_DIR, f"{symbol.lower()}_logo.png")
+            if not os.path.exists(logo_path):
+                response = requests.get(logo_url)
+                if response.status_code == 200:
+                    with open(logo_path, 'wb') as f:
+                        f.write(response.content)
+                    logger.info(f"Downloaded logo for {symbol}")
+                    return logo_path
+            return logo_path
+        except Exception as e:
+            logger.error(f"Error downloading logo for {symbol}: {e}")
+            return ""
+    
     def search_stock(self, symbol: str) -> Optional[Dict]:
         """
         Search for a stock by symbol.
@@ -24,15 +43,19 @@ class StockService:
             logger.info(f"Searching for stock with symbol: {symbol}")
             ticker = yf.Ticker(symbol)
             
-            # First check if we can get a valid price
             try:
-                current_price = ticker.info.get('currentPrice') or ticker.info.get('regularMarketPrice')
-                if current_price:
+                info = ticker.info
+                if info:
+                    # Get logo URL from Yahoo Finance
+                    logo_url = info.get('logo_url', '')
+                    if logo_url:
+                        self._download_logo(symbol, logo_url)
+                    
                     logger.info(f"Found stock: {symbol}")
                     return {
                         'id': symbol,  # Use symbol as ID for stocks
                         'symbol': symbol.upper(),
-                        'name': ticker.info.get('longName', ticker.info.get('shortName', symbol)),
+                        'name': info.get('longName', info.get('shortName', symbol)),
                         'type': 'stock'  # Mark as stock for differentiation
                     }
             except Exception as e:
@@ -63,14 +86,19 @@ class StockService:
             # Fetch fresh data
             logger.debug(f"Fetching fresh data from Yahoo Finance for {symbol}")
             ticker = yf.Ticker(symbol)
+            info = ticker.info
+            
+            if not info:
+                logger.error(f"No data returned from Yahoo Finance for {symbol}")
+                return None
             
             # Get current price (try multiple fields as backup)
-            current_price = ticker.info.get('currentPrice') or ticker.info.get('regularMarketPrice')
+            current_price = info.get('currentPrice') or info.get('regularMarketPrice')
             if not current_price:
                 logger.error(f"No price data returned from Yahoo Finance for {symbol}")
                 return None
             
-            # Get historical data for sparkline
+            # Get historical data for sparkline (7 days, 1-hour intervals)
             hist = ticker.history(period='7d', interval='1h')
             prices = hist['Close'].tolist() if not hist.empty else []
             
@@ -78,22 +106,26 @@ class StockService:
             if len(prices) >= 24:
                 price_change_24h = ((prices[-1] - prices[-24]) / prices[-24]) * 100
             else:
-                # Fallback to regular market change if available
-                price_change_24h = ticker.info.get('regularMarketChangePercent', 0)
+                price_change_24h = info.get('regularMarketChangePercent', 0)
             
-            # Process and cache the data
+            # Get and cache logo if available
+            logo_url = info.get('logo_url', '')
+            if logo_url:
+                self._download_logo(symbol, logo_url)
+            
+            # Process and cache the data (matching crypto format)
             processed_data = {
                 'id': symbol,
-                'name': ticker.info.get('longName', ticker.info.get('shortName', symbol)),
+                'name': info.get('longName', info.get('shortName', symbol)),
                 'symbol': symbol.upper(),
                 'type': 'stock',
-                'image': ticker.info.get('logo_url', ''),
                 'current_price': current_price,
                 'price_change_24h': price_change_24h,
                 'sparkline_7d': prices,
                 'last_updated': time.strftime('%Y-%m-%d %H:%M:%S'),
-                'market_cap': ticker.info.get('marketCap', 0),
-                'volume': ticker.info.get('volume', 0)
+                'market_cap': info.get('marketCap', 0),
+                'volume': info.get('volume', 0),
+                'favorite': False  # Default to not favorited
             }
             
             # Update cache

@@ -22,22 +22,6 @@ def main():
         # Initialize crypto manager and start price updates
         crypto_manager = CryptoManager()
         
-        # Test AAPL stock data
-        logger.info("Testing AAPL stock data fetch...")
-        stock_service = crypto_manager.stock_service
-        stock_info = stock_service.search_stock("AAPL")
-        if stock_info:
-            logger.info(f"Found stock info: {stock_info}")
-            stock_data = stock_service.get_stock_data("AAPL")
-            if stock_data:
-                logger.info(f"Current AAPL price: ${stock_data['current_price']}")
-                logger.info(f"24h change: {stock_data['price_change_24h']:.2f}%")
-                logger.info(f"Market cap: ${stock_data['market_cap']:,}")
-            else:
-                logger.error("Failed to get AAPL stock data")
-        else:
-            logger.error("Failed to find AAPL stock")
-        
         crypto_manager.start_price_updates()
         
         # Create display

@@ -16,6 +16,7 @@ class AddTickerScreen(BaseScreen):
         super().__init__(display)
         self.background_color = AppConfig.BLACK
         self.error_message = None
+        self.is_crypto_mode = True  # Default to crypto mode
         
         # Button dimensions
         self.button_width = AppConfig.BUTTON_WIDTH
@@ -41,6 +42,16 @@ class AddTickerScreen(BaseScreen):
             self.button_height
         )
         
+        # Create toggle button
+        toggle_width = 120
+        toggle_height = 40
+        self.toggle_rect = pygame.Rect(
+            self.width - toggle_width - 20,  # Right aligned with 20px margin
+            20 + 80,  # Below header
+            toggle_width,
+            toggle_height
+        )
+        
         logger.info("AddTickerScreen initialized")
     
     def _on_text_change(self, text: str):
@@ -56,7 +67,7 @@ class AddTickerScreen(BaseScreen):
             return
             
         try:
-            logger.info(f"Attempting to add ticker: {symbol}")
+            logger.info(f"Attempting to add ticker: {symbol} (Mode: {'Crypto' if self.is_crypto_mode else 'Stock'})")
             self.error_message = "Searching..."  # Show loading state
             self.draw()  # Force redraw to show loading state
             
@@ -90,7 +101,7 @@ class AddTickerScreen(BaseScreen):
         
         # Draw input box
         input_box_height = 50
-        input_box_width = self.width - 40  # 20px padding on each side
+        input_box_width = self.width - 160 - 40  # Reduced width to make room for toggle
         input_box_rect = pygame.Rect(
             20,
             header_rect.bottom + 30,
@@ -110,7 +121,7 @@ class AddTickerScreen(BaseScreen):
         input_text = self.keyboard.get_text().upper()
         if not input_text:
             # Draw placeholder
-            input_text = "Enter coin symbol"
+            input_text = "Enter symbol"
             text_color = (128, 128, 128)  # Gray for placeholder
         else:
             text_color = AppConfig.WHITE
@@ -121,6 +132,20 @@ class AddTickerScreen(BaseScreen):
             center=input_box_rect.center
         )
         self.display.surface.blit(input_surface, input_text_rect)
+        
+        # Draw toggle button
+        pygame.draw.rect(
+            self.display.surface,
+            (45, 45, 45) if not self.is_crypto_mode else (39, 174, 96),  # Green when in crypto mode
+            self.toggle_rect,
+            border_radius=10
+        )
+        
+        toggle_text = "CRYPTO" if self.is_crypto_mode else "STOCK"
+        toggle_font = self.display.get_text_font('md', 'regular')
+        toggle_surface = toggle_font.render(toggle_text, True, AppConfig.WHITE)
+        toggle_text_rect = toggle_surface.get_rect(center=self.toggle_rect.center)
+        self.display.surface.blit(toggle_surface, toggle_text_rect)
         
         # Draw keyboard
         self.keyboard.draw()
@@ -177,7 +202,13 @@ class AddTickerScreen(BaseScreen):
         elif event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
             x, y = self._scale_touch_input(event)
             
-            # Check keyboard input first
+            # Check toggle button first
+            if self.toggle_rect.collidepoint(x, y):
+                self.is_crypto_mode = not self.is_crypto_mode
+                logger.info(f"Switched to {'Crypto' if self.is_crypto_mode else 'Stock'} mode")
+                return
+            
+            # Check keyboard input next
             if self.keyboard.handle_input(x, y):
                 return
             
