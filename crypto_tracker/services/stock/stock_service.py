@@ -45,9 +45,28 @@ class StockService:
             logger.info(f"Getting available exchanges for symbol: {symbol}")
             exchanges = []
             
-            # Common exchanges to check
+            # Check US markets first (NYSE/NASDAQ)
+            try:
+                ticker = yf.Ticker(symbol)
+                info = ticker.info
+                if info and ('regularMarketPrice' in info or 'currentPrice' in info):
+                    # Get the actual exchange from info
+                    exchange_name = info.get('exchange', 'NYSE/NASDAQ')
+                    if exchange_name == 'NMS':
+                        exchange_name = 'NASDAQ'
+                    elif exchange_name in ['NYQ', 'NGM']:
+                        exchange_name = 'NYSE'
+                    
+                    exchanges.append({
+                        'symbol': symbol,
+                        'name': exchange_name,
+                        'suffix': ''
+                    })
+            except Exception as e:
+                logger.debug(f"Error checking US markets: {e}")
+            
+            # Common international exchanges to check
             suffixes = [
-                ('', 'NYSE/NASDAQ'),  # No suffix for US markets
                 ('.L', 'London Stock Exchange'),
                 ('.TO', 'Toronto Stock Exchange'),
                 ('.F', 'Frankfurt Stock Exchange'),
@@ -60,17 +79,18 @@ class StockService:
             ]
             
             for suffix, exchange_name in suffixes:
-                test_symbol = f"{symbol}{suffix}"
-                ticker = yf.Ticker(test_symbol)
                 try:
+                    test_symbol = f"{symbol}{suffix}"
+                    ticker = yf.Ticker(test_symbol)
                     info = ticker.info
-                    if info and 'regularMarketPrice' in info:
+                    if info and ('regularMarketPrice' in info or 'currentPrice' in info):
                         exchanges.append({
                             'symbol': test_symbol,
                             'name': exchange_name,
                             'suffix': suffix
                         })
-                except:
+                except Exception as e:
+                    logger.debug(f"Error checking {exchange_name}: {e}")
                     continue
             
             logger.info(f"Found {len(exchanges)} exchanges for {symbol}")
