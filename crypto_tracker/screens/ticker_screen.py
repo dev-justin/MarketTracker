@@ -86,13 +86,7 @@ class TickerScreen(BaseScreen):
                 return
         
         if not self.showing_selector:
-            if gestures['swipe_left']:
-                logger.info("Swipe left detected, showing next coin")
-                self.next_coin()
-            elif gestures['swipe_right']:
-                logger.info("Swipe right detected, showing previous coin")
-                self.previous_coin()
-            elif gestures['swipe_down']:
+            if gestures['swipe_down']:
                 logger.info("Swipe down detected, returning to dashboard")
                 self.screen_manager.switch_screen('dashboard')
     
@@ -101,36 +95,69 @@ class TickerScreen(BaseScreen):
         if not self.showing_selector:
             return
             
-        # Create semi-transparent overlay
-        overlay = pygame.Surface((self.width, 90), pygame.SRCALPHA)
-        pygame.draw.rect(overlay, (0, 0, 0, 200), overlay.get_rect())
+        # Define sizes
+        current_logo_size = 80  # Larger size for current ticker
+        other_logo_size = 50    # Normal size for other tickers
+        spacing = 30
         
-        # Calculate positions for logos
-        logo_size = 50
-        spacing = 20
-        total_width = len(self.coins) * (logo_size + spacing) - spacing
+        # Calculate total width needed
+        total_width = (len(self.coins) - 1) * (other_logo_size + spacing) + current_logo_size
         start_x = (self.width - total_width) // 2
+        center_y = self.height // 2  # Vertical center of screen
         
         # Draw logos
         for i, coin in enumerate(self.coins):
-            logo_x = start_x + i * (logo_size + spacing)
-            logo_path = os.path.join(AppConfig.CACHE_DIR, f"{coin['symbol'].lower()}_logo.png")
+            # Calculate position and size for this logo
+            is_current = (i == self.current_index)
+            logo_size = current_logo_size if is_current else other_logo_size
             
-            # Draw selection indicator for current coin
-            if i == self.current_index:
-                indicator_rect = pygame.Rect(logo_x - 5, 15, logo_size + 10, logo_size + 10)
-                pygame.draw.rect(overlay, (255, 255, 255, 30), indicator_rect, border_radius=10)
+            # Calculate x position accounting for different sizes
+            if i < self.current_index:
+                logo_x = start_x + i * (other_logo_size + spacing)
+            elif i == self.current_index:
+                logo_x = start_x + i * (other_logo_size + spacing) - (current_logo_size - other_logo_size) // 2
+            else:
+                logo_x = start_x + i * (other_logo_size + spacing) + (current_logo_size - other_logo_size)
+            
+            # Calculate y position (center vertically)
+            logo_y = center_y - logo_size // 2
+            
+            logo_path = os.path.join(AppConfig.CACHE_DIR, f"{coin['symbol'].lower()}_logo.png")
             
             if os.path.exists(logo_path):
                 try:
                     logo = pygame.image.load(logo_path)
                     logo = pygame.transform.scale(logo, (logo_size, logo_size))
-                    logo_rect = logo.get_rect(topleft=(logo_x, 20))
-                    overlay.blit(logo, logo_rect)
+                    logo_rect = logo.get_rect(topleft=(logo_x, logo_y))
+                    
+                    # Add subtle glow effect for current ticker
+                    if is_current:
+                        glow_surface = pygame.Surface((logo_size + 20, logo_size + 20), pygame.SRCALPHA)
+                        glow_rect = glow_surface.get_rect(center=(logo_size//2 + 10, logo_size//2 + 10))
+                        
+                        # Draw multiple circles for glow effect
+                        for radius in range(10, 0, -2):
+                            alpha = int(100 * (radius / 10))
+                            pygame.draw.circle(glow_surface, (255, 255, 255, alpha), glow_rect.center, logo_size//2 + radius)
+                        
+                        # Position and draw glow
+                        glow_pos = (logo_x - 10, logo_y - 10)
+                        self.display.surface.blit(glow_surface, glow_pos)
+                    
+                    self.display.surface.blit(logo, logo_rect)
+                    
+                    # Draw symbol below logo for current ticker
+                    if is_current:
+                        symbol_font = self.display.get_text_font('md', 'bold')
+                        symbol_surface = symbol_font.render(coin['symbol'].upper(), True, AppConfig.WHITE)
+                        symbol_rect = symbol_surface.get_rect(
+                            centerx=logo_rect.centerx,
+                            top=logo_rect.bottom + 10
+                        )
+                        self.display.surface.blit(symbol_surface, symbol_rect)
+                        
                 except Exception as e:
                     logger.error(f"Error loading logo for selector: {e}")
-        
-        self.display.surface.blit(overlay, (0, 0))
     
     def draw(self) -> None:
         """Draw the ticker screen."""
@@ -142,6 +169,13 @@ class TickerScreen(BaseScreen):
         # Fill background
         self.display.surface.fill(self.background_color)
         
+        # If selector is showing, only draw it
+        if self.showing_selector:
+            self.draw_ticker_selector()
+            self.update_screen()
+            return
+            
+        # Draw regular ticker screen content
         # Draw coin logo in top right
         logo_size = 64  # Large icon size
         logo_path = os.path.join(AppConfig.CACHE_DIR, f"{current_coin['symbol'].lower()}_logo.png")
