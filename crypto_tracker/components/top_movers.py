@@ -21,13 +21,16 @@ class TopMovers:
         self.scroll_speed = 1.2
         self.mover_width = 340
         self.last_update_time = 0
-        self.update_interval = 30000  # 30 seconds
+        self.update_interval = 10000  # Reduced to 10 seconds
         self.circle_color = (45, 45, 45)
         
         # Dimensions
         self.section_height = 100
         self.section_y = 160
         self.logo_size = 50
+        
+        # Initial data fetch
+        self.update()
     
     def update(self):
         """Update the list of top movers."""
