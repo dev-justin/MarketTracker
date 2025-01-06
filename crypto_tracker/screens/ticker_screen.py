@@ -167,10 +167,22 @@ class TickerScreen(BaseScreen):
                 price_range = max_price - min_price
                 
                 if price_range > 0:
+                    # Generate points with more samples for smoother curve
                     points = []
-                    for i, price in enumerate(prices):
-                        x = int((i / (len(prices) - 1)) * sparkline_rect.width)
-                        y = int(sparkline_rect.height - ((price - min_price) / price_range) * sparkline_rect.height * 0.8)  # Use 80% of height
+                    num_samples = len(prices) * 4  # Increase number of points for smoothing
+                    for i in range(num_samples):
+                        # Interpolate between price points
+                        t = i / (num_samples - 1)
+                        price_index = t * (len(prices) - 1)
+                        index_low = int(price_index)
+                        index_high = min(index_low + 1, len(prices) - 1)
+                        frac = price_index - index_low
+                        
+                        # Linear interpolation between points
+                        price = prices[index_low] * (1 - frac) + prices[index_high] * frac
+                        
+                        x = int(t * sparkline_rect.width)
+                        y = int(sparkline_rect.height - ((price - min_price) / price_range) * sparkline_rect.height * 0.8)
                         points.append((x, y))
                     
                     # Calculate price change
@@ -179,15 +191,15 @@ class TickerScreen(BaseScreen):
                     line_color = (*AppConfig.GREEN, 255) if price_change >= 0 else (*AppConfig.RED, 255)  # Full alpha
                     
                     # Draw thicker line
-                    pygame.draw.lines(sparkline_surface, line_color, False, points, 3)  # Increased line width
+                    pygame.draw.lines(sparkline_surface, line_color, False, points, 4)  # Increased thickness to 4
                     
                     # Draw subtle fill below the line
                     fill_points = points + [(sparkline_rect.width, sparkline_rect.height), (0, sparkline_rect.height)]
                     fill_color = (*line_color[:3], 20)  # Same color but with lower alpha
                     pygame.draw.polygon(sparkline_surface, fill_color, fill_points)
                 
-                # Position sparkline at bottom of screen with some padding
-                sparkline_rect.bottom = self.height - 20  # Add 20px padding from bottom
+                # Position sparkline at bottom of screen with no padding
+                sparkline_rect.bottom = self.height
                 self.display.surface.blit(sparkline_surface, sparkline_rect)
         
         self.update_screen() 
