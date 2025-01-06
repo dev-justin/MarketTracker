@@ -67,6 +67,21 @@ class TickerScreen(BaseScreen):
         # Fill background
         self.display.surface.fill(self.background_color)
         
+        # Draw coin logo in top right
+        logo_size = 64  # Large icon size
+        logo_path = os.path.join(AppConfig.CACHE_DIR, f"{current_coin['symbol'].lower()}_logo.png")
+        if os.path.exists(logo_path):
+            try:
+                logo = pygame.image.load(logo_path)
+                logo = pygame.transform.scale(logo, (logo_size, logo_size))
+                logo_rect = logo.get_rect(
+                    right=self.width - 20,  # 20px from right edge
+                    top=20  # 20px from top
+                )
+                self.display.surface.blit(logo, logo_rect)
+            except Exception as e:
+                logger.error(f"Error loading logo: {e}")
+        
         # Draw price (larger)
         price_text = f"${current_coin['current_price']:,.2f}"
         price_font = self.display.get_title_font('xl')
