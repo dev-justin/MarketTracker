@@ -173,7 +173,7 @@ class DashboardScreen(BaseScreen):
                     logo_path = os.path.join(AppConfig.CACHE_DIR, f"{coin['symbol'].lower()}_logo.png")
                     if os.path.exists(logo_path):
                         logo = pygame.image.load(logo_path)
-                        logo_size = 48
+                        logo_size = 36  # Reduced from 48
                         logo = pygame.transform.scale(logo, (logo_size, logo_size))
                         
                         # Get dominant color from logo
@@ -185,7 +185,7 @@ class DashboardScreen(BaseScreen):
                         # Draw logo
                         logo_rect = logo.get_rect(
                             left=box_rect.left + 15,
-                            top=box_rect.top + 15
+                            centery=box_rect.centery
                         )
                         self.display.surface.blit(logo, logo_rect)
                         
@@ -203,21 +203,27 @@ class DashboardScreen(BaseScreen):
                         price_text = f"${coin['current_price']:,.2f}"
                         price_font = self.display.get_text_font('lg', 'regular')
                         price_surface = price_font.render(price_text, True, AppConfig.WHITE)
-                        price_rect = price_surface.get_rect(
-                            right=box_rect.right - 15,
-                            centery=logo_rect.centery
-                        )
-                        self.display.surface.blit(price_surface, price_rect)
                         
-                        # Change percentage below price
+                        # Calculate change percentage
                         change_24h = coin['price_change_24h']
                         change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
                         change_text = f"{change_24h:+.1f}%"
                         change_font = self.display.get_text_font('md', 'regular')
                         change_surface = change_font.render(change_text, True, change_color)
+                        
+                        # Position price and change percentage on the same line
+                        total_width = price_surface.get_width() + 10 + change_surface.get_width()  # 10px spacing
+                        start_x = box_rect.right - 15 - total_width
+                        
+                        price_rect = price_surface.get_rect(
+                            left=start_x,
+                            centery=logo_rect.centery
+                        )
+                        self.display.surface.blit(price_surface, price_rect)
+                        
                         change_rect = change_surface.get_rect(
-                            right=box_rect.right - 15,
-                            top=logo_rect.bottom + 5
+                            left=price_rect.right + 10,
+                            centery=logo_rect.centery
                         )
                         self.display.surface.blit(change_surface, change_rect)
                         
