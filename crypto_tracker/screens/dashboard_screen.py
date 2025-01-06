@@ -195,29 +195,29 @@ class DashboardScreen(BaseScreen):
                         name_surface = name_font.render(name_text, True, AppConfig.WHITE)
                         name_rect = name_surface.get_rect(
                             left=logo_rect.right + 15,
-                            top=logo_rect.top + 5
+                            centery=logo_rect.centery
                         )
                         self.display.surface.blit(name_surface, name_rect)
                         
-                        # Draw price with larger font
+                        # Draw price with smaller font
                         price_text = f"${coin['current_price']:,.2f}"
-                        price_font = self.display.get_font('regular', 'title-md')
+                        price_font = self.display.get_text_font('lg', 'regular')
                         price_surface = price_font.render(price_text, True, AppConfig.WHITE)
                         price_rect = price_surface.get_rect(
-                            left=logo_rect.right + 15,
-                            top=name_rect.bottom + 8
+                            right=box_rect.right - 15,
+                            centery=logo_rect.centery
                         )
                         self.display.surface.blit(price_surface, price_rect)
                         
-                        # Change percentage next to price
+                        # Change percentage below price
                         change_24h = coin['price_change_24h']
                         change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
                         change_text = f"{change_24h:+.1f}%"
-                        change_font = self.display.get_font('regular', 'lg')
+                        change_font = self.display.get_text_font('md', 'regular')
                         change_surface = change_font.render(change_text, True, change_color)
                         change_rect = change_surface.get_rect(
                             right=box_rect.right - 15,
-                            centery=price_rect.centery
+                            top=logo_rect.bottom + 5
                         )
                         self.display.surface.blit(change_surface, change_rect)
                         
