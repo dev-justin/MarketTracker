@@ -17,7 +17,8 @@ class FavoritesGrid:
         
         # Dimensions
         self.box_height = 90
-        self.box_width = (self.display.width - 60) // 2  # Two columns with margins
+        display_width = self.display.surface.get_width()
+        self.box_width = (display_width - 60) // 2  # Two columns with margins
         self.margin = 20
         self.logo_size = 36
     
