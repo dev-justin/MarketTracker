@@ -161,17 +161,14 @@ class StockService:
         Uses caching to prevent excessive API calls.
         """
         try:
-            logger.info(f"Getting stock data for {symbol} (force_refresh: {force_refresh})")
-            
             # Check cache first if not forcing refresh
             if not force_refresh and symbol in self.cache:
                 cache_entry = self.cache[symbol]
                 if time.time() - cache_entry['timestamp'] < self.cache_duration:
-                    logger.debug(f"Using cached data for {symbol}")
                     return cache_entry['data']
             
             # Fetch fresh data
-            logger.debug(f"Fetching fresh data from Yahoo Finance for {symbol}")
+            logger.info(f"Fetching fresh data for {symbol}")
             ticker = yf.Ticker(symbol)
             info = ticker.info
             
@@ -234,7 +231,6 @@ class StockService:
                 processed_data['favorite'] = stored_stock.get('favorite', False)
                 self.storage.update_stock_data(symbol, processed_data)
             
-            logger.info(f"Successfully fetched and processed data for {symbol}")
             return processed_data
             
         except Exception as e:

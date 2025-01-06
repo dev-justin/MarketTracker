@@ -50,17 +50,14 @@ class CoinGeckoService:
         Uses caching to prevent excessive API calls.
         """
         try:
-            logger.info(f"Getting coin data for {coin_id} (force_refresh: {force_refresh})")
-            
             # Check cache first if not forcing refresh
             if not force_refresh and coin_id in self.cache:
                 cache_entry = self.cache[coin_id]
                 if time.time() - cache_entry['timestamp'] < self.cache_duration:
-                    logger.debug(f"Using cached data for {coin_id}")
                     return cache_entry['data']
             
             # Fetch fresh data
-            logger.debug(f"Fetching fresh data from CoinGecko for {coin_id}")
+            logger.info(f"Fetching fresh data for {coin_id}")
             coin_data = self.coingecko.get_coin_by_id(
                 coin_id,
                 localization=False,
@@ -74,8 +71,6 @@ class CoinGeckoService:
             if not coin_data:
                 logger.error(f"No data returned from CoinGecko for {coin_id}")
                 return None
-                
-            logger.debug(f"Raw coin data received: {coin_data.keys()}")
             
             # Process and cache the data
             processed_data = {
@@ -95,7 +90,6 @@ class CoinGeckoService:
                 'timestamp': time.time()
             }
             
-            logger.info(f"Successfully fetched and processed data for {coin_id}")
             return processed_data
             
         except Exception as e:

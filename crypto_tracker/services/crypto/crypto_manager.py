@@ -74,7 +74,6 @@ class CryptoManager:
                 
                 # Save updated data
                 self.storage._save_tracked_coins()
-                logger.debug("Updated prices for all tracked items")
             except Exception as e:
                 logger.error(f"Error updating prices: {e}")
             time.sleep(60)  # Wait for 1 minute
