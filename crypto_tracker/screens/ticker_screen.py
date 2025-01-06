@@ -22,6 +22,11 @@ class TickerScreen(BaseScreen):
         self.sparkline_height = int(self.height * 0.6)  # 60% of screen height
         self.sparkline_padding = 20  # Add padding from bottom
         
+        # Ticker selector state
+        self.showing_selector = False
+        self.selector_start_time = 0
+        self.selected_ticker_index = None
+        
         # Load initial coin data
         self.refresh_coins()
         
@@ -47,15 +52,85 @@ class TickerScreen(BaseScreen):
         """Handle pygame events."""
         gestures = self.gesture_handler.handle_touch_event(event)
         
-        if gestures['swipe_left']:
-            logger.info("Swipe left detected, showing next coin")
-            self.next_coin()
-        elif gestures['swipe_right']:
-            logger.info("Swipe right detected, showing previous coin")
-            self.previous_coin()
-        elif gestures['swipe_down']:
-            logger.info("Swipe down detected, returning to dashboard")
-            self.screen_manager.switch_screen('dashboard')
+        if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
+            self.selector_start_time = pygame.time.get_ticks()
+            x, y = self._scale_touch_input(event)
+            
+            # If selector is showing, check for ticker selection
+            if self.showing_selector:
+                # Calculate ticker positions
+                logo_size = 50
+                spacing = 20
+                total_width = len(self.coins) * (logo_size + spacing) - spacing
+                start_x = (self.width - total_width) // 2
+                
+                # Check if click is in the selector area
+                selector_rect = pygame.Rect(0, 0, self.width, logo_size + 40)
+                if selector_rect.collidepoint(x, y):
+                    # Find which ticker was clicked
+                    for i in range(len(self.coins)):
+                        logo_x = start_x + i * (logo_size + spacing)
+                        logo_rect = pygame.Rect(logo_x, 20, logo_size, logo_size)
+                        if logo_rect.collidepoint(x, y):
+                            self.current_index = i
+                            self.showing_selector = False
+                            return
+                else:
+                    # Hide selector if clicked outside
+                    self.showing_selector = False
+        
+        elif event.type == AppConfig.EVENT_TYPES['FINGER_UP']:
+            # Check if this was a long press
+            if not self.showing_selector and pygame.time.get_ticks() - self.selector_start_time > 500:  # 500ms for long press
+                self.showing_selector = True
+                return
+        
+        if not self.showing_selector:
+            if gestures['swipe_left']:
+                logger.info("Swipe left detected, showing next coin")
+                self.next_coin()
+            elif gestures['swipe_right']:
+                logger.info("Swipe right detected, showing previous coin")
+                self.previous_coin()
+            elif gestures['swipe_down']:
+                logger.info("Swipe down detected, returning to dashboard")
+                self.screen_manager.switch_screen('dashboard')
+    
+    def draw_ticker_selector(self):
+        """Draw the ticker selector overlay."""
+        if not self.showing_selector:
+            return
+            
+        # Create semi-transparent overlay
+        overlay = pygame.Surface((self.width, 90), pygame.SRCALPHA)
+        pygame.draw.rect(overlay, (0, 0, 0, 200), overlay.get_rect())
+        
+        # Calculate positions for logos
+        logo_size = 50
+        spacing = 20
+        total_width = len(self.coins) * (logo_size + spacing) - spacing
+        start_x = (self.width - total_width) // 2
+        
+        # Draw logos
+        for i, coin in enumerate(self.coins):
+            logo_x = start_x + i * (logo_size + spacing)
+            logo_path = os.path.join(AppConfig.CACHE_DIR, f"{coin['symbol'].lower()}_logo.png")
+            
+            # Draw selection indicator for current coin
+            if i == self.current_index:
+                indicator_rect = pygame.Rect(logo_x - 5, 15, logo_size + 10, logo_size + 10)
+                pygame.draw.rect(overlay, (255, 255, 255, 30), indicator_rect, border_radius=10)
+            
+            if os.path.exists(logo_path):
+                try:
+                    logo = pygame.image.load(logo_path)
+                    logo = pygame.transform.scale(logo, (logo_size, logo_size))
+                    logo_rect = logo.get_rect(topleft=(logo_x, 20))
+                    overlay.blit(logo, logo_rect)
+                except Exception as e:
+                    logger.error(f"Error loading logo for selector: {e}")
+        
+        self.display.surface.blit(overlay, (0, 0))
     
     def draw(self) -> None:
         """Draw the ticker screen."""
@@ -238,5 +313,8 @@ class TickerScreen(BaseScreen):
                 # Position sparkline at bottom of screen with no padding
                 sparkline_rect.bottom = self.height
                 self.display.surface.blit(sparkline_surface, sparkline_rect)
+        
+        # Draw the ticker selector overlay last
+        self.draw_ticker_selector()
         
         self.update_screen() 
