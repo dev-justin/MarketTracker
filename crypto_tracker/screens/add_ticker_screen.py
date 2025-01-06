@@ -198,13 +198,18 @@ class AddTickerScreen(BaseScreen):
         toggle_text_rect = toggle_surface.get_rect(center=self.toggle_rect.center)
         self.display.surface.blit(toggle_surface, toggle_text_rect)
         
+        # Calculate keyboard position
+        keyboard_height = self.height // 2  # Assuming keyboard takes up half the screen
+        keyboard_y = self.height - keyboard_height
+        
         # Draw exchange list if in stock mode and showing exchanges
         if not self.is_crypto_mode and self.showing_exchanges and self.available_exchanges:
+            exchange_list_height = min(200, keyboard_y - input_box_rect.bottom - 40)  # Limit height to available space
             exchange_list_rect = pygame.Rect(
                 20,
                 input_box_rect.bottom + 20,
                 self.width - 40,
-                200  # Fixed height for exchange list
+                exchange_list_height
             )
             
             # Draw exchange list background
@@ -217,7 +222,7 @@ class AddTickerScreen(BaseScreen):
             
             # Draw exchanges
             exchange_font = self.display.get_text_font('md', 'regular')
-            exchange_height = 40
+            exchange_height = min(40, exchange_list_height // 5)  # Adjust height based on available space
             visible_exchanges = min(5, len(self.available_exchanges))
             
             for i in range(visible_exchanges):
@@ -249,7 +254,7 @@ class AddTickerScreen(BaseScreen):
                 )
                 self.display.surface.blit(exchange_surface, exchange_text_rect)
         
-        # Draw keyboard
+        # Draw keyboard at the bottom
         self.keyboard.draw()
         
         # Draw error message if any
@@ -258,7 +263,7 @@ class AddTickerScreen(BaseScreen):
             error_surface = error_font.render(self.error_message, True, AppConfig.RED)
             error_rect = error_surface.get_rect(
                 centerx=self.width // 2,
-                centery=self.save_rect.centery
+                bottom=keyboard_y - 10  # Position above keyboard
             )
             self.display.surface.blit(error_surface, error_rect)
         
