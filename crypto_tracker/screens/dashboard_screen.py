@@ -23,11 +23,11 @@ class DashboardScreen(BaseScreen):
         # Top movers state
         self.top_movers = []
         self.scroll_offset = 0
-        self.last_scroll_time = 0
-        self.scroll_speed = 1  # Pixels per frame
-        self.scroll_pause = 3000  # Pause for 3 seconds when a new item enters
+        self.scroll_speed = 0.5  # Slower speed (pixels per frame)
         self.mover_width = 150  # Width of each mover item
         self.mover_spacing = 20  # Spacing between movers
+        self.last_update_time = 0
+        self.update_interval = 30000  # Update list every 30 seconds
         
         logger.info("DashboardScreen initialized")
     
@@ -138,6 +138,13 @@ class DashboardScreen(BaseScreen):
     
     def draw_top_movers(self):
         """Draw the scrolling top movers section."""
+        current_time = pygame.time.get_ticks()
+        
+        # Update the list periodically
+        if current_time - self.last_update_time > self.update_interval:
+            self.update_top_movers()
+            self.last_update_time = current_time
+        
         if not self.top_movers:
             self.update_top_movers()
             if not self.top_movers:
@@ -158,63 +165,63 @@ class DashboardScreen(BaseScreen):
         self.display.surface.set_clip(scroll_area)
         
         # Update scroll position
-        current_time = pygame.time.get_ticks()
-        if current_time - self.last_scroll_time > self.scroll_pause:
-            self.scroll_offset -= self.scroll_speed
-            # Reset scroll when all items have scrolled through
-            total_width = len(self.top_movers) * (self.mover_width + self.mover_spacing)
-            if abs(self.scroll_offset) >= self.mover_width + self.mover_spacing:
-                # Move first item to the end
-                self.top_movers.append(self.top_movers.pop(0))
-                self.scroll_offset = 0
-                self.last_scroll_time = current_time
+        self.scroll_offset -= self.scroll_speed
+        item_width = self.mover_width + self.mover_spacing
         
-        # Draw each mover
-        for i, coin in enumerate(self.top_movers):
-            x = 20 + i * (self.mover_width + self.mover_spacing) + self.scroll_offset
+        # When first item is fully scrolled off, reset offset and move it to the end
+        if abs(self.scroll_offset) >= item_width:
+            self.scroll_offset += item_width
+            self.top_movers.append(self.top_movers.pop(0))
+        
+        # Draw items in a continuous loop
+        visible_width = self.width + item_width
+        num_visible = (visible_width // item_width) + 2  # Add extra item for smooth transition
+        
+        for i in range(num_visible):
+            idx = i % len(self.top_movers)
+            coin = self.top_movers[idx]
+            x = 20 + i * item_width + self.scroll_offset
             
-            # Only draw if visible
-            if -self.mover_width <= x <= self.width:
-                # Draw background
-                mover_rect = pygame.Rect(x, section_y, self.mover_width, section_height)
-                pygame.draw.rect(self.display.surface, (25, 25, 25), mover_rect, border_radius=15)
-                
-                # Draw logo
-                logo_size = 40
-                logo_path = os.path.join(AppConfig.CACHE_DIR, f"{coin['symbol'].lower()}_logo.png")
-                if os.path.exists(logo_path):
-                    try:
-                        logo = pygame.image.load(logo_path)
-                        logo = pygame.transform.scale(logo, (logo_size, logo_size))
-                        logo_rect = logo.get_rect(
-                            left=x + 15,
-                            centery=section_y + section_height//2
-                        )
-                        self.display.surface.blit(logo, logo_rect)
-                        
-                        # Draw symbol
-                        symbol_font = self.display.get_text_font('md', 'bold')
-                        symbol_surface = symbol_font.render(coin['symbol'].upper(), True, AppConfig.WHITE)
-                        symbol_rect = symbol_surface.get_rect(
-                            left=logo_rect.right + 15,
-                            top=section_y + 15
-                        )
-                        self.display.surface.blit(symbol_surface, symbol_rect)
-                        
-                        # Draw change percentage
-                        change_24h = coin['price_change_24h']
-                        change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
-                        change_text = f"{change_24h:+.1f}%"
-                        change_font = self.display.get_text_font('md', 'regular')
-                        change_surface = change_font.render(change_text, True, change_color)
-                        change_rect = change_surface.get_rect(
-                            left=logo_rect.right + 15,
-                            top=symbol_rect.bottom + 5
-                        )
-                        self.display.surface.blit(change_surface, change_rect)
-                        
-                    except Exception as e:
-                        logger.error(f"Error drawing mover: {e}")
+            # Draw background
+            mover_rect = pygame.Rect(x, section_y, self.mover_width, section_height)
+            pygame.draw.rect(self.display.surface, (25, 25, 25), mover_rect, border_radius=15)
+            
+            # Draw logo
+            logo_size = 40
+            logo_path = os.path.join(AppConfig.CACHE_DIR, f"{coin['symbol'].lower()}_logo.png")
+            if os.path.exists(logo_path):
+                try:
+                    logo = pygame.image.load(logo_path)
+                    logo = pygame.transform.scale(logo, (logo_size, logo_size))
+                    logo_rect = logo.get_rect(
+                        left=x + 15,
+                        centery=section_y + section_height//2
+                    )
+                    self.display.surface.blit(logo, logo_rect)
+                    
+                    # Draw symbol
+                    symbol_font = self.display.get_text_font('md', 'bold')
+                    symbol_surface = symbol_font.render(coin['symbol'].upper(), True, AppConfig.WHITE)
+                    symbol_rect = symbol_surface.get_rect(
+                        left=logo_rect.right + 15,
+                        top=section_y + 15
+                    )
+                    self.display.surface.blit(symbol_surface, symbol_rect)
+                    
+                    # Draw change percentage
+                    change_24h = coin['price_change_24h']
+                    change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
+                    change_text = f"{change_24h:+.1f}%"
+                    change_font = self.display.get_text_font('md', 'regular')
+                    change_surface = change_font.render(change_text, True, change_color)
+                    change_rect = change_surface.get_rect(
+                        left=logo_rect.right + 15,
+                        top=symbol_rect.bottom + 5
+                    )
+                    self.display.surface.blit(change_surface, change_rect)
+                    
+                except Exception as e:
+                    logger.error(f"Error drawing mover: {e}")
         
         # Reset clip
         self.display.surface.set_clip(None)
