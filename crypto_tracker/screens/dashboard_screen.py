@@ -206,12 +206,12 @@ class DashboardScreen(BaseScreen):
                     price_left = mover_rect.right - price_area_width
                     
                     # Calculate vertical center for symbol/change stack
-                    stack_height = 45  # Total height for symbol + change
+                    stack_height = 42  # Slightly reduced total height for symbol + change
                     stack_top = section_y + (section_height - stack_height) // 2
                     
                     # Draw symbol (smaller/lighter)
-                    symbol_font = self.display.get_text_font('md', 'regular')  # Changed to regular text font
-                    symbol_surface = symbol_font.render(coin['symbol'].upper(), True, (200, 200, 200))  # Lighter color
+                    text_font = self.display.get_text_font('md', 'regular')  # Same font for both
+                    symbol_surface = text_font.render(coin['symbol'].upper(), True, (200, 200, 200))  # Lighter color
                     symbol_rect = symbol_surface.get_rect(
                         left=content_left,
                         top=stack_top
@@ -222,11 +222,10 @@ class DashboardScreen(BaseScreen):
                     change_24h = coin['price_change_24h']
                     change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
                     change_text = f"{change_24h:+.1f}%"
-                    change_font = self.display.get_title_font('md', 'bold')  # Made change more prominent
-                    change_surface = change_font.render(change_text, True, change_color)
+                    change_surface = text_font.render(change_text, True, change_color)  # Same font as symbol
                     change_rect = change_surface.get_rect(
                         left=content_left,
-                        top=symbol_rect.bottom + 2  # Reduced spacing
+                        top=symbol_rect.bottom + 1  # Minimal spacing
                     )
                     self.display.surface.blit(change_surface, change_rect)
                     
