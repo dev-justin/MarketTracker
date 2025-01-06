@@ -19,7 +19,7 @@ class TickerScreen(BaseScreen):
         self.coins = []
         
         # Sparkline dimensions
-        self.sparkline_height = int(self.height * 0.4)  # 40% of screen height for better visibility
+        self.sparkline_height = int(self.height * 0.6)  # 60% of screen height
         self.sparkline_padding = 20  # Add padding from bottom
         
         # Load initial coin data
@@ -150,14 +150,9 @@ class TickerScreen(BaseScreen):
         # Draw sparkline if price history is available
         if 'sparkline_7d' in current_coin and current_coin['sparkline_7d']:
             prices = current_coin['sparkline_7d']
-            logger.debug(f"Drawing sparkline with {len(prices)} price points")
-            if prices:
+            if prices and len(prices) > 1:
                 # Create a surface for the gradient and sparkline with alpha channel
                 sparkline_surface = pygame.Surface((self.width, self.sparkline_height), pygame.SRCALPHA)
-                
-                # Draw a subtle background for the sparkline
-                background_rect = pygame.Rect(0, 0, self.width, self.sparkline_height)
-                pygame.draw.rect(sparkline_surface, (255, 255, 255, 10), background_rect)
                 
                 # Calculate sparkline dimensions
                 sparkline_rect = pygame.Rect(
@@ -167,49 +162,32 @@ class TickerScreen(BaseScreen):
                     self.sparkline_height
                 )
                 
-                # Draw sparkline
-                if len(prices) > 1:
-                    min_price = min(prices)
-                    max_price = max(prices)
-                    price_range = max_price - min_price
-                    logger.debug(f"Price range: {min_price:.2f} - {max_price:.2f} = {price_range:.2f}")
+                min_price = min(prices)
+                max_price = max(prices)
+                price_range = max_price - min_price
+                
+                if price_range > 0:
+                    points = []
+                    for i, price in enumerate(prices):
+                        x = int((i / (len(prices) - 1)) * sparkline_rect.width)
+                        y = int(sparkline_rect.height - ((price - min_price) / price_range) * sparkline_rect.height * 0.8)  # Use 80% of height
+                        points.append((x, y))
                     
-                    if price_range > 0:
-                        points = []
-                        for i, price in enumerate(prices):
-                            x = int((i / (len(prices) - 1)) * sparkline_rect.width)
-                            y = int(sparkline_rect.height - ((price - min_price) / price_range) * sparkline_rect.height * 0.8)  # Use 80% of height
-                            points.append((x, y))
-                        
-                        if len(points) > 1:
-                            # Calculate 7-day price change
-                            price_change_7d = ((prices[-1] - prices[0]) / prices[0]) * 100
-                            # Draw line with gradient color based on 7-day price change
-                            line_color = (*AppConfig.GREEN, 255) if price_change_7d >= 0 else (*AppConfig.RED, 255)  # Full alpha
-                            logger.debug(f"Drawing sparkline with {len(points)} points, color: {'green' if price_change_7d >= 0 else 'red'}")
-                            
-                            # Draw thicker line
-                            pygame.draw.lines(sparkline_surface, line_color, False, points, 3)  # Increased line width
-                            
-                            # Draw subtle fill below the line
-                            fill_points = points + [(sparkline_rect.width, sparkline_rect.height), (0, sparkline_rect.height)]
-                            fill_color = (*line_color[:3], 30)  # Same color but with low alpha
-                            pygame.draw.polygon(sparkline_surface, fill_color, fill_points)
-                        else:
-                            logger.warning("Not enough points to draw sparkline after processing")
-                    else:
-                        logger.warning("Price range is 0, cannot draw sparkline")
-                else:
-                    logger.warning("Not enough price points to draw sparkline")
+                    # Calculate price change
+                    price_change = ((prices[-1] - prices[0]) / prices[0]) * 100
+                    # Draw line with gradient color based on price change
+                    line_color = (*AppConfig.GREEN, 255) if price_change >= 0 else (*AppConfig.RED, 255)  # Full alpha
+                    
+                    # Draw thicker line
+                    pygame.draw.lines(sparkline_surface, line_color, False, points, 3)  # Increased line width
+                    
+                    # Draw subtle fill below the line
+                    fill_points = points + [(sparkline_rect.width, sparkline_rect.height), (0, sparkline_rect.height)]
+                    fill_color = (*line_color[:3], 20)  # Same color but with lower alpha
+                    pygame.draw.polygon(sparkline_surface, fill_color, fill_points)
                 
                 # Position sparkline at bottom of screen with some padding
                 sparkline_rect.bottom = self.height - 20  # Add 20px padding from bottom
                 self.display.surface.blit(sparkline_surface, sparkline_rect)
-        else:
-            logger.warning(f"No sparkline data available for {current_coin['symbol']}")
-            if 'sparkline_7d' not in current_coin:
-                logger.debug("'sparkline_7d' key not found in coin data")
-            elif not current_coin['sparkline_7d']:
-                logger.debug("'sparkline_7d' is empty")
         
         self.update_screen() 
