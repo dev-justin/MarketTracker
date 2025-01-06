@@ -77,10 +77,12 @@ class SettingsScreen(BaseScreen):
         name_text = coin.get('name', '')
         if len(name_text) > 15:  # Truncate long names
             name_text = name_text[:13] + '...'
-        name_surface = self.fonts['md'].render(name_text, True, AppConfig.WHITE)
+        name_font = self.display.get_text_font('md', 'regular')
+        name_surface = name_font.render(name_text, True, AppConfig.WHITE)
         
         symbol_text = coin.get('symbol', '').upper()
-        symbol_surface = self.fonts['sm'].render(symbol_text, True, AppConfig.GRAY)
+        symbol_font = self.display.get_text_font('sm', 'regular')
+        symbol_surface = symbol_font.render(symbol_text, True, AppConfig.GRAY)
         
         total_text_height = name_surface.get_height() + symbol_surface.get_height() + 5
         text_start_y = rect.centery - (total_text_height // 2)
