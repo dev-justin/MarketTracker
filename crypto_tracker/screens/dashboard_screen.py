@@ -23,8 +23,8 @@ class DashboardScreen(BaseScreen):
         # Top movers state
         self.top_movers = []
         self.scroll_offset = 0
-        self.scroll_speed = 0.8
-        self.mover_width = 340  # Increased width to prevent overlapping
+        self.scroll_speed = 1.2
+        self.mover_width = 340
         self.mover_spacing = 25
         self.last_update_time = 0
         self.update_interval = 30000
@@ -231,7 +231,7 @@ class DashboardScreen(BaseScreen):
                     
                     # Draw price on the right
                     price_text = f"${coin['current_price']:,.2f}"
-                    price_font = self.display.get_title_font('md', 'regular')
+                    price_font = self.display.get_text_font('lg', 'regular')
                     price_surface = price_font.render(price_text, True, AppConfig.WHITE)
                     price_rect = price_surface.get_rect(
                         right=mover_rect.right - 20,
