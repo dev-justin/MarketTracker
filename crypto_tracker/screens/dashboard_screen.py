@@ -17,7 +17,7 @@ class DashboardScreen(BaseScreen):
         """Initialize the dashboard screen."""
         super().__init__(display)
         self.background_color = (13, 13, 13)  # Darker black for more contrast
-        self.box_height = 120  # Height of each coin box
+        self.box_height = 90  # Reduced from 120
         self.box_width = (self.width - 60) // 2  # Two columns with margins
         logger.info("DashboardScreen initialized")
     
@@ -189,9 +189,9 @@ class DashboardScreen(BaseScreen):
                         )
                         self.display.surface.blit(logo, logo_rect)
                         
-                        # Draw coin name
+                        # Draw coin symbol instead of name
                         name_font = self.display.get_font('light', 'lg')
-                        name_text = coin['name']
+                        name_text = coin['symbol'].upper()
                         name_surface = name_font.render(name_text, True, AppConfig.WHITE)
                         name_rect = name_surface.get_rect(
                             left=logo_rect.right + 15,
@@ -199,33 +199,33 @@ class DashboardScreen(BaseScreen):
                         )
                         self.display.surface.blit(name_surface, name_rect)
                         
-                        # Draw price with smaller font
-                        price_text = f"${coin['current_price']:,.2f}"
-                        price_font = self.display.get_text_font('lg', 'regular')
-                        price_surface = price_font.render(price_text, True, AppConfig.WHITE)
-                        
-                        # Calculate change percentage
+                        # Calculate change percentage first
                         change_24h = coin['price_change_24h']
                         change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
                         change_text = f"{change_24h:+.1f}%"
                         change_font = self.display.get_text_font('md', 'regular')
                         change_surface = change_font.render(change_text, True, change_color)
                         
-                        # Position price and change percentage on the same line
-                        total_width = price_surface.get_width() + 10 + change_surface.get_width()  # 10px spacing
+                        # Draw price
+                        price_text = f"${coin['current_price']:,.2f}"
+                        price_font = self.display.get_text_font('lg', 'regular')
+                        price_surface = price_font.render(price_text, True, AppConfig.WHITE)
+                        
+                        # Position change percentage and price on the same line (change first)
+                        total_width = change_surface.get_width() + 10 + price_surface.get_width()  # 10px spacing
                         start_x = box_rect.right - 15 - total_width
                         
-                        price_rect = price_surface.get_rect(
+                        change_rect = change_surface.get_rect(
                             left=start_x,
                             centery=logo_rect.centery
                         )
-                        self.display.surface.blit(price_surface, price_rect)
+                        self.display.surface.blit(change_surface, change_rect)
                         
-                        change_rect = change_surface.get_rect(
-                            left=price_rect.right + 10,
+                        price_rect = price_surface.get_rect(
+                            left=change_rect.right + 10,
                             centery=logo_rect.centery
                         )
-                        self.display.surface.blit(change_surface, change_rect)
+                        self.display.surface.blit(price_surface, price_rect)
                         
                 except Exception as e:
                     logger.error(f"Error drawing favorite coin {coin['symbol']}: {e}")
