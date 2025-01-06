@@ -186,6 +186,15 @@ class DashboardScreen(BaseScreen):
             mover_rect = pygame.Rect(x, section_y, self.mover_width, section_height)
             pygame.draw.rect(self.display.surface, (25, 25, 25), mover_rect, border_radius=15)
             
+            # Draw rank number
+            rank_font = self.display.get_text_font('sm', 'regular')
+            rank_surface = rank_font.render(f"#{idx + 1}", True, (128, 128, 128))  # Gray color
+            rank_rect = rank_surface.get_rect(
+                left=x + 10,
+                top=section_y + 10
+            )
+            self.display.surface.blit(rank_surface, rank_rect)
+            
             # Draw logo
             logo_size = 50
             logo_path = os.path.join(AppConfig.CACHE_DIR, f"{coin['symbol'].lower()}_logo.png")
@@ -194,7 +203,7 @@ class DashboardScreen(BaseScreen):
                     logo = pygame.image.load(logo_path)
                     logo = pygame.transform.scale(logo, (logo_size, logo_size))
                     logo_rect = logo.get_rect(
-                        left=x + 20,
+                        left=x + 35,  # Moved right to make room for rank number
                         centery=section_y + section_height//2
                     )
                     self.display.surface.blit(logo, logo_rect)
