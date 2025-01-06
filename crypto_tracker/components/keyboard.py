@@ -7,9 +7,9 @@ logger = get_logger(__name__)
 class VirtualKeyboard:
     """A reusable virtual keyboard component."""
     
-    def __init__(self, surface: pygame.Surface, fonts: dict, max_length: int = 5):
+    def __init__(self, surface: pygame.Surface, display, max_length: int = 5):
         self.surface = surface
-        self.fonts = fonts
+        self.display = display
         self.max_length = max_length
         self.text = ""
         self.on_change = None
@@ -83,7 +83,7 @@ class VirtualKeyboard:
                 pygame.draw.rect(self.surface, AppConfig.KEY_BG_COLOR, rect)
                 pygame.draw.rect(self.surface, AppConfig.KEY_BORDER_COLOR, rect, 1)
                 
-                key_text = self.fonts['medium'].render(key, True, AppConfig.WHITE)
+                key_text = self.display.get_text_font('md', 'medium').render(key, True, AppConfig.WHITE)
                 key_text_rect = key_text.get_rect(center=rect.center)
                 self.surface.blit(key_text, key_text_rect)
     

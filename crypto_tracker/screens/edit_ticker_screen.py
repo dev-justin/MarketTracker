@@ -136,7 +136,8 @@ class EditTickerScreen(BaseScreen):
             border_radius=corner_radius
         )
         favorite_text = "Unfavorite" if self.current_coin.get('favorite', False) else "Favorite"
-        favorite_surface = self.fonts['md'].render(favorite_text, True, AppConfig.WHITE)
+        favorite_font = self.display.get_text_font('md', 'regular')
+        favorite_surface = favorite_font.render(favorite_text, True, AppConfig.WHITE)
         favorite_text_rect = favorite_surface.get_rect(center=self.favorite_rect.center)
         self.display.surface.blit(favorite_surface, favorite_text_rect)
         
@@ -147,7 +148,8 @@ class EditTickerScreen(BaseScreen):
             self.delete_rect,
             border_radius=corner_radius
         )
-        delete_surface = self.fonts['md'].render("Delete", True, AppConfig.WHITE)
+        delete_font = self.display.get_text_font('md', 'regular')
+        delete_surface = delete_font.render("Delete", True, AppConfig.WHITE)
         delete_text_rect = delete_surface.get_rect(center=self.delete_rect.center)
         self.display.surface.blit(delete_surface, delete_text_rect)
         
@@ -158,7 +160,8 @@ class EditTickerScreen(BaseScreen):
             self.back_rect,
             border_radius=corner_radius
         )
-        back_surface = self.fonts['md'].render("Back", True, AppConfig.WHITE)
+        back_font = self.display.get_text_font('md', 'regular')
+        back_surface = back_font.render("Back", True, AppConfig.WHITE)
         back_text_rect = back_surface.get_rect(center=self.back_rect.center)
         self.display.surface.blit(back_surface, back_text_rect)
         

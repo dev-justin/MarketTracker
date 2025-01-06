@@ -104,7 +104,8 @@ class TickerScreen(BaseScreen):
         
         # Draw coin name and symbol below price (larger)
         name_text = f"{current_coin['name']}"
-        name_surface = self.fonts['title-lg'].render(name_text, True, AppConfig.WHITE)
+        name_font = self.display.get_title_font('lg', 'bold')
+        name_surface = name_font.render(name_text, True, AppConfig.WHITE)
         name_rect = name_surface.get_rect(
             left=20,
             top=price_rect.bottom + 15

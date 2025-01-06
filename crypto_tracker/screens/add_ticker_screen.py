@@ -23,7 +23,7 @@ class AddTickerScreen(BaseScreen):
         self.button_spacing = AppConfig.BUTTON_MARGIN
         
         # Create keyboard
-        self.keyboard = VirtualKeyboard(self.display.surface, self.fonts)
+        self.keyboard = VirtualKeyboard(self.display.surface, self.display)
         self.keyboard.on_change = self._on_text_change
         
         # Create buttons
@@ -60,7 +60,7 @@ class AddTickerScreen(BaseScreen):
                 logger.info(f"Successfully added ticker: {symbol}")
                 self.screen_manager.switch_screen('settings')
             else:
-                self.error_message = f"Could not find coin: {symbol}"
+                self.error_message = f"Could not find {symbol}"
         except Exception as e:
             logger.error(f"Error adding ticker: {e}")
             self.error_message = "Error adding ticker"
@@ -72,7 +72,7 @@ class AddTickerScreen(BaseScreen):
         
         # Draw header
         header_text = "Add Coin"
-        header_font = self.display.get_font('bold', 'title-md')
+        header_font = self.display.get_title_font('md', 'bold')
         header_surface = header_font.render(header_text, True, AppConfig.WHITE)
         header_rect = header_surface.get_rect(
             centerx=self.width // 2,
@@ -85,7 +85,7 @@ class AddTickerScreen(BaseScreen):
         
         # Draw error message if any
         if self.error_message:
-            error_font = self.display.get_font('regular', 'md')
+            error_font = self.display.get_text_font('md', 'regular')
             error_surface = error_font.render(self.error_message, True, AppConfig.RED)
             error_rect = error_surface.get_rect(
                 centerx=self.width // 2,
@@ -105,7 +105,7 @@ class AddTickerScreen(BaseScreen):
             border_radius=corner_radius
         )
         cancel_text = "Cancel"
-        cancel_font = self.display.get_font('regular', 'md')
+        cancel_font = self.display.get_text_font('md', 'regular')
         cancel_surface = cancel_font.render(cancel_text, True, AppConfig.WHITE)
         cancel_text_rect = cancel_surface.get_rect(center=self.cancel_rect.center)
         self.display.surface.blit(cancel_surface, cancel_text_rect)
@@ -118,7 +118,7 @@ class AddTickerScreen(BaseScreen):
             border_radius=corner_radius
         )
         save_text = "Save"
-        save_font = self.display.get_font('regular', 'md')
+        save_font = self.display.get_text_font('md', 'regular')
         save_surface = save_font.render(save_text, True, AppConfig.WHITE)
         save_text_rect = save_surface.get_rect(center=self.save_rect.center)
         self.display.surface.blit(save_surface, save_text_rect)
@@ -140,6 +140,4 @@ class AddTickerScreen(BaseScreen):
                 self.screen_manager.switch_screen('settings')
             elif self.save_rect.collidepoint(x, y):
                 logger.info("Save button clicked")
-                self.add_ticker()
-            else:
-                self.keyboard.handle_event(event) 
+                self.add_ticker() 

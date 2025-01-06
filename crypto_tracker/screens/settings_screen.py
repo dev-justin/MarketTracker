@@ -172,7 +172,8 @@ class SettingsScreen(BaseScreen):
         )
         
         add_text = "Add Coin"
-        add_surface = self.fonts['md'].render(add_text, True, AppConfig.WHITE)
+        add_font = self.display.get_text_font('md', 'regular')
+        add_surface = add_font.render(add_text, True, AppConfig.WHITE)
         add_rect = add_surface.get_rect(center=self.add_button_rect.center)
         self.display.surface.blit(add_surface, add_rect)
         
