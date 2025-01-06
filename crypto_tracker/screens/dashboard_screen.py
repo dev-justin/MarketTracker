@@ -167,89 +167,96 @@ class DashboardScreen(BaseScreen):
         # Update scroll position
         self.scroll_offset -= self.scroll_speed
         item_width = self.mover_width + self.mover_spacing
+        total_width = len(self.top_movers) * item_width
         
-        # When first item is fully scrolled off, reset offset and move it to the end
+        # Reset scroll when we've scrolled the full width
         if abs(self.scroll_offset) >= item_width:
             self.scroll_offset += item_width
-            self.top_movers.append(self.top_movers.pop(0))
         
-        # Draw items in a continuous loop
-        visible_width = self.width + item_width
-        num_visible = (visible_width // item_width) + 2  # Add extra item for smooth transition
+        # Calculate how many items we need to draw to fill the screen
+        visible_width = self.width + item_width * 2  # Add extra buffer
+        num_visible = (visible_width // item_width) + 2
         
+        # Draw items
         for i in range(num_visible):
-            idx = i % len(self.top_movers)
-            coin = self.top_movers[idx]
-            x = 20 + i * item_width + self.scroll_offset
+            # Calculate the true index in the list, considering the scroll position
+            true_idx = (i + int(abs(self.scroll_offset) / item_width)) % len(self.top_movers)
+            coin = self.top_movers[true_idx]
             
-            # Draw background
-            mover_rect = pygame.Rect(x, section_y, self.mover_width, section_height)
-            pygame.draw.rect(self.display.surface, (25, 25, 25), mover_rect, border_radius=15)
+            # Calculate x position
+            base_x = i * item_width + self.scroll_offset
+            x = 20 + base_x
             
-            # Draw rank number
-            rank_font = self.display.get_text_font('sm', 'regular')
-            rank_surface = rank_font.render(f"#{idx + 1}", True, (128, 128, 128))  # Gray color
-            rank_rect = rank_surface.get_rect(
-                left=x + 10,
-                top=section_y + 10
-            )
-            self.display.surface.blit(rank_surface, rank_rect)
-            
-            # Draw logo
-            logo_size = 50
-            logo_path = os.path.join(AppConfig.CACHE_DIR, f"{coin['symbol'].lower()}_logo.png")
-            if os.path.exists(logo_path):
-                try:
-                    logo = pygame.image.load(logo_path)
-                    logo = pygame.transform.scale(logo, (logo_size, logo_size))
-                    logo_rect = logo.get_rect(
-                        left=x + 35,  # Moved right to make room for rank number
-                        centery=section_y + section_height//2
-                    )
-                    self.display.surface.blit(logo, logo_rect)
-                    
-                    # Calculate content areas
-                    symbol_area_width = 120  # Fixed width for symbol/change area
-                    price_area_width = 140   # Fixed width for price area
-                    content_left = logo_rect.right + 20
-                    price_left = mover_rect.right - price_area_width
-                    
-                    # Calculate vertical center for symbol/change stack
-                    stack_height = 42  # Slightly reduced total height for symbol + change
-                    stack_top = section_y + (section_height - stack_height) // 2
-                    
-                    # Draw symbol (smaller/lighter)
-                    text_font = self.display.get_text_font('md', 'regular')  # Same font for both
-                    symbol_surface = text_font.render(coin['symbol'].upper(), True, (200, 200, 200))  # Lighter color
-                    symbol_rect = symbol_surface.get_rect(
-                        left=content_left,
-                        top=stack_top
-                    )
-                    self.display.surface.blit(symbol_surface, symbol_rect)
-                    
-                    # Draw change percentage below symbol (tighter spacing)
-                    change_24h = coin['price_change_24h']
-                    change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
-                    change_text = f"{change_24h:+.1f}%"
-                    change_surface = text_font.render(change_text, True, change_color)  # Same font as symbol
-                    change_rect = change_surface.get_rect(
-                        left=content_left,
-                        top=symbol_rect.bottom + 1  # Minimal spacing
-                    )
-                    self.display.surface.blit(change_surface, change_rect)
-                    
-                    # Draw price on the right
-                    price_text = f"${coin['current_price']:,.2f}"
-                    price_font = self.display.get_text_font('lg', 'regular')
-                    price_surface = price_font.render(price_text, True, AppConfig.WHITE)
-                    price_rect = price_surface.get_rect(
-                        right=mover_rect.right - 20,
-                        centery=section_y + section_height//2
-                    )
-                    self.display.surface.blit(price_surface, price_rect)
-                    
-                except Exception as e:
-                    logger.error(f"Error drawing mover: {e}")
+            # Only draw if visible
+            if -self.mover_width <= x <= self.width:
+                # Draw background
+                mover_rect = pygame.Rect(x, section_y, self.mover_width, section_height)
+                pygame.draw.rect(self.display.surface, (25, 25, 25), mover_rect, border_radius=15)
+                
+                # Draw rank number (using true_idx to maintain order)
+                rank_font = self.display.get_text_font('sm', 'regular')
+                rank_surface = rank_font.render(f"#{true_idx + 1}", True, (128, 128, 128))
+                rank_rect = rank_surface.get_rect(
+                    left=x + 10,
+                    top=section_y + 10
+                )
+                self.display.surface.blit(rank_surface, rank_rect)
+                
+                # Draw logo
+                logo_size = 50
+                logo_path = os.path.join(AppConfig.CACHE_DIR, f"{coin['symbol'].lower()}_logo.png")
+                if os.path.exists(logo_path):
+                    try:
+                        logo = pygame.image.load(logo_path)
+                        logo = pygame.transform.scale(logo, (logo_size, logo_size))
+                        logo_rect = logo.get_rect(
+                            left=x + 35,  # Moved right to make room for rank number
+                            centery=section_y + section_height//2
+                        )
+                        self.display.surface.blit(logo, logo_rect)
+                        
+                        # Calculate content areas
+                        symbol_area_width = 120  # Fixed width for symbol/change area
+                        price_area_width = 140   # Fixed width for price area
+                        content_left = logo_rect.right + 20
+                        price_left = mover_rect.right - price_area_width
+                        
+                        # Calculate vertical center for symbol/change stack
+                        stack_height = 42  # Slightly reduced total height for symbol + change
+                        stack_top = section_y + (section_height - stack_height) // 2
+                        
+                        # Draw symbol (smaller/lighter)
+                        text_font = self.display.get_text_font('md', 'regular')  # Same font for both
+                        symbol_surface = text_font.render(coin['symbol'].upper(), True, (200, 200, 200))  # Lighter color
+                        symbol_rect = symbol_surface.get_rect(
+                            left=content_left,
+                            top=stack_top
+                        )
+                        self.display.surface.blit(symbol_surface, symbol_rect)
+                        
+                        # Draw change percentage below symbol (tighter spacing)
+                        change_24h = coin['price_change_24h']
+                        change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
+                        change_text = f"{change_24h:+.1f}%"
+                        change_surface = text_font.render(change_text, True, change_color)  # Same font as symbol
+                        change_rect = change_surface.get_rect(
+                            left=content_left,
+                            top=symbol_rect.bottom + 1  # Minimal spacing
+                        )
+                        self.display.surface.blit(change_surface, change_rect)
+                        
+                        # Draw price on the right
+                        price_text = f"${coin['current_price']:,.2f}"
+                        price_font = self.display.get_text_font('lg', 'regular')
+                        price_surface = price_font.render(price_text, True, AppConfig.WHITE)
+                        price_rect = price_surface.get_rect(
+                            right=mover_rect.right - 20,
+                            centery=section_y + section_height//2
+                        )
+                        self.display.surface.blit(price_surface, price_rect)
+                        
+                    except Exception as e:
+                        logger.error(f"Error drawing mover: {e}")
         
         # Reset clip
         self.display.surface.set_clip(None)
