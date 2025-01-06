@@ -23,7 +23,7 @@ class DashboardScreen(BaseScreen):
         # Top movers state
         self.top_movers = []
         self.scroll_offset = 0
-        self.scroll_speed = 0.5  # Slower speed (pixels per frame)
+        self.scroll_speed = 0.8  # Faster speed (was 0.5)
         self.mover_width = 150  # Width of each mover item
         self.mover_spacing = 20  # Spacing between movers
         self.last_update_time = 0
@@ -152,7 +152,7 @@ class DashboardScreen(BaseScreen):
         
         # Calculate dimensions
         section_height = 80
-        section_y = 120  # Position below time display
+        section_y = 160  # Increased from 120 to add more spacing below time
         
         # Draw section header
         header_font = self.display.get_text_font('md', 'bold')
