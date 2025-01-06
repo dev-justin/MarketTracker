@@ -64,8 +64,8 @@ class TickerScreen(BaseScreen):
                 stock_section_y = self.height * 0.65
                 
                 # Split coins into sections
-                cryptos = [coin for coin in self.coins if coin['type'] != 'stock']
-                stocks = [coin for coin in self.coins if coin['type'] == 'stock']
+                cryptos = [coin for coin in self.coins if coin.get('type', '') != 'stock']
+                stocks = [coin for coin in self.coins if coin.get('type', '') == 'stock']
                 
                 # Check crypto section
                 if cryptos:
@@ -136,8 +136,8 @@ class TickerScreen(BaseScreen):
         section_spacing = 60
         
         # Split coins into crypto and stocks
-        cryptos = [coin for coin in self.coins if coin['type'] != 'stock']
-        stocks = [coin for coin in self.coins if coin['type'] == 'stock']
+        cryptos = [coin for coin in self.coins if coin.get('type', '') != 'stock']
+        stocks = [coin for coin in self.coins if coin.get('type', '') == 'stock']
         
         # Calculate layout
         crypto_section_y = self.height * 0.25  # Start crypto section at 25% of screen height
