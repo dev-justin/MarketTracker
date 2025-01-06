@@ -134,7 +134,7 @@ class DashboardScreen(BaseScreen):
         
         # Draw time (larger)
         time_text = local_time.strftime("%I:%M %p").lstrip("0")
-        time_font = pygame.font.Font(AppConfig.FONT_PATHS['regular'], int(AppConfig.FONT_SIZES['title-xl'] * 1.5))
+        time_font = self.display.get_title_font('xl')  # Use title-xl font
         time_surface = time_font.render(time_text, True, AppConfig.WHITE)
         time_rect = time_surface.get_rect(centerx=self.width // 2, top=date_rect.bottom + 10)
         self.display.surface.blit(time_surface, time_rect)

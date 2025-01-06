@@ -129,7 +129,8 @@ class SettingsScreen(BaseScreen):
         
         # Draw header
         header_text = "My Settings"
-        header_surface = self.fonts['title-md'].render(header_text, True, AppConfig.WHITE)
+        header_font = self.display.get_title_font('md')
+        header_surface = header_font.render(header_text, True, AppConfig.WHITE)
         header_rect = header_surface.get_rect(
             left=self.padding,
             top=self.padding

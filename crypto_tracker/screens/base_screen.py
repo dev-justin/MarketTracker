@@ -26,7 +26,6 @@ class BaseScreen(ABC):
         self.gesture_handler = GestureHandler()
         self.width = AppConfig.DISPLAY_WIDTH
         self.height = AppConfig.DISPLAY_HEIGHT
-        self.fonts = self.display.fonts
         logger.info(f"{self.__class__.__name__} initialized")
     
     def on_screen_enter(self) -> None:

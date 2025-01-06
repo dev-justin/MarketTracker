@@ -69,7 +69,8 @@ class TickerScreen(BaseScreen):
         
         # Draw price (larger)
         price_text = f"${current_coin['current_price']:,.2f}"
-        price_surface = self.fonts['title-xl'].render(price_text, True, AppConfig.WHITE)
+        price_font = self.display.get_title_font('xl')
+        price_surface = price_font.render(price_text, True, AppConfig.WHITE)
         price_rect = price_surface.get_rect(
             left=20,
             top=20
@@ -80,7 +81,8 @@ class TickerScreen(BaseScreen):
         change_24h = current_coin['price_change_24h']
         change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
         change_text = f"{change_24h:+.1f}%"
-        change_surface = self.fonts['title-md'].render(change_text, True, change_color)
+        change_font = self.display.get_title_font('md')
+        change_surface = change_font.render(change_text, True, change_color)
         change_rect = change_surface.get_rect(
             left=price_rect.right + 20,
             centery=price_rect.centery

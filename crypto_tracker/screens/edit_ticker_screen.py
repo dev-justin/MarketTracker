@@ -97,7 +97,7 @@ class EditTickerScreen(BaseScreen):
                 logger.error(f"Error loading logo: {e}")
         
         # Draw coin name
-        name_font = self.display.get_font('bold', 'title-lg')
+        name_font = self.display.get_title_font('lg', 'bold')
         name_surface = name_font.render(self.current_coin['name'], True, AppConfig.WHITE)
         name_rect = name_surface.get_rect(
             centerx=int(self.width * 0.25),  # Center in left half
@@ -106,7 +106,7 @@ class EditTickerScreen(BaseScreen):
         self.display.surface.blit(name_surface, name_rect)
         
         # Draw coin symbol
-        symbol_font = self.display.get_font('light', 'title-md')
+        symbol_font = self.display.get_title_font('md', 'light')
         symbol_surface = symbol_font.render(self.current_coin['symbol'].upper(), True, AppConfig.GRAY)
         symbol_rect = symbol_surface.get_rect(
             centerx=int(self.width * 0.25),  # Center in left half
