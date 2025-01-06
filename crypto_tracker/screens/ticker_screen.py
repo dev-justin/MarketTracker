@@ -167,31 +167,61 @@ class TickerScreen(BaseScreen):
                 price_range = max_price - min_price
                 
                 if price_range > 0:
-                    # Generate points with more samples for smoother curve
-                    points = []
-                    num_samples = len(prices) * 4  # Increase number of points for smoothing
-                    for i in range(num_samples):
-                        # Interpolate between price points
-                        t = i / (num_samples - 1)
-                        price_index = t * (len(prices) - 1)
-                        index_low = int(price_index)
-                        index_high = min(index_low + 1, len(prices) - 1)
-                        frac = price_index - index_low
-                        
-                        # Linear interpolation between points
-                        price = prices[index_low] * (1 - frac) + prices[index_high] * frac
-                        
-                        x = int(t * sparkline_rect.width)
+                    # Generate base points from price data
+                    base_points = []
+                    for i, price in enumerate(prices):
+                        x = int((i / (len(prices) - 1)) * sparkline_rect.width)
                         y = int(sparkline_rect.height - ((price - min_price) / price_range) * sparkline_rect.height * 0.8)
-                        points.append((x, y))
+                        base_points.append((x, y))
+                    
+                    # Generate smooth points using Catmull-Rom spline interpolation
+                    points = []
+                    num_segments = 32  # Number of segments between each pair of points
+                    
+                    # Helper function for Catmull-Rom interpolation
+                    def catmull_rom(p0, p1, p2, p3, t):
+                        t2 = t * t
+                        t3 = t2 * t
+                        
+                        # Catmull-Rom matrix coefficients
+                        a = -0.5 * t3 + t2 - 0.5 * t
+                        b = 1.5 * t3 - 2.5 * t2 + 1.0
+                        c = -1.5 * t3 + 2.0 * t2 + 0.5 * t
+                        d = 0.5 * t3 - 0.5 * t2
+                        
+                        # Interpolate x and y separately
+                        x = a * p0[0] + b * p1[0] + c * p2[0] + d * p3[0]
+                        y = a * p0[1] + b * p1[1] + c * p2[1] + d * p3[1]
+                        
+                        return (int(x), int(y))
+                    
+                    # Add extra control points at the ends
+                    control_points = [base_points[0]]  # Start with first point
+                    control_points.extend(base_points)
+                    control_points.append(base_points[-1])  # End with last point
+                    
+                    # Generate smooth points
+                    for i in range(len(base_points) - 1):
+                        p0 = control_points[i]
+                        p1 = control_points[i + 1]
+                        p2 = control_points[i + 2]
+                        p3 = control_points[i + 3]
+                        
+                        for t in range(num_segments):
+                            t_normalized = t / num_segments
+                            point = catmull_rom(p0, p1, p2, p3, t_normalized)
+                            points.append(point)
+                    
+                    # Add the last point
+                    points.append(base_points[-1])
                     
                     # Calculate price change
                     price_change = ((prices[-1] - prices[0]) / prices[0]) * 100
                     # Draw line with gradient color based on price change
                     line_color = (*AppConfig.GREEN, 255) if price_change >= 0 else (*AppConfig.RED, 255)  # Full alpha
                     
-                    # Draw thicker line
-                    pygame.draw.lines(sparkline_surface, line_color, False, points, 4)  # Increased thickness to 4
+                    # Draw thicker line with anti-aliasing
+                    pygame.draw.aalines(sparkline_surface, line_color, False, points, 5)  # Use aalines for smoother appearance
                     
                     # Draw subtle fill below the line
                     fill_points = points + [(sparkline_rect.width, sparkline_rect.height), (0, sparkline_rect.height)]
