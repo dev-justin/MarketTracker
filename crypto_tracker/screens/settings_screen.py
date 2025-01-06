@@ -29,8 +29,12 @@ class SettingsScreen(BaseScreen):
         self.corner_radius = 10
         
         # Button dimensions
-        self.button_width = 200
-        self.button_height = 60
+        self.button_width = 120  # Smaller width for Add Coin button
+        self.button_height = 40
+        
+        # Pagination
+        self.coins_per_page = 6
+        self.current_page = 0
         
         # Initialize tracked coins list and click areas
         self.tracked_coins = []
@@ -124,6 +128,49 @@ class SettingsScreen(BaseScreen):
         
         return rect, edit_icon_rect, coin
     
+    def next_page(self):
+        """Move to next page of coins."""
+        total_pages = (len(self.tracked_coins) + self.coins_per_page - 1) // self.coins_per_page
+        if total_pages > 0:
+            self.current_page = (self.current_page + 1) % total_pages
+            logger.info(f"Moved to page {self.current_page + 1} of {total_pages}")
+    
+    def previous_page(self):
+        """Move to previous page of coins."""
+        total_pages = (len(self.tracked_coins) + self.coins_per_page - 1) // self.coins_per_page
+        if total_pages > 0:
+            self.current_page = (self.current_page - 1) % total_pages
+            logger.info(f"Moved to page {self.current_page + 1} of {total_pages}")
+    
+    def handle_event(self, event: pygame.event.Event) -> None:
+        """Handle pygame events."""
+        gestures = self.gesture_handler.handle_touch_event(event)
+        
+        if gestures['swipe_down']:
+            logger.info("Swipe down detected, returning to dashboard")
+            self.screen_manager.switch_screen('dashboard')
+        elif gestures['swipe_left']:
+            logger.info("Swipe left detected, showing next page")
+            self.next_page()
+        elif gestures['swipe_right']:
+            logger.info("Swipe right detected, showing previous page")
+            self.previous_page()
+        elif event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
+            x, y = self._scale_touch_input(event)
+            
+            # Check add button first
+            if self.add_button_rect.collidepoint(x, y):
+                logger.info("Add button clicked")
+                self.screen_manager.switch_screen('add_ticker')
+                return
+            
+            # Check edit icons
+            for edit_rect, coin in self.edit_icon_areas:
+                if edit_rect.collidepoint(x, y):
+                    logger.info(f"Edit icon clicked for {coin['symbol']}")
+                    self.screen_manager.switch_screen('edit_ticker', coin['id'])
+                    return
+    
     def draw(self) -> None:
         """Draw the settings screen."""
         # Fill background
@@ -139,29 +186,10 @@ class SettingsScreen(BaseScreen):
         )
         self.display.surface.blit(header_surface, header_rect)
         
-        # Draw tracked coins in a grid
-        current_y = self.header_height + self.padding
-        self.coin_rects = []  # Store rects for click detection
-        self.edit_icon_areas = []  # Reset edit icon areas
-        
-        for i, coin in enumerate(self.tracked_coins):
-            if isinstance(coin, dict):
-                column = i % self.columns
-                x = self.padding + (column * (self.cell_width + self.padding))
-                
-                if column == 0 and i > 0:
-                    current_y += self.cell_height + self.cell_spacing
-                
-                rect, edit_icon_rect, coin = self._draw_coin_cell(self.display.surface, x, current_y, coin)
-                self.coin_rects.append((rect, coin))
-                if edit_icon_rect:
-                    self.edit_icon_areas.append((edit_icon_rect, coin))
-        
-        # Draw add button at the bottom
-        button_y = self.height - self.button_height - self.padding
+        # Draw add button in top right
         self.add_button_rect = pygame.Rect(
-            (self.width - self.button_width) // 2,
-            button_y,
+            self.width - self.button_width - self.padding,
+            self.padding,
             self.button_width,
             self.button_height
         )
@@ -179,26 +207,37 @@ class SettingsScreen(BaseScreen):
         add_rect = add_surface.get_rect(center=self.add_button_rect.center)
         self.display.surface.blit(add_surface, add_rect)
         
-        self.update_screen()
-    
-    def handle_event(self, event: pygame.event.Event) -> None:
-        """Handle pygame events."""
-        gestures = self.gesture_handler.handle_touch_event(event)
+        # Draw tracked coins in a grid with pagination
+        start_index = self.current_page * self.coins_per_page
+        end_index = min(start_index + self.coins_per_page, len(self.tracked_coins))
+        current_y = self.header_height + self.padding
         
-        if gestures['swipe_down']:
-            logger.info("Swipe down detected, returning to dashboard")
-            self.screen_manager.switch_screen('dashboard')
-        elif event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
-            x, y = self._scale_touch_input(event)
-            
-            # Check for edit icon clicks first
-            for edit_rect, coin in self.edit_icon_areas:
-                if edit_rect.collidepoint(x, y):
-                    logger.info(f"Edit icon clicked for {coin['symbol']}")
-                    self.screen_manager.switch_screen('edit_ticker', coin['id'])
-                    return
-            
-            # Check for add button click
-            if self.add_button_rect.collidepoint(x, y):
-                logger.info("Add button clicked")
-                self.screen_manager.switch_screen('add_ticker') 
+        self.coin_rects = []  # Store rects for click detection
+        self.edit_icon_areas = []  # Reset edit icon areas
+        
+        for i, coin in enumerate(self.tracked_coins[start_index:end_index]):
+            if isinstance(coin, dict):
+                column = i % self.columns
+                x = self.padding + (column * (self.cell_width + self.padding))
+                
+                if column == 0 and i > 0:
+                    current_y += self.cell_height + self.cell_spacing
+                
+                rect, edit_icon_rect, coin = self._draw_coin_cell(self.display.surface, x, current_y, coin)
+                self.coin_rects.append((rect, coin))
+                if edit_icon_rect:
+                    self.edit_icon_areas.append((edit_icon_rect, coin))
+        
+        # Draw page indicator
+        total_pages = (len(self.tracked_coins) + self.coins_per_page - 1) // self.coins_per_page
+        if total_pages > 1:
+            page_text = f"Page {self.current_page + 1} of {total_pages}"
+            page_font = self.display.get_text_font('md', 'regular')
+            page_surface = page_font.render(page_text, True, AppConfig.GRAY)
+            page_rect = page_surface.get_rect(
+                centerx=self.width // 2,
+                bottom=self.height - self.padding
+            )
+            self.display.surface.blit(page_surface, page_rect)
+        
+        self.update_screen() 
