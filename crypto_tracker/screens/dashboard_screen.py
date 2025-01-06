@@ -24,7 +24,7 @@ class DashboardScreen(BaseScreen):
         self.top_movers = []
         self.scroll_offset = 0
         self.scroll_speed = 0.8  # Faster speed (was 0.5)
-        self.mover_width = 150  # Width of each mover item
+        self.mover_width = 200  # Increased width to accommodate price
         self.mover_spacing = 20  # Spacing between movers
         self.last_update_time = 0
         self.update_interval = 30000  # Update list every 30 seconds
@@ -152,7 +152,7 @@ class DashboardScreen(BaseScreen):
         
         # Calculate dimensions
         section_height = 80
-        section_y = 160  # Increased from 120 to add more spacing below time
+        section_y = 160  # Position below time display
         
         # Draw section header
         header_font = self.display.get_text_font('md', 'bold')
@@ -208,6 +208,16 @@ class DashboardScreen(BaseScreen):
                     )
                     self.display.surface.blit(symbol_surface, symbol_rect)
                     
+                    # Draw price
+                    price_text = f"${coin['current_price']:,.2f}"
+                    price_font = self.display.get_text_font('sm', 'regular')
+                    price_surface = price_font.render(price_text, True, (180, 180, 180))  # Light gray
+                    price_rect = price_surface.get_rect(
+                        left=logo_rect.right + 15,
+                        top=symbol_rect.bottom + 5
+                    )
+                    self.display.surface.blit(price_surface, price_rect)
+                    
                     # Draw change percentage
                     change_24h = coin['price_change_24h']
                     change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
@@ -215,8 +225,8 @@ class DashboardScreen(BaseScreen):
                     change_font = self.display.get_text_font('md', 'regular')
                     change_surface = change_font.render(change_text, True, change_color)
                     change_rect = change_surface.get_rect(
-                        left=logo_rect.right + 15,
-                        top=symbol_rect.bottom + 5
+                        right=mover_rect.right - 15,
+                        centery=section_y + section_height//2
                     )
                     self.display.surface.blit(change_surface, change_rect)
                     
