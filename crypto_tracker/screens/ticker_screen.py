@@ -161,8 +161,10 @@ class TickerScreen(BaseScreen):
                             points.append((x, y))
                         
                         if len(points) > 1:
-                            # Draw line with gradient color based on price change
-                            line_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
+                            # Calculate 7-day price change
+                            price_change_7d = ((prices[-1] - prices[0]) / prices[0]) * 100
+                            # Draw line with gradient color based on 7-day price change
+                            line_color = AppConfig.GREEN if price_change_7d >= 0 else AppConfig.RED
                             pygame.draw.lines(sparkline_surface, line_color, False, points, 2)
                 
                 # Position sparkline at bottom of screen
