@@ -24,8 +24,8 @@ class DashboardScreen(BaseScreen):
         self.top_movers = []
         self.scroll_offset = 0
         self.scroll_speed = 0.8
-        self.mover_width = 280  # Increased width for larger layout
-        self.mover_spacing = 25  # Slightly more spacing
+        self.mover_width = 340  # Increased width to prevent overlapping
+        self.mover_spacing = 25
         self.last_update_time = 0
         self.update_interval = 30000
         
@@ -151,8 +151,8 @@ class DashboardScreen(BaseScreen):
                 return
         
         # Calculate dimensions
-        section_height = 100  # Increased height
-        section_y = 160  # Position below time display
+        section_height = 100
+        section_y = 160
         
         # Draw section header
         header_font = self.display.get_text_font('md', 'bold')
@@ -187,7 +187,7 @@ class DashboardScreen(BaseScreen):
             pygame.draw.rect(self.display.surface, (25, 25, 25), mover_rect, border_radius=15)
             
             # Draw logo
-            logo_size = 50  # Larger logo
+            logo_size = 50
             logo_path = os.path.join(AppConfig.CACHE_DIR, f"{coin['symbol'].lower()}_logo.png")
             if os.path.exists(logo_path):
                 try:
@@ -199,11 +199,14 @@ class DashboardScreen(BaseScreen):
                     )
                     self.display.surface.blit(logo, logo_rect)
                     
-                    # Left side content (symbol and change)
+                    # Calculate content areas
+                    symbol_area_width = 120  # Fixed width for symbol/change area
+                    price_area_width = 140   # Fixed width for price area
                     content_left = logo_rect.right + 20
+                    price_left = mover_rect.right - price_area_width
                     
                     # Draw symbol
-                    symbol_font = self.display.get_title_font('md', 'bold')  # Larger font
+                    symbol_font = self.display.get_title_font('md', 'bold')
                     symbol_surface = symbol_font.render(coin['symbol'].upper(), True, AppConfig.WHITE)
                     symbol_rect = symbol_surface.get_rect(
                         left=content_left,
@@ -215,7 +218,7 @@ class DashboardScreen(BaseScreen):
                     change_24h = coin['price_change_24h']
                     change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
                     change_text = f"{change_24h:+.1f}%"
-                    change_font = self.display.get_text_font('lg', 'regular')  # Larger font
+                    change_font = self.display.get_text_font('lg', 'regular')
                     change_surface = change_font.render(change_text, True, change_color)
                     change_rect = change_surface.get_rect(
                         left=content_left,
@@ -225,7 +228,7 @@ class DashboardScreen(BaseScreen):
                     
                     # Draw price on the right
                     price_text = f"${coin['current_price']:,.2f}"
-                    price_font = self.display.get_title_font('md', 'regular')  # Larger font
+                    price_font = self.display.get_title_font('md', 'regular')
                     price_surface = price_font.render(price_text, True, AppConfig.WHITE)
                     price_rect = price_surface.get_rect(
                         right=mover_rect.right - 20,
