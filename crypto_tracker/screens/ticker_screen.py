@@ -217,16 +217,23 @@ class TickerScreen(BaseScreen):
                     
                     # Calculate price change
                     price_change = ((prices[-1] - prices[0]) / prices[0]) * 100
-                    # Draw line with gradient color based on price change
-                    line_color = (*AppConfig.GREEN, 255) if price_change >= 0 else (*AppConfig.RED, 255)  # Full alpha
+                    # Get base color based on price change
+                    base_color = AppConfig.GREEN if price_change >= 0 else AppConfig.RED
                     
-                    # Draw thicker line with anti-aliasing
-                    pygame.draw.aalines(sparkline_surface, line_color, False, points, 5)  # Use aalines for smoother appearance
-                    
-                    # Draw subtle fill below the line
+                    # Draw fill first (lighter color under the line)
                     fill_points = points + [(sparkline_rect.width, sparkline_rect.height), (0, sparkline_rect.height)]
-                    fill_color = (*line_color[:3], 20)  # Same color but with lower alpha
+                    fill_color = (*base_color, 20)  # Very transparent fill
                     pygame.draw.polygon(sparkline_surface, fill_color, fill_points)
+                    
+                    # Draw neon effect (multiple lines with decreasing alpha)
+                    for thickness in range(6, 0, -1):
+                        alpha = int(80 * (thickness / 6))  # Alpha decreases with thickness
+                        glow_color = (*base_color, alpha)
+                        pygame.draw.aalines(sparkline_surface, glow_color, False, points, thickness)
+                    
+                    # Draw the main line (bright and sharp)
+                    main_line_color = (*base_color, 255)  # Full opacity for main line
+                    pygame.draw.aalines(sparkline_surface, main_line_color, False, points, 2)
                 
                 # Position sparkline at bottom of screen with no padding
                 sparkline_rect.bottom = self.height
