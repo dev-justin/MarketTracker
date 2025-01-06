@@ -20,7 +20,7 @@ class TopMovers:
         self.scroll_offset = 0
         self.scroll_speed = 1.2
         self.mover_width = 340
-        self.mover_spacing = 20  # Add spacing between items
+        self.mover_spacing = 20
         self.last_update_time = 0
         self.update_interval = 10000  # 10 seconds
         self.circle_color = (45, 45, 45)
@@ -43,6 +43,8 @@ class TopMovers:
                 # Sort by absolute price change
                 sorted_coins = sorted(coins, key=lambda x: abs(x.get('price_change_24h', 0)), reverse=True)
                 self.movers = sorted_coins[:5]  # Get top 5 movers
+                # Duplicate the list for seamless scrolling
+                self.movers = self.movers + self.movers.copy()
             self.last_update_time = current_time
     
     def draw(self):
@@ -66,21 +68,23 @@ class TopMovers:
         # Update scroll position
         self.scroll_offset -= self.scroll_speed
         item_width = self.mover_width + self.mover_spacing
+        total_width = (len(self.movers) // 2) * item_width  # Width of one complete set
         
-        # Reset scroll when we've scrolled one full item width
-        if abs(self.scroll_offset) >= item_width:
-            self.scroll_offset += item_width  # Instead of resetting to 0, add item width
-            # Rotate the list to create infinite scroll effect
-            self.movers.append(self.movers.pop(0))
+        # Reset scroll when we've scrolled through one complete set
+        if abs(self.scroll_offset) >= total_width:
+            self.scroll_offset += total_width
         
-        # Draw items (we need to draw 3 items for smooth transition)
-        for i in range(3):
+        # Draw all visible items
+        start_idx = max(0, int(abs(self.scroll_offset) // item_width))
+        num_visible = (display_width // item_width) + 2
+        
+        for i in range(start_idx, start_idx + num_visible):
             x = 20 + (i * item_width) + self.scroll_offset
-            idx = i % len(self.movers)
-            coin = self.movers[idx]
+            idx = i % (len(self.movers) // 2)  # Get index within original set
+            coin = self.movers[i % len(self.movers)]
             
-            # Always use the original index for ranking (based on 24h change)
-            rank = idx + 1  # Rank from 1-5 based on original sort order
+            # Use index from original set for ranking (1-5)
+            rank = idx + 1
             
             # Only draw if it would be visible
             if -item_width <= x <= display_width:
