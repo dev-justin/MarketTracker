@@ -20,6 +20,7 @@ class AddTickerScreen(BaseScreen):
         self.available_exchanges = []  # List of available exchanges for current symbol
         self.selected_exchange_index = 0  # Currently selected exchange
         self.showing_exchanges = False  # Whether we're showing the exchange list
+        self.stock_service = self.crypto_manager.stock_service  # Get stock service from crypto manager
         
         # Button dimensions
         self.button_width = AppConfig.BUTTON_WIDTH
