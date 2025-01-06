@@ -1,6 +1,6 @@
 """Service for interacting with Yahoo Finance API."""
 
-import yf
+import yfinance as yf
 import requests
 from typing import Optional, Dict, List
 from ...utils.logger import get_logger
