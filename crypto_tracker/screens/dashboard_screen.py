@@ -72,3 +72,6 @@ class DashboardScreen(BaseScreen):
         # Draw favorites grid (starting below top movers)
         favorites_start_y = time_rect.bottom + 140  # Start below top movers section
         self.favorites_grid.draw(favorites_start_y)
+        
+        # Update the display
+        self.update_screen()
