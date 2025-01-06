@@ -144,19 +144,9 @@ class DashboardScreen(BaseScreen):
         favorite_coins = [coin for coin in coins if coin.get('favorite', False)]
         
         if favorite_coins:
-            # Draw "Favorites" header
-            favorites_text = "Favorites"
-            favorites_font = self.display.get_font('light', 'title-md')
-            favorites_surface = favorites_font.render(favorites_text, True, (128, 128, 128))
-            favorites_rect = favorites_surface.get_rect(
-                left=20,
-                top=time_rect.bottom + 40
-            )
-            self.display.surface.blit(favorites_surface, favorites_rect)
-            
             # Calculate grid layout
             margin = 20
-            start_y = favorites_rect.bottom + 20
+            start_y = time_rect.bottom + 20  # Start closer to the time display
             
             # Draw favorite coins in a grid
             for i, coin in enumerate(favorite_coins):

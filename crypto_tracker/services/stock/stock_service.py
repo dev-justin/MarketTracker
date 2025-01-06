@@ -5,6 +5,7 @@ import requests
 from typing import Optional, Dict, List
 from ...utils.logger import get_logger
 from ...config.settings import AppConfig
+from .stock_storage import StockStorage
 import time
 import os
 
@@ -15,7 +16,8 @@ class StockService:
     
     def __init__(self):
         self.cache = {}
-        self.cache_duration = 60  # 60 seconds cache
+        self.cache_duration = 300  # 5 minutes cache duration
+        self.storage = StockStorage()
         logger.info("StockService initialized")
     
     def _download_logo(self, symbol: str, logo_url: str) -> str:
@@ -47,8 +49,18 @@ class StockService:
                 info = ticker.info
                 if info:
                     # Get logo URL from Yahoo Finance
-                    logo_url = info.get('logo_url', '')
-                    if logo_url:
+                    website = info.get('website', '')
+                    domain = website.replace('http://', '').replace('https://', '').split('/')[0] if website else ''
+                    
+                    logo_url = (
+                        info.get('logo_url') or 
+                        info.get('logoUrl') or 
+                        info.get('logo') or
+                        (f"https://logo.clearbit.com/{domain}" if domain else None) or
+                        f"https://storage.googleapis.com/iex/api/logos/{symbol.upper()}.png"  # IEX fallback
+                    )
+                    
+                    if logo_url and logo_url.startswith('http'):
                         self._download_logo(symbol, logo_url)
                     
                     logger.info(f"Found stock: {symbol}")
@@ -88,9 +100,6 @@ class StockService:
             ticker = yf.Ticker(symbol)
             info = ticker.info
             
-            # Debug log the available info keys
-            logger.debug(f"Available info keys: {info.keys() if info else 'No info available'}")
-            
             if not info:
                 logger.error(f"No data returned from Yahoo Finance for {symbol}")
                 return None
@@ -102,64 +111,26 @@ class StockService:
                 return None
             
             # Get historical data for sparkline (5 days, 30-minute intervals)
-            # Note: Yahoo Finance requires specific period values
-            hist = ticker.history(period='5d', interval='30m')  # Using 5d as it's a valid Yahoo Finance period
-            logger.debug(f"Historical data shape: {hist.shape if not hist.empty else 'Empty'}")
-            logger.debug(f"Historical data columns: {hist.columns.tolist() if not hist.empty else 'No columns'}")
-            
+            hist = ticker.history(period='5d', interval='30m')
             prices = hist['Close'].tolist() if not hist.empty else []
-            logger.debug(f"Number of price points: {len(prices)}")
             
             # If we don't have enough data points, try a different interval
-            if len(prices) < 50:  # We want at least 50 points for a good sparkline
-                logger.debug("Not enough data points, trying different interval")
+            if len(prices) < 50:
                 hist = ticker.history(period='5d', interval='1h')
                 prices = hist['Close'].tolist() if not hist.empty else []
-                logger.debug(f"Number of price points after adjustment: {len(prices)}")
             
             # Ensure we have enough points for the sparkline
             if prices:
-                # Normalize the number of points to match crypto format
                 target_points = 120  # 5 days * 24 hours
                 if len(prices) > target_points:
-                    # Take evenly spaced samples
                     step = len(prices) // target_points
                     prices = prices[::step][:target_points]
-                logger.debug(f"Final number of price points: {len(prices)}")
             
             # Calculate 24h price change
             if len(prices) >= 24:
                 price_change_24h = ((prices[-1] - prices[-24]) / prices[-24]) * 100
             else:
                 price_change_24h = info.get('regularMarketChangePercent', 0)
-            
-            # Get and cache logo if available
-            # Try multiple sources for the logo
-            website = info.get('website', '')
-            domain = website.replace('http://', '').replace('https://', '').split('/')[0] if website else ''
-            
-            logo_url = (
-                info.get('logo_url') or 
-                info.get('logoUrl') or 
-                info.get('logo') or
-                (f"https://logo.clearbit.com/{domain}" if domain else None) or
-                f"https://storage.googleapis.com/iex/api/logos/{symbol.upper()}.png"  # IEX fallback
-            )
-            logger.debug(f"Logo URL found: {logo_url if logo_url else 'No logo URL'}")
-            
-            if logo_url and logo_url.startswith('http'):
-                try:
-                    # Test if the URL is accessible
-                    response = requests.head(logo_url, timeout=5)
-                    if response.status_code == 200:
-                        logo_path = self._download_logo(symbol, logo_url)
-                        logger.debug(f"Logo saved to: {logo_path if logo_path else 'Logo not saved'}")
-                    else:
-                        logger.warning(f"Logo URL returned status code {response.status_code}")
-                except Exception as e:
-                    logger.warning(f"Error checking logo URL: {e}")
-            else:
-                logger.warning(f"No valid logo URL found for {symbol}")
             
             # Process and cache the data (matching crypto format)
             processed_data = {
@@ -176,14 +147,17 @@ class StockService:
                 'favorite': False  # Default to not favorited
             }
             
-            # Debug log the processed data
-            logger.debug(f"Processed data: {processed_data}")
-            
             # Update cache
             self.cache[symbol] = {
                 'data': processed_data,
                 'timestamp': time.time()
             }
+            
+            # Update storage with new data
+            stored_stock = self.storage.get_stock(symbol)
+            if stored_stock:
+                processed_data['favorite'] = stored_stock.get('favorite', False)
+                self.storage.update_stock_data(symbol, processed_data)
             
             logger.info(f"Successfully fetched and processed data for {symbol}")
             return processed_data

@@ -101,7 +101,7 @@ class CryptoManager:
                 logger.info(f"Found as stock: {symbol}")
                 stock_data = self.stock_service.get_stock_data(symbol)
                 if stock_data:
-                    return self.storage.add_coin(stock_data)
+                    return self.stock_service.storage.add_stock(stock_data)
             
             logger.warning(f"Symbol not found as either crypto or stock: {symbol}")
             return False
@@ -112,26 +112,62 @@ class CryptoManager:
     
     def remove_coin(self, coin_id: str) -> bool:
         """Remove a coin from tracking."""
-        success = self.storage.remove_coin(coin_id)
-        if success:
+        # Try to remove from crypto storage first
+        if self.storage.remove_coin(coin_id):
             self.coingecko.clear_cache(coin_id)
-        return success
+            return True
+        
+        # If not found in crypto storage, try stock storage
+        if self.stock_service.storage.remove_stock(coin_id):
+            self.stock_service.clear_cache(coin_id)
+            return True
+        
+        return False
     
     def get_coin_data(self, coin_id: str) -> Optional[Dict]:
         """
         Get current coin data.
         Returns cached data if available and fresh.
         """
-        return self.coingecko.get_coin_data(coin_id)
+        # Try crypto first
+        coin_data = self.coingecko.get_coin_data(coin_id)
+        if coin_data:
+            return coin_data
+        
+        # If not found, try stock
+        return self.stock_service.get_stock_data(coin_id)
     
     def get_tracked_coins(self) -> List[Dict]:
-        """Get all tracked coins with current data."""
-        return self.storage.get_all_coins()
+        """Get all tracked coins and stocks with current data."""
+        # Get both crypto and stock data
+        crypto_coins = self.storage.get_all_coins()
+        stocks = self.stock_service.storage.get_all_stocks()
+        
+        # Update stock data with current prices
+        updated_stocks = []
+        for stock in stocks:
+            current_data = self.stock_service.get_stock_data(stock['id'])
+            if current_data:
+                # Preserve favorite status
+                current_data['favorite'] = stock.get('favorite', False)
+                updated_stocks.append(current_data)
+            else:
+                updated_stocks.append(stock)
+        
+        # Combine and return all data
+        return crypto_coins + updated_stocks
     
     def toggle_favorite(self, coin_id: str) -> bool:
-        """Toggle favorite status for a coin."""
-        return self.storage.toggle_favorite(coin_id)
+        """Toggle favorite status for a coin or stock."""
+        # Try crypto first
+        if self.storage.toggle_favorite(coin_id):
+            return True
+        
+        # If not found, try stock
+        return self.stock_service.storage.toggle_favorite(coin_id)
     
     def get_favorites(self) -> List[Dict]:
-        """Get list of favorite coins."""
-        return self.storage.get_favorite_coins() 
+        """Get list of favorite coins and stocks."""
+        crypto_favorites = [coin for coin in self.storage.get_all_coins() if coin.get('favorite', False)]
+        stock_favorites = [stock for stock in self.stock_service.storage.get_all_stocks() if stock.get('favorite', False)]
+        return crypto_favorites + stock_favorites 
