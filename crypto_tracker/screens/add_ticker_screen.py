@@ -119,11 +119,11 @@ class AddTickerScreen(BaseScreen):
         
         # Draw error message if any
         if self.error_message:
-            error_font = self.display.get_text_font('md', 'regular')
+            error_font = self.display.get_text_font('md', 'bold')
             error_surface = error_font.render(self.error_message, True, AppConfig.RED)
             error_rect = error_surface.get_rect(
                 centerx=self.width // 2,
-                bottom=self.save_rect.top - 20
+                centery=self.save_rect.centery
             )
             self.display.surface.blit(error_surface, error_rect)
         
