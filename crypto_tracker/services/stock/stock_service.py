@@ -88,6 +88,9 @@ class StockService:
             ticker = yf.Ticker(symbol)
             info = ticker.info
             
+            # Debug log the available info keys
+            logger.debug(f"Available info keys: {info.keys() if info else 'No info available'}")
+            
             if not info:
                 logger.error(f"No data returned from Yahoo Finance for {symbol}")
                 return None
@@ -99,8 +102,30 @@ class StockService:
                 return None
             
             # Get historical data for sparkline (7 days, 1-hour intervals)
-            hist = ticker.history(period='7d', interval='1h')
+            # Try to get more data points by extending the period and adjusting interval
+            hist = ticker.history(period='7d', interval='30m')  # Changed to 30-minute intervals
+            logger.debug(f"Historical data shape: {hist.shape if not hist.empty else 'Empty'}")
+            logger.debug(f"Historical data columns: {hist.columns.tolist() if not hist.empty else 'No columns'}")
+            
             prices = hist['Close'].tolist() if not hist.empty else []
+            logger.debug(f"Number of price points: {len(prices)}")
+            
+            # If we don't have enough data points, try a different interval
+            if len(prices) < 50:  # We want at least 50 points for a good sparkline
+                logger.debug("Not enough data points, trying different interval")
+                hist = ticker.history(period='7d', interval='1h')
+                prices = hist['Close'].tolist() if not hist.empty else []
+                logger.debug(f"Number of price points after adjustment: {len(prices)}")
+            
+            # Ensure we have enough points for the sparkline
+            if prices:
+                # Normalize the number of points to match crypto format
+                target_points = 168  # 7 days * 24 hours
+                if len(prices) > target_points:
+                    # Take evenly spaced samples
+                    step = len(prices) // target_points
+                    prices = prices[::step][:target_points]
+                logger.debug(f"Final number of price points: {len(prices)}")
             
             # Calculate 24h price change
             if len(prices) >= 24:
@@ -109,9 +134,20 @@ class StockService:
                 price_change_24h = info.get('regularMarketChangePercent', 0)
             
             # Get and cache logo if available
-            logo_url = info.get('logo_url', '')
-            if logo_url:
-                self._download_logo(symbol, logo_url)
+            # Try different possible fields for logo URL
+            logo_url = (
+                info.get('logo_url') or 
+                info.get('logoUrl') or 
+                info.get('logo') or
+                f"https://logo.clearbit.com/{info.get('website', '').replace('http://', '').replace('https://', '')}"
+            )
+            logger.debug(f"Logo URL found: {logo_url if logo_url else 'No logo URL'}")
+            
+            if logo_url and logo_url.startswith('http'):
+                logo_path = self._download_logo(symbol, logo_url)
+                logger.debug(f"Logo saved to: {logo_path if logo_path else 'Logo not saved'}")
+            else:
+                logger.warning(f"No valid logo URL found for {symbol}")
             
             # Process and cache the data (matching crypto format)
             processed_data = {
@@ -127,6 +163,9 @@ class StockService:
                 'volume': info.get('volume', 0),
                 'favorite': False  # Default to not favorited
             }
+            
+            # Debug log the processed data
+            logger.debug(f"Processed data: {processed_data}")
             
             # Update cache
             self.cache[symbol] = {
