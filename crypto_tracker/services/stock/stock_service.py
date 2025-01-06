@@ -23,16 +23,20 @@ class StockService:
         try:
             logger.info(f"Searching for stock with symbol: {symbol}")
             ticker = yf.Ticker(symbol)
-            info = ticker.info
             
-            if info and 'regularMarketPrice' in info:
-                logger.info(f"Found stock: {symbol}")
-                return {
-                    'id': symbol,  # Use symbol as ID for stocks
-                    'symbol': symbol.upper(),
-                    'name': info.get('longName', info.get('shortName', symbol)),
-                    'type': 'stock'  # Mark as stock for differentiation
-                }
+            # First check if we can get a valid price
+            try:
+                current_price = ticker.info.get('currentPrice') or ticker.info.get('regularMarketPrice')
+                if current_price:
+                    logger.info(f"Found stock: {symbol}")
+                    return {
+                        'id': symbol,  # Use symbol as ID for stocks
+                        'symbol': symbol.upper(),
+                        'name': ticker.info.get('longName', ticker.info.get('shortName', symbol)),
+                        'type': 'stock'  # Mark as stock for differentiation
+                    }
+            except Exception as e:
+                logger.error(f"Error getting ticker info: {e}")
             
             logger.warning(f"No stock found for symbol: {symbol}")
             return None
@@ -59,10 +63,11 @@ class StockService:
             # Fetch fresh data
             logger.debug(f"Fetching fresh data from Yahoo Finance for {symbol}")
             ticker = yf.Ticker(symbol)
-            info = ticker.info
             
-            if not info or 'regularMarketPrice' not in info:
-                logger.error(f"No data returned from Yahoo Finance for {symbol}")
+            # Get current price (try multiple fields as backup)
+            current_price = ticker.info.get('currentPrice') or ticker.info.get('regularMarketPrice')
+            if not current_price:
+                logger.error(f"No price data returned from Yahoo Finance for {symbol}")
                 return None
             
             # Get historical data for sparkline
@@ -73,21 +78,22 @@ class StockService:
             if len(prices) >= 24:
                 price_change_24h = ((prices[-1] - prices[-24]) / prices[-24]) * 100
             else:
-                price_change_24h = 0
+                # Fallback to regular market change if available
+                price_change_24h = ticker.info.get('regularMarketChangePercent', 0)
             
             # Process and cache the data
             processed_data = {
                 'id': symbol,
-                'name': info.get('longName', info.get('shortName', symbol)),
+                'name': ticker.info.get('longName', ticker.info.get('shortName', symbol)),
                 'symbol': symbol.upper(),
                 'type': 'stock',
-                'image': info.get('logo_url', ''),  # Yahoo might provide logo URL
-                'current_price': info['regularMarketPrice'],
+                'image': ticker.info.get('logo_url', ''),
+                'current_price': current_price,
                 'price_change_24h': price_change_24h,
                 'sparkline_7d': prices,
                 'last_updated': time.strftime('%Y-%m-%d %H:%M:%S'),
-                'market_cap': info.get('marketCap', 0),
-                'volume': info.get('volume', 0)
+                'market_cap': ticker.info.get('marketCap', 0),
+                'volume': ticker.info.get('volume', 0)
             }
             
             # Update cache
