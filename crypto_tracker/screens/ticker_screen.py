@@ -56,64 +56,67 @@ class TickerScreen(BaseScreen):
             self.selector_start_time = pygame.time.get_ticks()
             x, y = self._scale_touch_input(event)
             
-            # If selector is showing, check for ticker selection
             if self.showing_selector:
-                # Calculate ticker positions with scroll offset
-                center_y = self.height // 2
-                center_x = self.width // 2
-                current_logo_size = 80
-                other_logo_size = 50
-                spacing = 30
+                # Define the same layout parameters as in draw_ticker_selector
+                logo_size = 60
+                spacing = 25
+                crypto_section_y = self.height * 0.25
+                stock_section_y = self.height * 0.65
                 
-                # Check if click is in the selector area
-                selector_area = pygame.Rect(0, center_y - 60, self.width, 120)
-                if selector_area.collidepoint(x, y):
-                    # Calculate visible range
-                    for i in range(len(self.coins)):
-                        # Calculate position relative to center
-                        offset_from_current = i - self.current_index
+                # Split coins into sections
+                cryptos = [coin for coin in self.coins if coin['type'] != 'stock']
+                stocks = [coin for coin in self.coins if coin['type'] == 'stock']
+                
+                # Check crypto section
+                if cryptos:
+                    row_width = self.width - 80
+                    logos_per_row = max(1, (row_width + spacing) // (logo_size + spacing))
+                    
+                    for i, coin in enumerate(cryptos):
+                        row = i // logos_per_row
+                        col = i % logos_per_row
                         
-                        if offset_from_current < 0:
-                            cumulative_width = sum([other_logo_size + spacing for _ in range(abs(offset_from_current))])
-                            logo_x = center_x - (current_logo_size // 2) - spacing - cumulative_width
-                        elif offset_from_current > 0:
-                            cumulative_width = sum([other_logo_size + spacing for _ in range(offset_from_current)])
-                            logo_x = center_x + (current_logo_size // 2) + spacing + cumulative_width - other_logo_size
-                        else:
-                            logo_x = center_x - (current_logo_size // 2)
+                        logo_x = 40 + col * (logo_size + spacing)
+                        logo_y = crypto_section_y + row * (logo_size + spacing)
                         
-                        logo_x += self.selector_scroll_offset
-                        logo_size = current_logo_size if i == self.current_index else other_logo_size
-                        logo_rect = pygame.Rect(logo_x, center_y - logo_size // 2, logo_size, logo_size)
+                        # Include symbol text height in clickable area
+                        logo_rect = pygame.Rect(logo_x, logo_y, logo_size, logo_size + 30)
                         
                         if logo_rect.collidepoint(x, y):
-                            self.current_index = i
+                            self.current_index = self.coins.index(coin)
                             self.showing_selector = False
-                            self.selector_scroll_offset = 0
                             return
-                else:
-                    # Hide selector if clicked outside
-                    self.showing_selector = False
-                    self.selector_scroll_offset = 0
+                
+                # Check stock section
+                if stocks:
+                    row_width = self.width - 80
+                    logos_per_row = max(1, (row_width + spacing) // (logo_size + spacing))
+                    
+                    for i, coin in enumerate(stocks):
+                        row = i // logos_per_row
+                        col = i % logos_per_row
+                        
+                        logo_x = 40 + col * (logo_size + spacing)
+                        logo_y = stock_section_y + row * (logo_size + spacing)
+                        
+                        # Include symbol text height in clickable area
+                        logo_rect = pygame.Rect(logo_x, logo_y, logo_size, logo_size + 30)
+                        
+                        if logo_rect.collidepoint(x, y):
+                            self.current_index = self.coins.index(coin)
+                            self.showing_selector = False
+                            return
+                
+                # Hide selector if clicked outside
+                self.showing_selector = False
         
         elif event.type == AppConfig.EVENT_TYPES['FINGER_UP']:
             # Check if this was a long press
             if not self.showing_selector and pygame.time.get_ticks() - self.selector_start_time > 500:  # 500ms for long press
                 self.showing_selector = True
-                self.selector_scroll_offset = 0
                 return
         
-        # Handle horizontal scrolling in selector mode
-        if self.showing_selector:
-            if gestures['swipe_left']:
-                self.selector_scroll_offset += 100  # Scroll left
-            elif gestures['swipe_right']:
-                self.selector_scroll_offset -= 100  # Scroll right
-            
-            # Limit scrolling
-            max_scroll = (len(self.coins) - 5) * (50 + 30)  # (other_logo_size + spacing)
-            self.selector_scroll_offset = max(-max_scroll, min(self.selector_scroll_offset, 0))
-        elif gestures['swipe_down']:
+        if not self.showing_selector and gestures['swipe_down']:
             logger.info("Swipe down detected, returning to dashboard")
             self.screen_manager.switch_screen('dashboard')
     
@@ -122,80 +125,130 @@ class TickerScreen(BaseScreen):
         if not self.showing_selector:
             return
             
-        # Define sizes
-        current_logo_size = 80  # Larger size for current ticker
-        other_logo_size = 50    # Normal size for other tickers
-        spacing = 30
+        # Create semi-transparent dark overlay for background
+        overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 230))  # Very dark, almost black background
+        self.display.surface.blit(overlay, (0, 0))
         
-        center_y = self.height // 2  # Vertical center of screen
-        center_x = self.width // 2   # Horizontal center of screen
+        # Define sizes and spacing
+        logo_size = 60
+        spacing = 25
+        section_spacing = 60
         
-        # Draw all logos
-        for i in range(len(self.coins)):
-            # Calculate position and size for this logo
-            is_current = (i == self.current_index)
-            logo_size = current_logo_size if is_current else other_logo_size
+        # Split coins into crypto and stocks
+        cryptos = [coin for coin in self.coins if coin['type'] != 'stock']
+        stocks = [coin for coin in self.coins if coin['type'] == 'stock']
+        
+        # Calculate layout
+        crypto_section_y = self.height * 0.25  # Start crypto section at 25% of screen height
+        stock_section_y = self.height * 0.65   # Start stock section at 65% of screen height
+        
+        # Draw section headers
+        header_font = self.display.get_title_font('md', 'bold')
+        label_font = self.display.get_text_font('sm', 'regular')
+        
+        # Crypto section
+        if cryptos:
+            # Draw "CRYPTO" header
+            header_surface = header_font.render("CRYPTO", True, AppConfig.WHITE)
+            header_rect = header_surface.get_rect(
+                left=40,
+                bottom=crypto_section_y - 20
+            )
+            self.display.surface.blit(header_surface, header_rect)
             
-            # Calculate position relative to center
-            offset_from_current = i - self.current_index
+            # Draw crypto count
+            count_text = f"{len(cryptos)} {'asset' if len(cryptos) == 1 else 'assets'}"
+            count_surface = label_font.render(count_text, True, (128, 128, 128))
+            count_rect = count_surface.get_rect(
+                left=header_rect.right + 15,
+                centery=header_rect.centery
+            )
+            self.display.surface.blit(count_surface, count_rect)
             
-            # Position logos with current one in center
-            if offset_from_current < 0:
-                # Logos to the left of current
-                cumulative_width = sum([other_logo_size + spacing for _ in range(abs(offset_from_current))])
-                logo_x = center_x - (current_logo_size // 2) - spacing - cumulative_width
-            elif offset_from_current > 0:
-                # Logos to the right of current
-                cumulative_width = sum([other_logo_size + spacing for _ in range(offset_from_current)])
-                logo_x = center_x + (current_logo_size // 2) + spacing + cumulative_width - other_logo_size
-            else:
-                # Current logo (centered)
-                logo_x = center_x - (current_logo_size // 2)
+            # Draw crypto logos
+            row_width = self.width - 80  # 40px padding on each side
+            logos_per_row = max(1, (row_width + spacing) // (logo_size + spacing))
             
-            # Apply scroll offset
-            logo_x += self.selector_scroll_offset
-            
-            # Only draw if visible on screen
-            if -logo_size <= logo_x <= self.width:
-                # Calculate y position (center vertically)
-                logo_y = center_y - logo_size // 2
+            for i, coin in enumerate(cryptos):
+                row = i // logos_per_row
+                col = i % logos_per_row
                 
-                logo_path = os.path.join(AppConfig.CACHE_DIR, f"{self.coins[i]['symbol'].lower()}_logo.png")
+                x = 40 + col * (logo_size + spacing)
+                y = crypto_section_y + row * (logo_size + spacing)
                 
-                if os.path.exists(logo_path):
-                    try:
-                        logo = pygame.image.load(logo_path)
-                        logo = pygame.transform.scale(logo, (logo_size, logo_size))
-                        logo_rect = logo.get_rect(topleft=(logo_x, logo_y))
-                        
-                        # Add subtle glow effect for current ticker
-                        if is_current:
-                            glow_surface = pygame.Surface((logo_size + 20, logo_size + 20), pygame.SRCALPHA)
-                            glow_rect = glow_surface.get_rect(center=(logo_size//2 + 10, logo_size//2 + 10))
-                            
-                            # Draw multiple circles for glow effect
-                            for radius in range(10, 0, -2):
-                                alpha = int(100 * (radius / 10))
-                                pygame.draw.circle(glow_surface, (255, 255, 255, alpha), glow_rect.center, logo_size//2 + radius)
-                            
-                            # Position and draw glow
-                            glow_pos = (logo_x - 10, logo_y - 10)
-                            self.display.surface.blit(glow_surface, glow_pos)
-                        
-                        self.display.surface.blit(logo, logo_rect)
-                        
-                        # Draw symbol below logo for current ticker
-                        if is_current:
-                            symbol_font = self.display.get_text_font('md', 'bold')
-                            symbol_surface = symbol_font.render(self.coins[i]['symbol'].upper(), True, AppConfig.WHITE)
-                            symbol_rect = symbol_surface.get_rect(
-                                centerx=logo_rect.centerx,
-                                top=logo_rect.bottom + 10
-                            )
-                            self.display.surface.blit(symbol_surface, symbol_rect)
-                            
-                    except Exception as e:
-                        logger.error(f"Error loading logo for selector: {e}")
+                self._draw_selector_item(coin, x, y, logo_size)
+        
+        # Stock section
+        if stocks:
+            # Draw "STOCKS" header
+            header_surface = header_font.render("STOCKS", True, AppConfig.WHITE)
+            header_rect = header_surface.get_rect(
+                left=40,
+                bottom=stock_section_y - 20
+            )
+            self.display.surface.blit(header_surface, header_rect)
+            
+            # Draw stock count
+            count_text = f"{len(stocks)} {'asset' if len(stocks) == 1 else 'assets'}"
+            count_surface = label_font.render(count_text, True, (128, 128, 128))
+            count_rect = count_surface.get_rect(
+                left=header_rect.right + 15,
+                centery=header_rect.centery
+            )
+            self.display.surface.blit(count_surface, count_rect)
+            
+            # Draw stock logos
+            row_width = self.width - 80  # 40px padding on each side
+            logos_per_row = max(1, (row_width + spacing) // (logo_size + spacing))
+            
+            for i, coin in enumerate(stocks):
+                row = i // logos_per_row
+                col = i % logos_per_row
+                
+                x = 40 + col * (logo_size + spacing)
+                y = stock_section_y + row * (logo_size + spacing)
+                
+                self._draw_selector_item(coin, x, y, logo_size)
+    
+    def _draw_selector_item(self, coin, x, y, size):
+        """Draw a single item in the selector with logo and hover effects."""
+        is_current = coin == self.coins[self.current_index]
+        logo_path = os.path.join(AppConfig.CACHE_DIR, f"{coin['symbol'].lower()}_logo.png")
+        
+        if os.path.exists(logo_path):
+            try:
+                # Create background for logo
+                bg_rect = pygame.Rect(x, y, size, size)
+                if is_current:
+                    # Draw glow effect for current ticker
+                    glow_surface = pygame.Surface((size + 20, size + 20), pygame.SRCALPHA)
+                    for radius in range(10, 0, -2):
+                        alpha = int(60 * (radius / 10))
+                        pygame.draw.circle(glow_surface, (255, 255, 255, alpha), 
+                                        (size//2 + 10, size//2 + 10), size//2 + radius)
+                    self.display.surface.blit(glow_surface, (x - 10, y - 10))
+                
+                # Draw subtle background for logo
+                pygame.draw.rect(self.display.surface, (30, 30, 30), bg_rect, border_radius=15)
+                
+                # Draw logo
+                logo = pygame.image.load(logo_path)
+                logo = pygame.transform.scale(logo, (size - 20, size - 20))
+                logo_rect = logo.get_rect(center=bg_rect.center)
+                self.display.surface.blit(logo, logo_rect)
+                
+                # Draw symbol below logo
+                symbol_font = self.display.get_text_font('sm', 'regular')
+                symbol_surface = symbol_font.render(coin['symbol'].upper(), True, (200, 200, 200))
+                symbol_rect = symbol_surface.get_rect(
+                    centerx=bg_rect.centerx,
+                    top=bg_rect.bottom + 8
+                )
+                self.display.surface.blit(symbol_surface, symbol_rect)
+                
+            except Exception as e:
+                logger.error(f"Error drawing selector item: {e}")
     
     def draw(self) -> None:
         """Draw the ticker screen."""
