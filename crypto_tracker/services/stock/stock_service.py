@@ -2,7 +2,7 @@
 
 import yfinance as yf
 import requests
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Tuple
 from ...utils.logger import get_logger
 from ...config.settings import AppConfig
 from .stock_storage import StockStorage
@@ -36,14 +36,59 @@ class StockService:
             logger.error(f"Error downloading logo for {symbol}: {e}")
             return ""
     
-    def search_stock(self, symbol: str) -> Optional[Dict]:
+    def get_available_exchanges(self, symbol: str) -> List[Dict[str, str]]:
         """
-        Search for a stock by symbol.
+        Get available exchanges for a stock symbol.
+        Returns a list of dictionaries with exchange info.
+        """
+        try:
+            logger.info(f"Getting available exchanges for symbol: {symbol}")
+            exchanges = []
+            
+            # Common exchanges to check
+            suffixes = [
+                ('', 'NYSE/NASDAQ'),  # No suffix for US markets
+                ('.L', 'London Stock Exchange'),
+                ('.TO', 'Toronto Stock Exchange'),
+                ('.F', 'Frankfurt Stock Exchange'),
+                ('.PA', 'Euronext Paris'),
+                ('.MI', 'Borsa Italiana'),
+                ('.DE', 'Deutsche Börse'),
+                ('.AX', 'Australian Securities Exchange'),
+                ('.HK', 'Hong Kong Stock Exchange'),
+                ('.T', 'Tokyo Stock Exchange')
+            ]
+            
+            for suffix, exchange_name in suffixes:
+                test_symbol = f"{symbol}{suffix}"
+                ticker = yf.Ticker(test_symbol)
+                try:
+                    info = ticker.info
+                    if info and 'regularMarketPrice' in info:
+                        exchanges.append({
+                            'symbol': test_symbol,
+                            'name': exchange_name,
+                            'suffix': suffix
+                        })
+                except:
+                    continue
+            
+            logger.info(f"Found {len(exchanges)} exchanges for {symbol}")
+            return exchanges
+            
+        except Exception as e:
+            logger.error(f"Error getting exchanges: {e}")
+            return []
+    
+    def search_stock(self, symbol: str, exchange_suffix: str = '') -> Optional[Dict]:
+        """
+        Search for a stock by symbol and exchange.
         Returns stock info if found, otherwise None.
         """
         try:
-            logger.info(f"Searching for stock with symbol: {symbol}")
-            ticker = yf.Ticker(symbol)
+            full_symbol = f"{symbol}{exchange_suffix}"
+            logger.info(f"Searching for stock with symbol: {full_symbol}")
+            ticker = yf.Ticker(full_symbol)
             
             try:
                 info = ticker.info
@@ -63,17 +108,18 @@ class StockService:
                     if logo_url and logo_url.startswith('http'):
                         self._download_logo(symbol, logo_url)
                     
-                    logger.info(f"Found stock: {symbol}")
+                    logger.info(f"Found stock: {full_symbol}")
                     return {
-                        'id': symbol,  # Use symbol as ID for stocks
-                        'symbol': symbol.upper(),
+                        'id': full_symbol,  # Use full symbol as ID for stocks
+                        'symbol': full_symbol.upper(),
                         'name': info.get('longName', info.get('shortName', symbol)),
-                        'type': 'stock'  # Mark as stock for differentiation
+                        'type': 'stock',  # Mark as stock for differentiation
+                        'exchange_suffix': exchange_suffix  # Store the exchange suffix
                     }
             except Exception as e:
                 logger.error(f"Error getting ticker info: {e}")
             
-            logger.warning(f"No stock found for symbol: {symbol}")
+            logger.warning(f"No stock found for symbol: {full_symbol}")
             return None
             
         except Exception as e:

@@ -17,6 +17,9 @@ class AddTickerScreen(BaseScreen):
         self.background_color = AppConfig.BLACK
         self.error_message = None
         self.is_crypto_mode = True  # Default to crypto mode
+        self.available_exchanges = []  # List of available exchanges for current symbol
+        self.selected_exchange_index = 0  # Currently selected exchange
+        self.showing_exchanges = False  # Whether we're showing the exchange list
         
         # Button dimensions
         self.button_width = AppConfig.BUTTON_WIDTH
@@ -57,6 +60,27 @@ class AddTickerScreen(BaseScreen):
     def _on_text_change(self, text: str):
         """Handle keyboard text changes."""
         self.error_message = None
+        self.available_exchanges = []
+        self.selected_exchange_index = 0
+        self.showing_exchanges = False
+    
+    def search_exchanges(self) -> None:
+        """Search for available exchanges for the current symbol."""
+        symbol = self.keyboard.get_text().strip().upper()
+        if not symbol:
+            self.error_message = "Please enter a symbol"
+            return
+        
+        self.error_message = "Searching exchanges..."
+        self.draw()  # Force redraw to show loading state
+        
+        self.available_exchanges = self.stock_service.get_available_exchanges(symbol)
+        if not self.available_exchanges:
+            self.error_message = f"No exchanges found for {symbol}"
+        else:
+            self.showing_exchanges = True
+            self.selected_exchange_index = 0
+        self.draw()
     
     def add_ticker(self) -> None:
         """Add a new ticker."""
@@ -67,18 +91,44 @@ class AddTickerScreen(BaseScreen):
             return
             
         try:
-            logger.info(f"Attempting to add ticker: {symbol} (Mode: {'Crypto' if self.is_crypto_mode else 'Stock'})")
-            self.error_message = "Searching..."  # Show loading state
-            self.draw()  # Force redraw to show loading state
-            
-            success = self.crypto_manager.add_coin(symbol)
-            if success:
-                logger.info(f"Successfully added ticker: {symbol}")
-                self.screen_manager.switch_screen('settings')
+            if self.is_crypto_mode:
+                logger.info(f"Attempting to add crypto: {symbol}")
+                self.error_message = "Searching..."  # Show loading state
+                self.draw()  # Force redraw to show loading state
+                
+                success = self.crypto_manager.add_coin(symbol)
+                if success:
+                    logger.info(f"Successfully added crypto: {symbol}")
+                    self.screen_manager.switch_screen('settings')
+                else:
+                    self.error_message = f"Could not find {symbol}"
+                    logger.warning(f"Failed to add crypto: {symbol}")
+                    self.draw()  # Force redraw to show error
             else:
-                self.error_message = f"Could not find {symbol}"
-                logger.warning(f"Failed to add ticker: {symbol}")
-                self.draw()  # Force redraw to show error
+                # For stocks, first check if we need to search exchanges
+                if not self.showing_exchanges:
+                    self.search_exchanges()
+                    return
+                
+                # If showing exchanges and we have some available
+                if self.available_exchanges:
+                    exchange = self.available_exchanges[self.selected_exchange_index]
+                    logger.info(f"Attempting to add stock: {symbol} on {exchange['name']}")
+                    self.error_message = "Adding..."
+                    self.draw()
+                    
+                    stock_info = self.stock_service.search_stock(symbol, exchange['suffix'])
+                    if stock_info:
+                        stock_data = self.stock_service.get_stock_data(stock_info['id'])
+                        if stock_data and self.stock_service.storage.add_stock(stock_data):
+                            logger.info(f"Successfully added stock: {stock_info['id']}")
+                            self.screen_manager.switch_screen('settings')
+                            return
+                    
+                    self.error_message = f"Could not add {symbol}"
+                    logger.warning(f"Failed to add stock: {symbol}")
+                    self.draw()
+                
         except Exception as e:
             logger.error(f"Error adding ticker: {e}", exc_info=True)
             self.error_message = "Error adding ticker"
@@ -90,7 +140,7 @@ class AddTickerScreen(BaseScreen):
         self.display.surface.fill(self.background_color)
         
         # Draw header
-        header_text = "Add Coin"
+        header_text = "Add Coin" if self.is_crypto_mode else "Add Stock"
         header_font = self.display.get_title_font('md', 'bold')
         header_surface = header_font.render(header_text, True, AppConfig.WHITE)
         header_rect = header_surface.get_rect(
@@ -147,6 +197,57 @@ class AddTickerScreen(BaseScreen):
         toggle_text_rect = toggle_surface.get_rect(center=self.toggle_rect.center)
         self.display.surface.blit(toggle_surface, toggle_text_rect)
         
+        # Draw exchange list if in stock mode and showing exchanges
+        if not self.is_crypto_mode and self.showing_exchanges and self.available_exchanges:
+            exchange_list_rect = pygame.Rect(
+                20,
+                input_box_rect.bottom + 20,
+                self.width - 40,
+                200  # Fixed height for exchange list
+            )
+            
+            # Draw exchange list background
+            pygame.draw.rect(
+                self.display.surface,
+                (30, 30, 30),  # Slightly darker than input box
+                exchange_list_rect,
+                border_radius=10
+            )
+            
+            # Draw exchanges
+            exchange_font = self.display.get_text_font('md', 'regular')
+            exchange_height = 40
+            visible_exchanges = min(5, len(self.available_exchanges))
+            
+            for i in range(visible_exchanges):
+                exchange = self.available_exchanges[i]
+                is_selected = i == self.selected_exchange_index
+                
+                # Draw selection highlight
+                if is_selected:
+                    highlight_rect = pygame.Rect(
+                        exchange_list_rect.left + 5,
+                        exchange_list_rect.top + (i * exchange_height) + 5,
+                        exchange_list_rect.width - 10,
+                        exchange_height - 10
+                    )
+                    pygame.draw.rect(
+                        self.display.surface,
+                        (45, 45, 45),  # Highlight color
+                        highlight_rect,
+                        border_radius=8
+                    )
+                
+                # Draw exchange text
+                exchange_text = f"{exchange['symbol']} - {exchange['name']}"
+                text_color = AppConfig.WHITE if is_selected else (200, 200, 200)
+                exchange_surface = exchange_font.render(exchange_text, True, text_color)
+                exchange_text_rect = exchange_surface.get_rect(
+                    left=exchange_list_rect.left + 20,
+                    centery=exchange_list_rect.top + (i * exchange_height) + (exchange_height // 2)
+                )
+                self.display.surface.blit(exchange_surface, exchange_text_rect)
+        
         # Draw keyboard
         self.keyboard.draw()
         
@@ -177,14 +278,14 @@ class AddTickerScreen(BaseScreen):
         cancel_text_rect = cancel_surface.get_rect(center=self.cancel_rect.center)
         self.display.surface.blit(cancel_surface, cancel_text_rect)
         
-        # Save button
+        # Save/Next button
         pygame.draw.rect(
             self.display.surface,
             button_color,
             self.save_rect,
             border_radius=corner_radius
         )
-        save_text = "Save"
+        save_text = "Save" if self.is_crypto_mode or (not self.is_crypto_mode and self.showing_exchanges) else "Next"
         save_font = self.display.get_text_font('md', 'regular')
         save_surface = save_font.render(save_text, True, AppConfig.WHITE)
         save_text_rect = save_surface.get_rect(center=self.save_rect.center)
@@ -205,6 +306,8 @@ class AddTickerScreen(BaseScreen):
             # Check toggle button first
             if self.toggle_rect.collidepoint(x, y):
                 self.is_crypto_mode = not self.is_crypto_mode
+                self.showing_exchanges = False
+                self.available_exchanges = []
                 logger.info(f"Switched to {'Crypto' if self.is_crypto_mode else 'Stock'} mode")
                 return
             
@@ -216,5 +319,21 @@ class AddTickerScreen(BaseScreen):
                 logger.info("Cancel button clicked")
                 self.screen_manager.switch_screen('settings')
             elif self.save_rect.collidepoint(x, y):
-                logger.info("Save button clicked")
-                self.add_ticker() 
+                logger.info("Save/Next button clicked")
+                self.add_ticker()
+            
+            # Handle exchange selection if showing exchanges
+            elif not self.is_crypto_mode and self.showing_exchanges and self.available_exchanges:
+                exchange_list_top = self.toggle_rect.bottom + 20
+                exchange_height = 40
+                for i in range(min(5, len(self.available_exchanges))):
+                    exchange_rect = pygame.Rect(
+                        20,
+                        exchange_list_top + (i * exchange_height),
+                        self.width - 40,
+                        exchange_height
+                    )
+                    if exchange_rect.collidepoint(x, y):
+                        self.selected_exchange_index = i
+                        self.draw()
+                        break 
