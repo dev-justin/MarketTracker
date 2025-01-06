@@ -19,6 +19,16 @@ class DashboardScreen(BaseScreen):
         self.background_color = (13, 13, 13)  # Darker black for more contrast
         self.box_height = 90  # Reduced from 120
         self.box_width = (self.width - 60) // 2  # Two columns with margins
+        
+        # Top movers state
+        self.top_movers = []
+        self.scroll_offset = 0
+        self.last_scroll_time = 0
+        self.scroll_speed = 1  # Pixels per frame
+        self.scroll_pause = 3000  # Pause for 3 seconds when a new item enters
+        self.mover_width = 150  # Width of each mover item
+        self.mover_spacing = 20  # Spacing between movers
+        
         logger.info("DashboardScreen initialized")
     
     def get_dominant_color(self, logo_surface):
@@ -116,6 +126,99 @@ class DashboardScreen(BaseScreen):
             logger.info("Swipe down detected, switching to ticker")
             self.screen_manager.switch_screen('ticker')
     
+    def update_top_movers(self):
+        """Update the list of top movers."""
+        coins = self.crypto_manager.get_tracked_coins()
+        if not coins:
+            return
+        
+        # Sort by absolute price change
+        sorted_coins = sorted(coins, key=lambda x: abs(x.get('price_change_24h', 0)), reverse=True)
+        self.top_movers = sorted_coins[:5]  # Get top 5 movers
+    
+    def draw_top_movers(self):
+        """Draw the scrolling top movers section."""
+        if not self.top_movers:
+            self.update_top_movers()
+            if not self.top_movers:
+                return
+        
+        # Calculate dimensions
+        section_height = 80
+        section_y = 120  # Position below time display
+        
+        # Draw section header
+        header_font = self.display.get_text_font('md', 'bold')
+        header_surface = header_font.render("TOP MOVERS", True, (150, 150, 150))
+        header_rect = header_surface.get_rect(left=20, bottom=section_y - 10)
+        self.display.surface.blit(header_surface, header_rect)
+        
+        # Create clipping rect for smooth scrolling
+        scroll_area = pygame.Rect(0, section_y, self.width, section_height)
+        self.display.surface.set_clip(scroll_area)
+        
+        # Update scroll position
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_scroll_time > self.scroll_pause:
+            self.scroll_offset -= self.scroll_speed
+            # Reset scroll when all items have scrolled through
+            total_width = len(self.top_movers) * (self.mover_width + self.mover_spacing)
+            if abs(self.scroll_offset) >= self.mover_width + self.mover_spacing:
+                # Move first item to the end
+                self.top_movers.append(self.top_movers.pop(0))
+                self.scroll_offset = 0
+                self.last_scroll_time = current_time
+        
+        # Draw each mover
+        for i, coin in enumerate(self.top_movers):
+            x = 20 + i * (self.mover_width + self.mover_spacing) + self.scroll_offset
+            
+            # Only draw if visible
+            if -self.mover_width <= x <= self.width:
+                # Draw background
+                mover_rect = pygame.Rect(x, section_y, self.mover_width, section_height)
+                pygame.draw.rect(self.display.surface, (25, 25, 25), mover_rect, border_radius=15)
+                
+                # Draw logo
+                logo_size = 40
+                logo_path = os.path.join(AppConfig.CACHE_DIR, f"{coin['symbol'].lower()}_logo.png")
+                if os.path.exists(logo_path):
+                    try:
+                        logo = pygame.image.load(logo_path)
+                        logo = pygame.transform.scale(logo, (logo_size, logo_size))
+                        logo_rect = logo.get_rect(
+                            left=x + 15,
+                            centery=section_y + section_height//2
+                        )
+                        self.display.surface.blit(logo, logo_rect)
+                        
+                        # Draw symbol
+                        symbol_font = self.display.get_text_font('md', 'bold')
+                        symbol_surface = symbol_font.render(coin['symbol'].upper(), True, AppConfig.WHITE)
+                        symbol_rect = symbol_surface.get_rect(
+                            left=logo_rect.right + 15,
+                            top=section_y + 15
+                        )
+                        self.display.surface.blit(symbol_surface, symbol_rect)
+                        
+                        # Draw change percentage
+                        change_24h = coin['price_change_24h']
+                        change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
+                        change_text = f"{change_24h:+.1f}%"
+                        change_font = self.display.get_text_font('md', 'regular')
+                        change_surface = change_font.render(change_text, True, change_color)
+                        change_rect = change_surface.get_rect(
+                            left=logo_rect.right + 15,
+                            top=symbol_rect.bottom + 5
+                        )
+                        self.display.surface.blit(change_surface, change_rect)
+                        
+                    except Exception as e:
+                        logger.error(f"Error drawing mover: {e}")
+        
+        # Reset clip
+        self.display.surface.set_clip(None)
+    
     def draw(self) -> None:
         """Draw the dashboard screen."""
         # Fill background
@@ -139,6 +242,9 @@ class DashboardScreen(BaseScreen):
         time_rect = time_surface.get_rect(centerx=self.width // 2, top=date_rect.bottom + 10)
         self.display.surface.blit(time_surface, time_rect)
         
+        # Draw top movers section
+        self.draw_top_movers()
+        
         # Get favorite coins
         coins = self.crypto_manager.get_tracked_coins()
         favorite_coins = [coin for coin in coins if coin.get('favorite', False)]
@@ -146,7 +252,7 @@ class DashboardScreen(BaseScreen):
         if favorite_coins:
             # Calculate grid layout
             margin = 20
-            start_y = time_rect.bottom + 20  # Start closer to the time display
+            start_y = time_rect.bottom + 140  # Start below top movers section
             
             # Draw favorite coins in a grid
             for i, coin in enumerate(favorite_coins):
