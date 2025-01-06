@@ -1,7 +1,8 @@
-"""Central manager for cryptocurrency operations."""
+"""Central manager for cryptocurrency and stock operations."""
 
 from typing import Dict, List, Optional
 from .coingecko_service import CoinGeckoService
+from ..stock.stock_service import StockService
 from .storage import CryptoStorage
 from ...utils.logger import get_logger
 import threading
@@ -11,8 +12,8 @@ logger = get_logger(__name__)
 
 class CryptoManager:
     """
-    Central manager for cryptocurrency operations.
-    Coordinates between CoinGecko API and local storage.
+    Central manager for cryptocurrency and stock operations.
+    Coordinates between CoinGecko API, Yahoo Finance, and local storage.
     """
     
     _instance = None
@@ -28,6 +29,7 @@ class CryptoManager:
     def __init__(self):
         if not hasattr(self, 'initialized'):
             self.coingecko = CoinGeckoService()
+            self.stock_service = StockService()
             self.storage = CryptoStorage()
             self.price_update_thread = None
             self.should_update = True
@@ -55,55 +57,57 @@ class CryptoManager:
         """Background loop to update prices."""
         while self.should_update:
             try:
-                tracked_coins = self.storage.get_all_coins()
-                for coin in tracked_coins:
-                    updated_data = self.coingecko.get_coin_data(coin['id'], force_refresh=True)
+                tracked_items = self.storage.get_all_coins()
+                for item in tracked_items:
+                    if item.get('type') == 'stock':
+                        # Update stock data
+                        updated_data = self.stock_service.get_stock_data(item['id'], force_refresh=True)
+                    else:
+                        # Update crypto data
+                        updated_data = self.coingecko.get_coin_data(item['id'], force_refresh=True)
+                    
                     if updated_data:
                         # Preserve favorite state and other stored data while updating prices
-                        favorite_state = coin.get('favorite', False)
-                        coin.update(updated_data)
-                        coin['favorite'] = favorite_state
+                        favorite_state = item.get('favorite', False)
+                        item.update(updated_data)
+                        item['favorite'] = favorite_state
+                
                 # Save updated data
                 self.storage._save_tracked_coins()
-                logger.debug("Updated prices for all tracked coins")
+                logger.debug("Updated prices for all tracked items")
             except Exception as e:
                 logger.error(f"Error updating prices: {e}")
             time.sleep(60)  # Wait for 1 minute
     
     def add_coin(self, symbol: str) -> bool:
         """
-        Add a new coin to track.
+        Add a new coin or stock to track.
         Handles both API lookup and storage.
         """
         try:
-            logger.info(f"Starting add_coin process for symbol: {symbol}")
+            logger.info(f"Starting add process for symbol: {symbol}")
             
-            # Search for coin
+            # Try as cryptocurrency first
             coin_info = self.coingecko.search_coin(symbol)
-            if not coin_info:
-                logger.warning(f"Coin not found in search: {symbol}")
-                return False
+            if coin_info:
+                logger.info(f"Found as cryptocurrency: {symbol}")
+                coin_data = self.coingecko.get_coin_data(coin_info['id'])
+                if coin_data:
+                    return self.storage.add_coin(coin_data)
             
-            logger.info(f"Found coin info: {coin_info}")
+            # If not found as crypto, try as stock
+            stock_info = self.stock_service.search_stock(symbol)
+            if stock_info:
+                logger.info(f"Found as stock: {symbol}")
+                stock_data = self.stock_service.get_stock_data(symbol)
+                if stock_data:
+                    return self.storage.add_coin(stock_data)
             
-            # Get full coin data
-            coin_data = self.coingecko.get_coin_data(coin_info['id'])
-            if not coin_data:
-                logger.warning(f"Could not fetch coin data for: {symbol} (id: {coin_info['id']})")
-                return False
-            
-            logger.info(f"Successfully fetched coin data for {symbol}")
-            
-            # Store coin
-            storage_success = self.storage.add_coin(coin_data)
-            if storage_success:
-                logger.info(f"Successfully stored coin data for {symbol}")
-            else:
-                logger.warning(f"Failed to store coin data for {symbol}")
-            return storage_success
+            logger.warning(f"Symbol not found as either crypto or stock: {symbol}")
+            return False
             
         except Exception as e:
-            logger.error(f"Error in add_coin process: {e}", exc_info=True)
+            logger.error(f"Error in add process: {e}", exc_info=True)
             return False
     
     def remove_coin(self, coin_id: str) -> bool:
