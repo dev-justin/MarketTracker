@@ -80,6 +80,40 @@ class AddTickerScreen(BaseScreen):
         )
         self.display.surface.blit(header_surface, header_rect)
         
+        # Draw input box
+        input_box_height = 50
+        input_box_width = self.width - 40  # 20px padding on each side
+        input_box_rect = pygame.Rect(
+            20,
+            header_rect.bottom + 30,
+            input_box_width,
+            input_box_height
+        )
+        
+        # Draw input box background
+        pygame.draw.rect(
+            self.display.surface,
+            (45, 45, 45),  # Dark gray background
+            input_box_rect,
+            border_radius=10
+        )
+        
+        # Draw current input text
+        input_text = self.keyboard.get_text().upper()
+        if not input_text:
+            # Draw placeholder
+            input_text = "Enter coin symbol"
+            text_color = (128, 128, 128)  # Gray for placeholder
+        else:
+            text_color = AppConfig.WHITE
+        
+        input_font = self.display.get_text_font('lg', 'regular')
+        input_surface = input_font.render(input_text, True, text_color)
+        input_text_rect = input_surface.get_rect(
+            center=input_box_rect.center
+        )
+        self.display.surface.blit(input_surface, input_text_rect)
+        
         # Draw keyboard
         self.keyboard.draw()
         
@@ -134,6 +168,10 @@ class AddTickerScreen(BaseScreen):
             self.screen_manager.switch_screen('settings')
         elif event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
             x, y = self._scale_touch_input(event)
+            
+            # Check keyboard input first
+            if self.keyboard.handle_input(x, y):
+                return
             
             if self.cancel_rect.collidepoint(x, y):
                 logger.info("Cancel button clicked")
