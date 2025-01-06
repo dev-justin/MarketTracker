@@ -76,23 +76,34 @@ class CryptoManager:
         Handles both API lookup and storage.
         """
         try:
+            logger.info(f"Starting add_coin process for symbol: {symbol}")
+            
             # Search for coin
             coin_info = self.coingecko.search_coin(symbol)
             if not coin_info:
-                logger.warning(f"Coin not found: {symbol}")
+                logger.warning(f"Coin not found in search: {symbol}")
                 return False
+            
+            logger.info(f"Found coin info: {coin_info}")
             
             # Get full coin data
             coin_data = self.coingecko.get_coin_data(coin_info['id'])
             if not coin_data:
-                logger.warning(f"Could not fetch coin data: {symbol}")
+                logger.warning(f"Could not fetch coin data for: {symbol} (id: {coin_info['id']})")
                 return False
             
+            logger.info(f"Successfully fetched coin data for {symbol}")
+            
             # Store coin
-            return self.storage.add_coin(coin_data)
+            storage_success = self.storage.add_coin(coin_data)
+            if storage_success:
+                logger.info(f"Successfully stored coin data for {symbol}")
+            else:
+                logger.warning(f"Failed to store coin data for {symbol}")
+            return storage_success
             
         except Exception as e:
-            logger.error(f"Error adding coin: {e}")
+            logger.error(f"Error in add_coin process: {e}", exc_info=True)
             return False
     
     def remove_coin(self, coin_id: str) -> bool:

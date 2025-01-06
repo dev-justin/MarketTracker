@@ -25,9 +25,13 @@ class CoinGeckoService:
         Returns coin info if found, otherwise None.
         """
         try:
+            logger.info(f"Searching for coin with symbol: {symbol}")
             search_results = self.coingecko.search(symbol.lower())
+            logger.debug(f"Search results: {search_results}")
+            
             for coin in search_results.get('coins', []):
                 if coin['symbol'].lower() == symbol.lower():
+                    logger.info(f"Found exact match for {symbol}: {coin['id']}")
                     return {
                         'id': coin['id'],
                         'symbol': coin['symbol'].upper(),
@@ -37,7 +41,7 @@ class CoinGeckoService:
             return None
             
         except Exception as e:
-            logger.error(f"Error searching coin: {e}")
+            logger.error(f"Error searching coin: {e}", exc_info=True)
             return None
     
     def get_coin_data(self, coin_id: str, force_refresh: bool = False) -> Optional[Dict]:
@@ -46,6 +50,8 @@ class CoinGeckoService:
         Uses caching to prevent excessive API calls.
         """
         try:
+            logger.info(f"Getting coin data for {coin_id} (force_refresh: {force_refresh})")
+            
             # Check cache first if not forcing refresh
             if not force_refresh and coin_id in self.cache:
                 cache_entry = self.cache[coin_id]
@@ -54,6 +60,7 @@ class CoinGeckoService:
                     return cache_entry['data']
             
             # Fetch fresh data
+            logger.debug(f"Fetching fresh data from CoinGecko for {coin_id}")
             coin_data = self.coingecko.get_coin_by_id(
                 coin_id,
                 localization=False,
@@ -63,6 +70,12 @@ class CoinGeckoService:
                 developer_data=False,
                 sparkline=True
             )
+            
+            if not coin_data:
+                logger.error(f"No data returned from CoinGecko for {coin_id}")
+                return None
+                
+            logger.debug(f"Raw coin data received: {coin_data.keys()}")
             
             # Process and cache the data
             processed_data = {
@@ -82,11 +95,11 @@ class CoinGeckoService:
                 'timestamp': time.time()
             }
             
-            logger.info(f"Fetched fresh data for {coin_id}")
+            logger.info(f"Successfully fetched and processed data for {coin_id}")
             return processed_data
             
         except Exception as e:
-            logger.error(f"Error fetching coin data for {coin_id}: {e}")
+            logger.error(f"Error fetching coin data for {coin_id}: {e}", exc_info=True)
             return None
     
     def clear_cache(self, coin_id: Optional[str] = None):

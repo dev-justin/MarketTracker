@@ -52,18 +52,26 @@ class AddTickerScreen(BaseScreen):
         symbol = self.keyboard.get_text().strip().upper()
         if not symbol:
             self.error_message = "Please enter a symbol"
+            logger.warning("Attempted to add ticker with empty symbol")
             return
             
         try:
+            logger.info(f"Attempting to add ticker: {symbol}")
+            self.error_message = "Searching..."  # Show loading state
+            self.draw()  # Force redraw to show loading state
+            
             success = self.crypto_manager.add_coin(symbol)
             if success:
                 logger.info(f"Successfully added ticker: {symbol}")
                 self.screen_manager.switch_screen('settings')
             else:
                 self.error_message = f"Could not find {symbol}"
+                logger.warning(f"Failed to add ticker: {symbol}")
+                self.draw()  # Force redraw to show error
         except Exception as e:
-            logger.error(f"Error adding ticker: {e}")
+            logger.error(f"Error adding ticker: {e}", exc_info=True)
             self.error_message = "Error adding ticker"
+            self.draw()  # Force redraw to show error
     
     def draw(self) -> None:
         """Draw the add ticker screen."""
