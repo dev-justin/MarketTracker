@@ -48,10 +48,11 @@ class StockService:
             # Check US markets first (NYSE/NASDAQ)
             try:
                 ticker = yf.Ticker(symbol)
-                info = ticker.info
-                if info and ('regularMarketPrice' in info or 'currentPrice' in info):
-                    # Get the actual exchange from info
-                    exchange_name = info.get('exchange', 'NYSE/NASDAQ')
+                info = ticker.fast_info
+                if hasattr(info, 'last_price') and info.last_price is not None:
+                    # Get detailed info only if basic check passes
+                    full_info = ticker.info
+                    exchange_name = full_info.get('exchange', 'NYSE/NASDAQ')
                     if exchange_name == 'NMS':
                         exchange_name = 'NASDAQ'
                     elif exchange_name in ['NYQ', 'NGM']:
@@ -64,6 +65,11 @@ class StockService:
                     })
             except Exception as e:
                 logger.debug(f"Error checking US markets: {e}")
+            
+            # If we found a US listing, don't check international exchanges
+            if exchanges:
+                logger.info(f"Found US listing for {symbol}, skipping international exchanges")
+                return exchanges
             
             # Common international exchanges to check
             suffixes = [
@@ -82,13 +88,16 @@ class StockService:
                 try:
                     test_symbol = f"{symbol}{suffix}"
                     ticker = yf.Ticker(test_symbol)
-                    info = ticker.info
-                    if info and ('regularMarketPrice' in info or 'currentPrice' in info):
+                    info = ticker.fast_info
+                    
+                    # Only get full info if basic check passes
+                    if hasattr(info, 'last_price') and info.last_price is not None:
                         exchanges.append({
                             'symbol': test_symbol,
                             'name': exchange_name,
                             'suffix': suffix
                         })
+                        time.sleep(0.1)  # Add small delay between requests
                 except Exception as e:
                     logger.debug(f"Error checking {exchange_name}: {e}")
                     continue
