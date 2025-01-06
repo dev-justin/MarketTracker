@@ -100,29 +100,42 @@ class TickerScreen(BaseScreen):
         other_logo_size = 50    # Normal size for other tickers
         spacing = 30
         
-        # Calculate total width needed
-        total_width = (len(self.coins) - 1) * (other_logo_size + spacing) + current_logo_size
-        start_x = (self.width - total_width) // 2
         center_y = self.height // 2  # Vertical center of screen
+        center_x = self.width // 2   # Horizontal center of screen
         
-        # Draw logos
-        for i, coin in enumerate(self.coins):
+        # Calculate how many tickers we can show on each side of the current ticker
+        visible_on_each_side = 2  # Show 2 tickers on each side of current
+        
+        # Calculate start and end indices for visible tickers
+        start_index = max(0, self.current_index - visible_on_each_side)
+        end_index = min(len(self.coins), self.current_index + visible_on_each_side + 1)
+        
+        # Draw visible logos
+        for i in range(start_index, end_index):
             # Calculate position and size for this logo
             is_current = (i == self.current_index)
             logo_size = current_logo_size if is_current else other_logo_size
             
-            # Calculate x position accounting for different sizes
-            if i < self.current_index:
-                logo_x = start_x + i * (other_logo_size + spacing)
-            elif i == self.current_index:
-                logo_x = start_x + i * (other_logo_size + spacing) - (current_logo_size - other_logo_size) // 2
+            # Calculate position relative to center
+            offset_from_current = i - self.current_index
+            
+            # Position logos with current one in center
+            if offset_from_current < 0:
+                # Logos to the left of current
+                cumulative_width = sum([other_logo_size + spacing for _ in range(abs(offset_from_current))])
+                logo_x = center_x - (current_logo_size // 2) - spacing - cumulative_width
+            elif offset_from_current > 0:
+                # Logos to the right of current
+                cumulative_width = sum([other_logo_size + spacing for _ in range(offset_from_current)])
+                logo_x = center_x + (current_logo_size // 2) + spacing + cumulative_width - other_logo_size
             else:
-                logo_x = start_x + i * (other_logo_size + spacing) + (current_logo_size - other_logo_size)
+                # Current logo (centered)
+                logo_x = center_x - (current_logo_size // 2)
             
             # Calculate y position (center vertically)
             logo_y = center_y - logo_size // 2
             
-            logo_path = os.path.join(AppConfig.CACHE_DIR, f"{coin['symbol'].lower()}_logo.png")
+            logo_path = os.path.join(AppConfig.CACHE_DIR, f"{self.coins[i]['symbol'].lower()}_logo.png")
             
             if os.path.exists(logo_path):
                 try:
@@ -149,7 +162,7 @@ class TickerScreen(BaseScreen):
                     # Draw symbol below logo for current ticker
                     if is_current:
                         symbol_font = self.display.get_text_font('md', 'bold')
-                        symbol_surface = symbol_font.render(coin['symbol'].upper(), True, AppConfig.WHITE)
+                        symbol_surface = symbol_font.render(self.coins[i]['symbol'].upper(), True, AppConfig.WHITE)
                         symbol_rect = symbol_surface.get_rect(
                             centerx=logo_rect.centerx,
                             top=logo_rect.bottom + 10
