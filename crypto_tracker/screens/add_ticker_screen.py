@@ -198,18 +198,14 @@ class AddTickerScreen(BaseScreen):
         toggle_text_rect = toggle_surface.get_rect(center=self.toggle_rect.center)
         self.display.surface.blit(toggle_surface, toggle_text_rect)
         
-        # Calculate keyboard position
-        keyboard_height = self.height // 2  # Assuming keyboard takes up half the screen
-        keyboard_y = self.height - keyboard_height
-        
         # Draw exchange list if in stock mode and showing exchanges
         if not self.is_crypto_mode and self.showing_exchanges and self.available_exchanges:
-            exchange_list_height = min(200, keyboard_y - input_box_rect.bottom - 40)  # Limit height to available space
+            # Use full height for exchange list when showing exchanges
             exchange_list_rect = pygame.Rect(
                 20,
                 input_box_rect.bottom + 20,
                 self.width - 40,
-                exchange_list_height
+                self.height - input_box_rect.bottom - 100  # Leave space for buttons at bottom
             )
             
             # Draw exchange list background
@@ -222,8 +218,8 @@ class AddTickerScreen(BaseScreen):
             
             # Draw exchanges
             exchange_font = self.display.get_text_font('md', 'regular')
-            exchange_height = min(40, exchange_list_height // 5)  # Adjust height based on available space
-            visible_exchanges = min(5, len(self.available_exchanges))
+            exchange_height = 60  # Make items bigger since we have more space
+            visible_exchanges = min(len(self.available_exchanges), (exchange_list_rect.height - 20) // exchange_height)
             
             for i in range(visible_exchanges):
                 exchange = self.available_exchanges[i]
@@ -254,8 +250,9 @@ class AddTickerScreen(BaseScreen):
                 )
                 self.display.surface.blit(exchange_surface, exchange_text_rect)
         
-        # Draw keyboard at the bottom
-        self.keyboard.draw()
+        # Draw keyboard only if not showing exchanges
+        if not self.showing_exchanges:
+            self.keyboard.draw()
         
         # Draw error message if any
         if self.error_message:
@@ -263,7 +260,7 @@ class AddTickerScreen(BaseScreen):
             error_surface = error_font.render(self.error_message, True, AppConfig.RED)
             error_rect = error_surface.get_rect(
                 centerx=self.width // 2,
-                bottom=keyboard_y - 10  # Position above keyboard
+                bottom=self.height - 80  # Position above buttons
             )
             self.display.surface.blit(error_surface, error_rect)
         
@@ -317,8 +314,8 @@ class AddTickerScreen(BaseScreen):
                 logger.info(f"Switched to {'Crypto' if self.is_crypto_mode else 'Stock'} mode")
                 return
             
-            # Check keyboard input next
-            if self.keyboard.handle_input(x, y):
+            # Check keyboard input only if not showing exchanges
+            if not self.showing_exchanges and self.keyboard.handle_input(x, y):
                 return
             
             if self.cancel_rect.collidepoint(x, y):
@@ -331,8 +328,8 @@ class AddTickerScreen(BaseScreen):
             # Handle exchange selection if showing exchanges
             elif not self.is_crypto_mode and self.showing_exchanges and self.available_exchanges:
                 exchange_list_top = self.toggle_rect.bottom + 20
-                exchange_height = 40
-                for i in range(min(5, len(self.available_exchanges))):
+                exchange_height = 60  # Match the height in draw method
+                for i in range(min(len(self.available_exchanges), (self.height - exchange_list_top - 100) // exchange_height)):
                     exchange_rect = pygame.Rect(
                         20,
                         exchange_list_top + (i * exchange_height),
