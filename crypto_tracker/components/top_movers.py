@@ -55,7 +55,8 @@ class TopMovers:
         self.display.surface.blit(header_surface, header_rect)
         
         # Create clipping rect for smooth scrolling
-        scroll_area = pygame.Rect(0, self.section_y, self.display.width, self.section_height)
+        display_width = self.display.surface.get_width()
+        scroll_area = pygame.Rect(0, self.section_y, display_width, self.section_height)
         self.display.surface.set_clip(scroll_area)
         
         # Update scroll position
