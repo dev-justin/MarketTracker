@@ -58,6 +58,14 @@ class AddTickerScreen(BaseScreen):
         
         logger.info("AddTickerScreen initialized")
     
+    def _reset_state(self):
+        """Reset the screen state."""
+        self.keyboard.set_text("")
+        self.error_message = None
+        self.showing_exchanges = False
+        self.available_exchanges = []
+        self.selected_exchange_index = 0
+    
     def _on_text_change(self, text: str):
         """Handle keyboard text changes."""
         self.error_message = None
@@ -100,6 +108,7 @@ class AddTickerScreen(BaseScreen):
                 success = self.crypto_manager.add_coin(symbol)
                 if success:
                     logger.info(f"Successfully added crypto: {symbol}")
+                    self._reset_state()
                     self.screen_manager.switch_screen('settings')
                 else:
                     self.error_message = f"Could not find {symbol}"
@@ -123,6 +132,7 @@ class AddTickerScreen(BaseScreen):
                         stock_data = self.stock_service.get_stock_data(stock_info['id'])
                         if stock_data and self.stock_service.storage.add_stock(stock_data):
                             logger.info(f"Successfully added stock: {stock_info['id']}")
+                            self._reset_state()
                             self.screen_manager.switch_screen('settings')
                             return
                     
