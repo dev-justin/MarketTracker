@@ -101,9 +101,9 @@ class StockService:
                 logger.error(f"No price data returned from Yahoo Finance for {symbol}")
                 return None
             
-            # Get historical data for sparkline (7 days, 1-hour intervals)
-            # Try to get more data points by extending the period and adjusting interval
-            hist = ticker.history(period='7d', interval='30m')  # Changed to 30-minute intervals
+            # Get historical data for sparkline (5 days, 30-minute intervals)
+            # Note: Yahoo Finance requires specific period values
+            hist = ticker.history(period='5d', interval='30m')  # Using 5d as it's a valid Yahoo Finance period
             logger.debug(f"Historical data shape: {hist.shape if not hist.empty else 'Empty'}")
             logger.debug(f"Historical data columns: {hist.columns.tolist() if not hist.empty else 'No columns'}")
             
@@ -113,14 +113,14 @@ class StockService:
             # If we don't have enough data points, try a different interval
             if len(prices) < 50:  # We want at least 50 points for a good sparkline
                 logger.debug("Not enough data points, trying different interval")
-                hist = ticker.history(period='7d', interval='1h')
+                hist = ticker.history(period='5d', interval='1h')
                 prices = hist['Close'].tolist() if not hist.empty else []
                 logger.debug(f"Number of price points after adjustment: {len(prices)}")
             
             # Ensure we have enough points for the sparkline
             if prices:
                 # Normalize the number of points to match crypto format
-                target_points = 168  # 7 days * 24 hours
+                target_points = 120  # 5 days * 24 hours
                 if len(prices) > target_points:
                     # Take evenly spaced samples
                     step = len(prices) // target_points
@@ -134,18 +134,30 @@ class StockService:
                 price_change_24h = info.get('regularMarketChangePercent', 0)
             
             # Get and cache logo if available
-            # Try different possible fields for logo URL
+            # Try multiple sources for the logo
+            website = info.get('website', '')
+            domain = website.replace('http://', '').replace('https://', '').split('/')[0] if website else ''
+            
             logo_url = (
                 info.get('logo_url') or 
                 info.get('logoUrl') or 
                 info.get('logo') or
-                f"https://logo.clearbit.com/{info.get('website', '').replace('http://', '').replace('https://', '')}"
+                (f"https://logo.clearbit.com/{domain}" if domain else None) or
+                f"https://storage.googleapis.com/iex/api/logos/{symbol.upper()}.png"  # IEX fallback
             )
             logger.debug(f"Logo URL found: {logo_url if logo_url else 'No logo URL'}")
             
             if logo_url and logo_url.startswith('http'):
-                logo_path = self._download_logo(symbol, logo_url)
-                logger.debug(f"Logo saved to: {logo_path if logo_path else 'Logo not saved'}")
+                try:
+                    # Test if the URL is accessible
+                    response = requests.head(logo_url, timeout=5)
+                    if response.status_code == 200:
+                        logo_path = self._download_logo(symbol, logo_url)
+                        logger.debug(f"Logo saved to: {logo_path if logo_path else 'Logo not saved'}")
+                    else:
+                        logger.warning(f"Logo URL returned status code {response.status_code}")
+                except Exception as e:
+                    logger.warning(f"Error checking logo URL: {e}")
             else:
                 logger.warning(f"No valid logo URL found for {symbol}")
             
