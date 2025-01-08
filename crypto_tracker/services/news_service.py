@@ -118,12 +118,19 @@ class NewsService:
             
             if response.status_code == 200:
                 news_data = response.json()
+                logger.info("Raw API response data:")
+                logger.info(json.dumps(news_data, indent=2))
+                
                 results = news_data.get('results', [])
                 logger.info(f"Received {len(results)} items from Crypto Panic")
                 
                 for item in results[:2]:  # Get top 2 crypto news
                     # Extract domain from URL for source
                     source = item.get('domain', 'Crypto News')
+                    logger.info(f"Processing news item:")
+                    logger.info(f"  Title: {item.get('title', '')}")
+                    logger.info(f"  Source: {source}")
+                    logger.info(f"  Description: {item.get('metadata', {}).get('description', '')}")
                     
                     crypto_news.append({
                         'title': item.get('title', ''),
@@ -172,7 +179,14 @@ class NewsService:
             if not stock_news:
                 stock_news = self.stock_news[:2]  # Only keep 2 items from cache
         
-        logger.info(f"Returning {len(crypto_news)} crypto news items and {len(stock_news)} stock news items")
+        logger.info(f"Final news items:")
+        logger.info("Crypto news:")
+        for item in crypto_news:
+            logger.info(json.dumps(item, indent=2))
+        logger.info("Stock news:")
+        for item in stock_news:
+            logger.info(json.dumps(item, indent=2))
+            
         return crypto_news, stock_news
     
     def get_news(self) -> Tuple[List[Dict], List[Dict]]:
