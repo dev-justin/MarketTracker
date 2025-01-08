@@ -75,8 +75,12 @@ class EditTickerScreen(BaseScreen):
         """Toggle favorite status for current coin."""
         if self.current_coin:
             if self.crypto_manager.toggle_favorite(self.current_coin['id']):
-                # Get updated coin data from storage
-                self.current_coin = self.crypto_manager.storage.get_coin(self.current_coin['id'])
+                # Get updated data from the appropriate storage
+                if self.current_coin.get('type') == 'stock':
+                    self.current_coin = self.crypto_manager.stock_service.storage.get_stock(self.current_coin['id'])
+                else:
+                    self.current_coin = self.crypto_manager.storage.get_coin(self.current_coin['id'])
+                    
                 logger.info(f"Toggled favorite state for {self.current_coin['symbol']}")
                 # Force redraw to show updated state
                 self.draw()
