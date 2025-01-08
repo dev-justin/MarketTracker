@@ -7,6 +7,7 @@ from crypto_tracker.config.settings import AppConfig
 from crypto_tracker.services.service_manager import ServiceManager
 from crypto_tracker.services.display import Display
 from crypto_tracker.services.screen_manager import ScreenManager
+from crypto_tracker.services.event_manager import EventManager
 from crypto_tracker.services.crypto.crypto_manager import CryptoManager
 
 # Configure logging
@@ -34,9 +35,14 @@ def main():
         display = Display()
         service_manager.register_service('display', display)
         
-        # Initialize screen manager
+        # Initialize managers
         screen_manager = ScreenManager(display)
+        event_manager = EventManager()
+        
+        # Connect managers
+        event_manager.set_screen_manager(screen_manager)
         service_manager.register_service('screen_manager', screen_manager)
+        service_manager.register_service('event_manager', event_manager)
         
         # Main game loop
         clock = pygame.time.Clock()
@@ -45,21 +51,23 @@ def main():
         needs_update = True
         
         while running:
+            current_time = pygame.time.get_ticks()
+            
             # Handle all events
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                    break
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_q:
                         running = False
-                elif event.type in [AppConfig.EVENT_TYPES['FINGER_DOWN'], 
-                                  AppConfig.EVENT_TYPES['FINGER_UP'],
-                                  AppConfig.EVENT_TYPES['FINGER_MOTION']]:
-                    screen_manager.handle_event(event)
-                    needs_update = True
+                        break
+                else:
+                    # Process event through event manager
+                    if event_manager.process_event(event):
+                        needs_update = True
             
             # Update time display every second
-            current_time = pygame.time.get_ticks()
             if current_time - last_time_update >= 1000:  # 1 second
                 needs_update = True
                 last_time_update = current_time
@@ -69,6 +77,7 @@ def main():
                 screen_manager.update_screen()
                 needs_update = False
             
+            # Cap frame rate
             clock.tick(AppConfig.FPS)
         
         # Clean up
@@ -77,7 +86,7 @@ def main():
         sys.exit()
         
     except Exception as e:
-        logger.error(f"Application error: {e}")
+        logger.error(f"Application error: {e}", exc_info=True)
         if 'crypto_manager' in locals():
             crypto_manager.stop_price_updates()
         pygame.quit()
