@@ -1,6 +1,7 @@
 """Menu grid component for the dashboard screen."""
 
 import pygame
+import time
 from typing import List, Dict, Tuple
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
@@ -44,9 +45,9 @@ class MenuGrid:
         display_width = self.display.surface.get_width()
         self.card_width = (display_width - (self.padding * (len(self.menu_items) + 1))) // len(self.menu_items)
         
-        # Click handling
-        self.last_click_time = 0
-        self.click_delay = 300  # milliseconds
+        # Touch handling
+        self.last_touch_time = 0
+        self.touch_delay = 0.3  # 300ms
         
         logger.info("MenuGrid initialized")
     
@@ -96,14 +97,14 @@ class MenuGrid:
         return clickable_areas
     
     def handle_click(self, pos: Tuple[int, int], clickable_areas: List[Tuple[pygame.Rect, str]]) -> None:
-        """Handle click events."""
-        current_time = pygame.time.get_ticks()
-        if current_time - self.last_click_time < self.click_delay:
+        """Handle touch events."""
+        current_time = time.time()
+        if current_time - self.last_touch_time < self.touch_delay:
             return
         
         for rect, screen_name in clickable_areas:
             if rect.collidepoint(pos):
-                logger.info(f"Menu item clicked: {screen_name}")
+                logger.info(f"Menu item touched: {screen_name}")
                 self.screen_manager.switch_screen(screen_name)
-                self.last_click_time = current_time
+                self.last_touch_time = current_time
                 break 

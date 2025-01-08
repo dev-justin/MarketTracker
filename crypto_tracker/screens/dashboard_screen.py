@@ -20,7 +20,7 @@ class DashboardScreen(BaseScreen):
         
         # Initialize components
         self.top_movers = TopMovers(display, self.crypto_manager)
-        self.menu_grid = MenuGrid(display, None)  # screen_manager will be set later
+        self.menu_grid = None  # Will be initialized when screen_manager is set
         
         # Menu grid position
         self.menu_start_y = 300
@@ -40,9 +40,11 @@ class DashboardScreen(BaseScreen):
         elif gestures['swipe_down']:
             logger.info("Swipe down detected, switching to ticker screen")
             self.screen_manager.switch_screen('ticker')
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            # Handle menu clicks
-            self.menu_grid.handle_click(event.pos, self.clickable_areas)
+        elif event.type == AppConfig.EVENT_TYPES['FINGER_DOWN'] and self.menu_grid:
+            # Handle touch events for menu
+            x = int(event.x * self.width)
+            y = int(event.y * self.height)
+            self.menu_grid.handle_click((x, y), self.clickable_areas)
     
     def draw(self) -> None:
         """Draw the dashboard screen."""
@@ -70,9 +72,13 @@ class DashboardScreen(BaseScreen):
         # Draw top movers
         self.top_movers.draw(date_rect.bottom + 20)
         
+        # Initialize menu grid if needed
+        if not self.menu_grid and self.screen_manager:
+            self.menu_grid = MenuGrid(self.display, self.screen_manager)
+        
         # Draw menu grid
-        self.menu_grid.screen_manager = self.screen_manager
-        self.clickable_areas = self.menu_grid.draw(self.menu_start_y)
+        if self.menu_grid:
+            self.clickable_areas = self.menu_grid.draw(self.menu_start_y)
         
         self.update_screen()
     
