@@ -92,7 +92,18 @@ class CryptoManager:
                 logger.info(f"Found as cryptocurrency: {symbol}")
                 coin_data = self.coingecko.get_coin_data(coin_info['id'])
                 if coin_data:
-                    return self.storage.add_coin(coin_data)
+                    success = self.storage.add_coin(coin_data)
+                    if success:
+                        # Notify screens to refresh
+                        from ...services.service_manager import ServiceManager
+                        service_manager = ServiceManager()
+                        screen_manager = service_manager.get_screen_manager()
+                        if screen_manager:
+                            for screen_name in ['ticker', 'dashboard', 'settings']:
+                                screen = screen_manager.screens.get(screen_name)
+                                if screen and hasattr(screen, 'refresh_coins'):
+                                    screen.refresh_coins()
+                    return success
             
             # If not found as crypto, try as stock
             stock_info = self.stock_service.search_stock(symbol)
@@ -100,7 +111,18 @@ class CryptoManager:
                 logger.info(f"Found as stock: {symbol}")
                 stock_data = self.stock_service.get_stock_data(symbol)
                 if stock_data:
-                    return self.stock_service.storage.add_stock(stock_data)
+                    success = self.stock_service.storage.add_stock(stock_data)
+                    if success:
+                        # Notify screens to refresh
+                        from ...services.service_manager import ServiceManager
+                        service_manager = ServiceManager()
+                        screen_manager = service_manager.get_screen_manager()
+                        if screen_manager:
+                            for screen_name in ['ticker', 'dashboard', 'settings']:
+                                screen = screen_manager.screens.get(screen_name)
+                                if screen and hasattr(screen, 'refresh_coins'):
+                                    screen.refresh_coins()
+                    return success
             
             logger.warning(f"Symbol not found as either crypto or stock: {symbol}")
             return False

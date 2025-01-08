@@ -75,3 +75,12 @@ class DashboardScreen(BaseScreen):
         
         # Update the display
         self.update_screen()
+
+    def refresh_coins(self):
+        """Refresh the list of tracked coins."""
+        # Update top movers
+        self.top_movers.update()
+        # Update favorites grid
+        self.favorites_grid.draw(self.top_movers.section_y + self.top_movers.section_height + 20)
+        # Force redraw
+        self.draw()

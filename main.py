@@ -10,6 +10,7 @@ from crypto_tracker.screens.edit_ticker_screen import EditTickerScreen
 from crypto_tracker.config.settings import AppConfig
 from crypto_tracker.utils.logger import get_logger
 from crypto_tracker.services.crypto.crypto_manager import CryptoManager
+from crypto_tracker.services.service_manager import ServiceManager
 
 logger = get_logger(__name__)
 
@@ -19,16 +20,21 @@ def main():
         # Initialize pygame
         pygame.init()
         
+        # Initialize services
+        service_manager = ServiceManager()
+        
         # Initialize crypto manager and start price updates
         crypto_manager = CryptoManager()
-        
+        service_manager.register_service('crypto_manager', crypto_manager)
         crypto_manager.start_price_updates()
         
         # Create display
         display = Display()
+        service_manager.register_service('display', display)
         
         # Create screen manager
         screen_manager = ScreenManager(display)
+        service_manager.register_service('screen_manager', screen_manager)
         
         # Add screens
         screen_manager.add_screen('dashboard', DashboardScreen)
