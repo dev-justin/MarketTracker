@@ -1,4 +1,5 @@
-from abc import ABC, abstractmethod
+"""Base screen class for all screens in the application."""
+
 import pygame
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
@@ -11,14 +12,16 @@ from typing import Optional
 
 logger = get_logger(__name__)
 
-class BaseScreen(ABC):
+class BaseScreen:
     """Base class for all screens in the application."""
     
     def __init__(self, display) -> None:
         """Initialize the base screen."""
+        # Store passed display instance
+        self.display = display
+        
         # Get service instances
         service_manager = ServiceManager()
-        self.display = service_manager.get_display()
         self.crypto_manager = service_manager.get_crypto_manager()
         
         # Get asset manager

@@ -106,9 +106,13 @@ class MenuGrid:
         if current_time - self.last_touch_time < self.touch_delay:
             return
         
+        x, y = pos
         for rect, screen_name in clickable_areas:
-            if rect.collidepoint(pos):
+            if rect.collidepoint(x, y):
                 logger.info(f"Menu item touched: {screen_name}")
-                self.screen_manager.switch_screen(screen_name)
-                self.last_touch_time = current_time
+                if self.screen_manager:
+                    self.screen_manager.switch_screen(screen_name)
+                    self.last_touch_time = current_time
+                else:
+                    logger.error("Screen manager not initialized")
                 break 

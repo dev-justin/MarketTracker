@@ -41,9 +41,9 @@ class DashboardScreen(BaseScreen):
             logger.info("Swipe down detected, switching to ticker screen")
             self.screen_manager.switch_screen('ticker')
         elif event.type == AppConfig.EVENT_TYPES['FINGER_DOWN'] and self.menu_grid:
-            # Handle touch events for menu
-            x = int(event.x * self.width)
-            y = int(event.y * self.height)
+            # Scale the touch input to screen coordinates
+            x, y = self._scale_touch_input(event)
+            logger.debug(f"Touch detected at ({x}, {y})")
             self.menu_grid.handle_click((x, y), self.clickable_areas)
     
     def draw(self) -> None:
@@ -74,6 +74,7 @@ class DashboardScreen(BaseScreen):
         
         # Initialize menu grid if needed
         if not self.menu_grid and self.screen_manager:
+            logger.debug("Initializing menu grid")
             self.menu_grid = MenuGrid(self.display, self.screen_manager)
         
         # Draw menu grid
