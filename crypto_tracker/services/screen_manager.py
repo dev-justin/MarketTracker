@@ -104,11 +104,17 @@ class ScreenManager:
     
     def handle_event(self, event: pygame.event.Event) -> bool:
         """Handle pygame events and return whether screen needs update."""
-        if not self.current_screen or self.switching_in_progress:
+        if not self.current_screen:
+            logger.warning("No current screen to handle event")
+            return False
+            
+        if self.switching_in_progress:
+            logger.debug("Ignoring event during screen transition")
             return False
             
         try:
             # Let current screen handle the event
+            logger.debug(f"Forwarding event {event.type} to {self.current_screen.__class__.__name__}")
             self.current_screen.handle_event(event)
             return True
         except Exception as e:
