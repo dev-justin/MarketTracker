@@ -260,22 +260,49 @@ class NewsScreen(BaseScreen):
         # Fill background
         self.display.surface.fill(self.background_color)
         
-        # Draw section headers
+        # Draw section headers with pill/badge design
         header_font = self.display.get_title_font('md', 'bold')  # Increased font size
         
-        # Crypto header with accent color
+        # Crypto header with pill background
         crypto_header = header_font.render("Crypto News", True, (45, 156, 219))  # Blue accent
         crypto_header_rect = crypto_header.get_rect(
             left=20,
             centery=self.title_height // 2
         )
+        # Draw pill background
+        pill_padding = 15  # Padding around text
+        crypto_pill_rect = pygame.Rect(
+            crypto_header_rect.left - pill_padding,
+            crypto_header_rect.top - pill_padding,
+            crypto_header_rect.width + (pill_padding * 2),
+            crypto_header_rect.height + (pill_padding * 2)
+        )
+        pygame.draw.rect(
+            self.display.surface,
+            (20, 62, 88),  # Darker blue background
+            crypto_pill_rect,
+            border_radius=crypto_pill_rect.height // 2  # Fully rounded corners
+        )
         self.display.surface.blit(crypto_header, crypto_header_rect)
         
-        # Stock header with accent color
+        # Stock header with pill background
         stock_header = header_font.render("Stock News", True, (39, 174, 96))  # Green accent
         stock_header_rect = stock_header.get_rect(
             left=20,
             centery=self.crypto_section_rect.bottom + self.title_height // 2
+        )
+        # Draw pill background
+        stock_pill_rect = pygame.Rect(
+            stock_header_rect.left - pill_padding,
+            stock_header_rect.top - pill_padding,
+            stock_header_rect.width + (pill_padding * 2),
+            stock_header_rect.height + (pill_padding * 2)
+        )
+        pygame.draw.rect(
+            self.display.surface,
+            (16, 70, 38),  # Darker green background
+            stock_pill_rect,
+            border_radius=stock_pill_rect.height // 2  # Fully rounded corners
         )
         self.display.surface.blit(stock_header, stock_header_rect)
         

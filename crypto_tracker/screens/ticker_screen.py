@@ -8,6 +8,23 @@ from .base_screen import BaseScreen
 
 logger = get_logger(__name__)
 
+def catmull_rom(p0, p1, p2, p3, t):
+    """Calculate point on a Catmull-Rom spline."""
+    t2 = t * t
+    t3 = t2 * t
+    
+    # Catmull-Rom matrix coefficients
+    a = -0.5 * t3 + t2 - 0.5 * t
+    b = 1.5 * t3 - 2.5 * t2 + 1.0
+    c = -1.5 * t3 + 2.0 * t2 + 0.5 * t
+    d = 0.5 * t3 - 0.5 * t2
+    
+    # Interpolate x and y separately
+    x = a * p0[0] + b * p1[0] + c * p2[0] + d * p3[0]
+    y = a * p0[1] + b * p1[1] + c * p2[1] + d * p3[1]
+    
+    return (int(x), int(y))
+
 class TickerScreen(BaseScreen):
     """Screen for displaying detailed coin information."""
     
