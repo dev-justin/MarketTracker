@@ -23,8 +23,6 @@ class ScreenManager:
         self.current_screen: Optional[BaseScreen] = None
         self.current_screen_name: Optional[str] = None
         self.switching_in_progress = False
-        self.transition_start_time = 0
-        self.transition_duration = 100  # 100ms transition duration
         
         # Initialize screens
         self._init_screens()
@@ -53,8 +51,6 @@ class ScreenManager:
     
     def switch_screen(self, screen_name: str, **kwargs) -> None:
         """Switch to a different screen."""
-        current_time = pygame.time.get_ticks()
-        
         # Basic validation
         if screen_name not in self.screens:
             logger.error(f"Screen {screen_name} not found")
@@ -63,19 +59,12 @@ class ScreenManager:
         if screen_name == self.current_screen_name:
             return
         
-        # Check if we're still in transition
         if self.switching_in_progress:
-            if current_time - self.transition_start_time < self.transition_duration:
-                logger.debug("Screen transition in progress")
-                return
-            else:
-                # Force end previous transition if it's taking too long
-                self.switching_in_progress = False
+            logger.debug("Screen switch already in progress, ignoring request")
+            return
         
         try:
             self.switching_in_progress = True
-            self.transition_start_time = current_time
-            
             logger.info(f"Switching to screen: {screen_name}")
             
             # Exit current screen
@@ -95,12 +84,11 @@ class ScreenManager:
             
         except Exception as e:
             logger.error(f"Error switching screen: {e}")
-            self.switching_in_progress = False
             raise
         finally:
-            # Reset switch flag after transition duration
-            if current_time - self.transition_start_time >= self.transition_duration:
-                self.switching_in_progress = False
+            # Always reset the switching flag
+            self.switching_in_progress = False
+            logger.debug("Screen switch completed")
     
     def handle_event(self, event: pygame.event.Event) -> bool:
         """Handle pygame events and return whether screen needs update."""
