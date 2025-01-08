@@ -129,9 +129,6 @@ class NewsService:
                         'title': item.get('title', ''),
                         'source': source,
                         'summary': item.get('metadata', {}).get('description', ''),
-                        'image_path': '',  # Crypto Panic free API doesn't provide images
-                        'url': item.get('url', ''),
-                        'timestamp': time.time(),
                         'type': 'crypto'
                     })
             else:
@@ -142,16 +139,12 @@ class NewsService:
                         'title': 'Bitcoin Continues to Dominate Crypto Market',
                         'source': 'Crypto News',
                         'summary': 'Bitcoin maintains its position as the leading cryptocurrency by market capitalization.',
-                        'image_path': '',
-                        'timestamp': time.time(),
                         'type': 'crypto'
                     },
                     {
                         'title': 'Ethereum Network Activity Surges',
                         'source': 'DeFi Updates',
                         'summary': 'Increased DeFi and NFT activity drives Ethereum network usage to new highs.',
-                        'image_path': '',
-                        'timestamp': time.time(),
                         'type': 'crypto'
                     }
                 ]
@@ -162,16 +155,12 @@ class NewsService:
                     'title': 'Market Update: Global Markets Show Mixed Performance',
                     'source': 'Market News',
                     'summary': 'Major indices display varied movements as investors assess economic data.',
-                    'image_path': '',
-                    'timestamp': time.time(),
                     'type': 'stock'
                 },
                 {
                     'title': 'Central Banks Signal Policy Changes',
                     'source': 'Financial News',
                     'summary': 'Key central banks indicate potential shifts in monetary policy affecting market sentiment.',
-                    'image_path': '',
-                    'timestamp': time.time(),
                     'type': 'stock'
                 }
             ]
