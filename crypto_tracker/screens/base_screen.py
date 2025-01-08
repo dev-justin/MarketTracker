@@ -36,17 +36,14 @@ class BaseScreen:
     
     def on_screen_enter(self) -> None:
         """Called when entering the screen. Override in subclasses."""
-        logger.debug(f"Entering screen: {self.__class__.__name__}")
         pass
     
     def on_screen_exit(self) -> None:
         """Called when exiting the screen. Override in subclasses."""
-        logger.debug(f"Exiting screen: {self.__class__.__name__}")
         pass
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
-        logger.debug(f"Base screen handling event: {event.type}")
         pass
     
     def draw(self) -> None:

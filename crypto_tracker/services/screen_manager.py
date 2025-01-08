@@ -65,5 +65,4 @@ class ScreenManager:
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
         if self.current_screen:
-            logger.debug(f"Forwarding event {event.type} to {self.current_screen.__class__.__name__}")
             self.current_screen.handle_event(event)

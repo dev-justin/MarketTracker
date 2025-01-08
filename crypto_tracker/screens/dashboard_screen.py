@@ -35,11 +35,8 @@ class DashboardScreen(BaseScreen):
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
-        logger.debug(f"DashboardScreen received event type: {event.type}")
-        
         # Handle gestures first
         gestures = self.gesture_handler.handle_touch_event(event)
-        logger.debug(f"Gesture detected: {gestures}")
         
         if gestures['swipe_up']:
             logger.info("Swipe up detected, switching to settings screen")
@@ -56,13 +53,9 @@ class DashboardScreen(BaseScreen):
         
         # Handle direct touch events
         if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
-            # Log raw touch coordinates
-            logger.debug(f"Raw touch coordinates: ({event.x}, {event.y})")
             x, y = self._scale_touch_input(event)
-            logger.debug(f"Scaled touch coordinates: ({x}, {y})")
             
             if self.menu_grid:
-                logger.debug("Menu grid exists, handling click")
                 self.menu_grid.handle_click((x, y), self.clickable_areas)
             else:
                 logger.warning("Menu grid not initialized for touch event")
@@ -109,7 +102,6 @@ class DashboardScreen(BaseScreen):
         # Draw menu grid and store clickable areas
         if self.menu_grid:
             self.clickable_areas = self.menu_grid.draw(self.menu_start_y)
-            logger.debug(f"Menu grid drawn with {len(self.clickable_areas)} clickable areas")
         
         self.update_screen()
         self.needs_redraw = False
