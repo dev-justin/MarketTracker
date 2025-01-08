@@ -35,29 +35,33 @@ class NewsScreen(BaseScreen):
         self.active_section = None  # 'crypto' or 'stock'
         
         # Dimensions
-        self.title_height = 60  # Header height
+        self.title_height = 50  # Slightly reduced header height
         self.section_padding = 20
         self.news_item_padding = 15
         
         # Calculate section heights
-        available_height = self.height - (self.title_height * 2) - (self.section_padding * 2)  # Account for both headers and padding
+        header_bottom_padding = 15  # Reduced padding below headers
+        total_padding = (self.section_padding * 2) + (header_bottom_padding * 2)  # Total vertical padding
+        available_height = self.height - (self.title_height * 2) - total_padding
         self.section_height = available_height // 2
         
         # Calculate item dimensions for 2x2 grid
         self.news_item_width = (self.width - (self.news_item_padding * 3)) // 2  # 3 paddings: left, middle, right
         self.news_item_height = self.section_height - (self.news_item_padding * 2)  # Full height minus padding
         
-        # Calculate section boundaries with additional padding below headers
-        header_bottom_padding = 30  # Extra padding below headers
+        # Calculate section boundaries
+        first_section_y = self.title_height + header_bottom_padding
+        second_section_y = first_section_y + self.section_height + self.section_padding + self.title_height
+        
         self.crypto_section_rect = pygame.Rect(
             0,
-            self.title_height + header_bottom_padding,  # Add padding below crypto header
+            first_section_y,
             self.width,
             self.section_height
         )
         self.stock_section_rect = pygame.Rect(
             0,
-            self.crypto_section_rect.bottom + self.section_padding + self.title_height + header_bottom_padding,  # Add padding below stock header
+            second_section_y,
             self.width,
             self.section_height
         )
