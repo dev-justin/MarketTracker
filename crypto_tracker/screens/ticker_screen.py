@@ -70,7 +70,6 @@ class TickerScreen(BaseScreen):
         gestures = self.gesture_handler.handle_touch_event(event)
         
         if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
-            self.selector_start_time = pygame.time.get_ticks()
             x, y = self._scale_touch_input(event)
             
             if self.showing_selector:
@@ -127,12 +126,6 @@ class TickerScreen(BaseScreen):
                 # Hide selector if clicked outside
                 self.showing_selector = False
         
-        elif event.type == AppConfig.EVENT_TYPES['FINGER_UP']:
-            # Check if this was a long press
-            if not self.showing_selector and pygame.time.get_ticks() - self.selector_start_time > 500:  # 500ms for long press
-                self.showing_selector = True
-                return
-        
         if not self.showing_selector:
             if gestures['swipe_up']:
                 logger.info("Swipe up detected, returning to dashboard")
@@ -143,6 +136,9 @@ class TickerScreen(BaseScreen):
             elif gestures['swipe_right']:
                 logger.info("Swipe right detected, showing previous coin")
                 self.previous_coin()
+            elif gestures['long_press']:
+                logger.info("Long press detected, showing selector")
+                self.showing_selector = True
     
     def draw_ticker_selector(self):
         """Draw the ticker selector overlay."""

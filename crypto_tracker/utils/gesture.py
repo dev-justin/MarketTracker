@@ -13,6 +13,8 @@ class GestureHandler:
         """Initialize the gesture handler."""
         self.start_x = None
         self.start_y = None
+        self.press_start_time = None
+        self.LONG_PRESS_DURATION = 500  # milliseconds
         logger.info("GestureHandler initialized")
     
     def handle_touch_event(self, event: pygame.event.Event) -> dict:
@@ -21,12 +23,14 @@ class GestureHandler:
             'swipe_up': False,
             'swipe_down': False,
             'swipe_left': False,
-            'swipe_right': False
+            'swipe_right': False,
+            'long_press': False
         }
         
         if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
             self.start_x = event.x
             self.start_y = event.y
+            self.press_start_time = pygame.time.get_ticks()
             logger.debug(f"Touch start at ({self.start_x:.2f}, {self.start_y:.2f})")
         
         elif event.type == AppConfig.EVENT_TYPES['FINGER_UP'] and self.start_x is not None and self.start_y is not None:
@@ -36,6 +40,13 @@ class GestureHandler:
             # Calculate distance moved
             distance = (dx * dx + dy * dy) ** 0.5
             logger.debug(f"Touch end at ({event.x:.2f}, {event.y:.2f}), distance: {distance:.2f}")
+            
+            # Check for long press
+            if self.press_start_time is not None:
+                press_duration = pygame.time.get_ticks() - self.press_start_time
+                if press_duration >= self.LONG_PRESS_DURATION and distance < 0.05:
+                    gestures['long_press'] = True
+                    logger.debug(f"Detected long press (duration={press_duration}ms)")
             
             # Only register as swipe if moved more than 10% of screen
             if distance > 0.1:
@@ -57,9 +68,10 @@ class GestureHandler:
             else:
                 logger.debug("Touch distance too small for gesture")
             
-            # Reset start position
+            # Reset start position and time
             self.start_x = None
             self.start_y = None
+            self.press_start_time = None
         
         elif event.type == AppConfig.EVENT_TYPES['FINGER_MOTION']:
             logger.debug(f"Touch motion at ({event.x:.2f}, {event.y:.2f})")
