@@ -77,7 +77,7 @@ class DashboardScreen(BaseScreen):
         
         # Draw menu grid if initialized
         if self.menu_grid:
-            menu_start_y = time_rect.bottom + 120  # Reduced from 160
+            menu_start_y = self.height - self.menu_grid.height - 20  # Position from bottom of screen
             self.menu_grid.draw(menu_start_y)
         
         # Update the display
