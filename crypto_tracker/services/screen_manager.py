@@ -34,9 +34,11 @@ class ScreenManager:
         # Set screen manager reference in each screen
         for screen in self.screens.values():
             screen.screen_manager = self
+            logger.debug(f"Set screen manager for {screen.__class__.__name__}")
         
         # Set initial screen
-        self.switch_screen('ticker')
+        logger.info("Setting initial screen to dashboard")
+        self.switch_screen('dashboard')
         
         logger.info("ScreenManager initialized")
     
@@ -63,4 +65,5 @@ class ScreenManager:
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
         if self.current_screen:
+            logger.debug(f"Forwarding event {event.type} to {self.current_screen.__class__.__name__}")
             self.current_screen.handle_event(event)

@@ -51,7 +51,7 @@ class MenuGrid:
         self.last_touch_time = 0
         self.touch_delay = 0.3  # 300ms
         
-        logger.info("MenuGrid initialized")
+        logger.info(f"MenuGrid initialized with card dimensions: {self.card_width}x{self.card_height}")
     
     def _draw_menu_item(self, item: Dict, x: int, y: int) -> pygame.Rect:
         """Draw a single menu item."""
@@ -74,6 +74,7 @@ class MenuGrid:
                 centery=item_rect.centery - 10
             )
             self.display.surface.blit(icon, icon_rect)
+            logger.debug(f"Drew icon {item['icon']} at {icon_rect}")
         else:
             logger.warning(f"Failed to load icon: {item['icon']}")
         
@@ -96,6 +97,7 @@ class MenuGrid:
         for item in self.menu_items:
             item_rect = self._draw_menu_item(item, current_x, start_y)
             clickable_areas.append((item_rect, item['screen']))
+            logger.debug(f"Added clickable area for {item['title']} at {item_rect}")
             current_x += self.card_width + self.padding
         
         return clickable_areas
@@ -104,13 +106,18 @@ class MenuGrid:
         """Handle touch events."""
         current_time = time.time()
         if current_time - self.last_touch_time < self.touch_delay:
+            logger.debug("Touch ignored due to delay")
             return
         
         x, y = pos
+        logger.debug(f"Checking touch at ({x}, {y}) against {len(clickable_areas)} areas")
+        
         for rect, screen_name in clickable_areas:
+            logger.debug(f"Checking rect {rect} for screen {screen_name}")
             if rect.collidepoint(x, y):
                 logger.info(f"Menu item touched: {screen_name}")
                 if self.screen_manager:
+                    logger.debug(f"Switching to screen: {screen_name}")
                     self.screen_manager.switch_screen(screen_name)
                     self.last_touch_time = current_time
                 else:

@@ -32,19 +32,36 @@ class DashboardScreen(BaseScreen):
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
+        logger.debug(f"DashboardScreen received event: {event.type}")
+        
+        if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
+            # Log raw touch coordinates
+            logger.debug(f"Raw touch coordinates: ({event.x}, {event.y})")
+            x, y = self._scale_touch_input(event)
+            logger.debug(f"Scaled touch coordinates: ({x}, {y})")
+            
+            if self.menu_grid:
+                logger.debug("Menu grid exists, handling click")
+                self.menu_grid.handle_click((x, y), self.clickable_areas)
+            else:
+                logger.warning("Menu grid not initialized for touch event")
+        
+        # Handle gestures after direct touch events
         gestures = self.gesture_handler.handle_touch_event(event)
+        logger.debug(f"Gesture detected: {gestures}")
         
         if gestures['swipe_up']:
             logger.info("Swipe up detected, switching to settings screen")
-            self.screen_manager.switch_screen('settings')
+            if self.screen_manager:
+                self.screen_manager.switch_screen('settings')
+            else:
+                logger.error("Screen manager not initialized for swipe up")
         elif gestures['swipe_down']:
             logger.info("Swipe down detected, switching to ticker screen")
-            self.screen_manager.switch_screen('ticker')
-        elif event.type == AppConfig.EVENT_TYPES['FINGER_DOWN'] and self.menu_grid:
-            # Scale the touch input to screen coordinates
-            x, y = self._scale_touch_input(event)
-            logger.debug(f"Touch detected at ({x}, {y})")
-            self.menu_grid.handle_click((x, y), self.clickable_areas)
+            if self.screen_manager:
+                self.screen_manager.switch_screen('ticker')
+            else:
+                logger.error("Screen manager not initialized for swipe down")
     
     def draw(self) -> None:
         """Draw the dashboard screen."""
@@ -74,12 +91,15 @@ class DashboardScreen(BaseScreen):
         
         # Initialize menu grid if needed
         if not self.menu_grid and self.screen_manager:
-            logger.debug("Initializing menu grid")
+            logger.info("Initializing menu grid with screen manager")
             self.menu_grid = MenuGrid(self.display, self.screen_manager)
+        elif not self.screen_manager:
+            logger.warning("Cannot initialize menu grid - screen manager not set")
         
-        # Draw menu grid
+        # Draw menu grid and store clickable areas
         if self.menu_grid:
             self.clickable_areas = self.menu_grid.draw(self.menu_start_y)
+            logger.debug(f"Menu grid drawn with {len(self.clickable_areas)} clickable areas")
         
         self.update_screen()
     
