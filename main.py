@@ -7,6 +7,7 @@ from crypto_tracker.config.settings import AppConfig
 from crypto_tracker.services.service_manager import ServiceManager
 from crypto_tracker.services.display import Display
 from crypto_tracker.services.screen_manager import ScreenManager
+from crypto_tracker.services.crypto.crypto_manager import CryptoManager
 
 # Configure logging
 logging.basicConfig(
@@ -23,6 +24,11 @@ def main():
         
         # Initialize services
         service_manager = ServiceManager()
+        
+        # Initialize crypto manager first
+        crypto_manager = CryptoManager()
+        service_manager.register_service('crypto_manager', crypto_manager)
+        crypto_manager.start_price_updates()
         
         # Initialize display
         display = Display()
@@ -49,11 +55,15 @@ def main():
             screen_manager.update_screen()
             clock.tick(AppConfig.FPS)
         
+        # Clean up
+        crypto_manager.stop_price_updates()
         pygame.quit()
         sys.exit()
         
     except Exception as e:
         logger.error(f"Application error: {e}")
+        if 'crypto_manager' in locals():
+            crypto_manager.stop_price_updates()
         pygame.quit()
         sys.exit(1)
 
