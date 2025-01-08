@@ -52,10 +52,18 @@ class EditTickerScreen(BaseScreen):
     
     def load_coin(self, coin_id: str) -> None:
         """Load coin data for editing."""
+        # Try crypto storage first
         self.current_coin = self.crypto_manager.storage.get_coin(coin_id)
         if not self.current_coin:
-            logger.error(f"Could not load coin: {coin_id}")
-            self.screen_manager.switch_screen('settings')
+            # If not found in crypto storage, try stock storage
+            self.current_coin = self.crypto_manager.stock_service.storage.get_stock(coin_id)
+            if not self.current_coin:
+                logger.error(f"Could not load coin: {coin_id}")
+                self.screen_manager.switch_screen('settings')
+            else:
+                logger.info(f"Loaded stock: {coin_id}")
+        else:
+            logger.info(f"Loaded crypto: {coin_id}")
     
     def delete_coin(self) -> None:
         """Delete the current coin."""
