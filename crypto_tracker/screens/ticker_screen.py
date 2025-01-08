@@ -319,7 +319,7 @@ class TickerScreen(BaseScreen):
         self.display.surface.blit(price_surface, price_rect)
         
         # Draw 24h change next to price
-        change_24h = current_coin['price_change_24h']
+        change_24h = current_coin.get('price_change_percentage_24h', 0)
         change_color = AppConfig.GREEN if change_24h >= 0 else AppConfig.RED
         change_text = f"{change_24h:+.1f}%"
         change_font = self.display.get_title_font('md')
