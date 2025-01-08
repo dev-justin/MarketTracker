@@ -1,21 +1,22 @@
+"""Main entry point for the crypto tracker application."""
+
 import pygame
-import os
+import sys
+import logging
+from crypto_tracker.config.settings import AppConfig
+from crypto_tracker.services.service_manager import ServiceManager
 from crypto_tracker.services.display import Display
 from crypto_tracker.services.screen_manager import ScreenManager
-from crypto_tracker.screens.dashboard_screen import DashboardScreen
-from crypto_tracker.screens.ticker_screen import TickerScreen
-from crypto_tracker.screens.settings_screen import SettingsScreen
-from crypto_tracker.screens.add_ticker_screen import AddTickerScreen
-from crypto_tracker.screens.edit_ticker_screen import EditTickerScreen
-from crypto_tracker.config.settings import AppConfig
-from crypto_tracker.utils.logger import get_logger
-from crypto_tracker.services.crypto.crypto_manager import CryptoManager
-from crypto_tracker.services.service_manager import ServiceManager
 
-logger = get_logger(__name__)
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 def main():
-    """Initialize and run the application."""
+    """Main function to run the crypto tracker application."""
     try:
         # Initialize pygame
         pygame.init()
@@ -23,32 +24,13 @@ def main():
         # Initialize services
         service_manager = ServiceManager()
         
-        # Initialize crypto manager and start price updates
-        crypto_manager = CryptoManager()
-        service_manager.register_service('crypto_manager', crypto_manager)
-        crypto_manager.start_price_updates()
-        
-        # Create display
+        # Initialize display
         display = Display()
         service_manager.register_service('display', display)
         
-        # Create screen manager
+        # Initialize screen manager
         screen_manager = ScreenManager(display)
         service_manager.register_service('screen_manager', screen_manager)
-        
-        # Add screens
-        screen_manager.add_screen('dashboard', DashboardScreen)
-        screen_manager.add_screen('ticker', TickerScreen)
-        screen_manager.add_screen('settings', SettingsScreen)
-        screen_manager.add_screen('add_ticker', AddTickerScreen)
-        screen_manager.add_screen('edit_ticker', EditTickerScreen, is_singleton=False)
-        
-        # Set initial screen
-        screen_manager.switch_screen('ticker')
-        
-        # Create data directory if it doesn't exist
-        os.makedirs(AppConfig.DATA_DIR, exist_ok=True)
-        os.makedirs(AppConfig.CACHE_DIR, exist_ok=True)
         
         # Main game loop
         clock = pygame.time.Clock()
@@ -58,21 +40,22 @@ def main():
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_q:
+                        running = False
                 else:
                     screen_manager.handle_event(event)
             
             screen_manager.update_screen()
             clock.tick(AppConfig.FPS)
         
-        # Clean up
-        crypto_manager.stop_price_updates()
         pygame.quit()
+        sys.exit()
         
     except Exception as e:
         logger.error(f"Application error: {e}")
-        crypto_manager.stop_price_updates()
         pygame.quit()
-        raise
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
