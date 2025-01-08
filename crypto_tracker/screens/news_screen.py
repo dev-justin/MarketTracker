@@ -52,9 +52,10 @@ class NewsScreen(BaseScreen):
             logger.info("Swipe down detected, returning to dashboard")
             self.screen_manager.switch_screen('dashboard')
         elif event.type == AppConfig.EVENT_TYPES['FINGER_MOTION']:
-            # Handle scrolling
-            _, rel_y = event.rel
-            self.scroll_velocity = rel_y * 2
+            # Handle scrolling using touch_rel
+            _, rel_y = event.touch_rel
+            # Scale the velocity based on screen height
+            self.scroll_velocity = rel_y * self.height * 2
     
     def _draw_news_item(self, item: dict, y: int) -> pygame.Rect:
         """Draw a single news item."""
