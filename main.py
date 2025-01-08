@@ -7,7 +7,6 @@ from crypto_tracker.config.settings import AppConfig
 from crypto_tracker.services.service_manager import ServiceManager
 from crypto_tracker.services.display import Display
 from crypto_tracker.services.screen_manager import ScreenManager
-from crypto_tracker.services.event_manager import EventManager
 from crypto_tracker.services.crypto.crypto_manager import CryptoManager
 
 # Configure logging
@@ -35,14 +34,9 @@ def main():
         display = Display()
         service_manager.register_service('display', display)
         
-        # Initialize managers
+        # Initialize screen manager
         screen_manager = ScreenManager(display)
-        event_manager = EventManager()
-        
-        # Connect managers
-        event_manager.set_screen_manager(screen_manager)
         service_manager.register_service('screen_manager', screen_manager)
-        service_manager.register_service('event_manager', event_manager)
         
         # Main game loop
         clock = pygame.time.Clock()
@@ -62,9 +56,10 @@ def main():
                     if event.key == pygame.K_q:
                         running = False
                         break
-                else:
-                    # Process event through event manager
-                    if event_manager.process_event(event):
+                elif event.type in [AppConfig.EVENT_TYPES['FINGER_DOWN'], 
+                                  AppConfig.EVENT_TYPES['FINGER_UP'],
+                                  AppConfig.EVENT_TYPES['FINGER_MOTION']]:
+                    if screen_manager.handle_event(event):
                         needs_update = True
             
             # Update time display every second

@@ -4,6 +4,7 @@ import pygame
 from typing import Dict, Any, Optional, Tuple
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
+from ..utils.gesture import GestureHandler
 from ..services.service_manager import ServiceManager
 from ..services.asset_manager import AssetManager
 from datetime import datetime
@@ -36,9 +37,8 @@ class BaseScreen:
         # Create a surface for double buffering
         self.surface = pygame.Surface((self.width, self.height))
         
-        # Touch handling properties
-        self.touch_start_pos: Optional[Tuple[int, int]] = None
-        self.touch_start_time: Optional[int] = None
+        # Initialize gesture handler
+        self.gesture_handler = GestureHandler()
         
         logger.info(f"{self.__class__.__name__} initialized with dimensions {self.width}x{self.height}")
     
@@ -48,25 +48,15 @@ class BaseScreen:
     
     def on_screen_exit(self) -> None:
         """Called when exiting the screen. Override in subclasses."""
-        self.touch_start_pos = None
-        self.touch_start_time = None
+        pass
     
-    def handle_event(self, event: pygame.event.Event, gestures: Dict[str, bool]) -> None:
+    def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
-        if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
-            self.touch_start_pos = self._scale_touch_input(event)
-            self.touch_start_time = pygame.time.get_ticks()
-        elif event.type == AppConfig.EVENT_TYPES['FINGER_UP']:
-            if self.touch_start_pos and self.touch_start_time:
-                current_time = pygame.time.get_ticks()
-                if current_time - self.touch_start_time < AppConfig.TOUCH_TIMEOUT:
-                    end_pos = self._scale_touch_input(event)
-                    self._handle_touch(self.touch_start_pos, end_pos)
-            self.touch_start_pos = None
-            self.touch_start_time = None
+        gestures = self.gesture_handler.handle_touch_event(event)
+        self._handle_gestures(gestures)
     
-    def _handle_touch(self, start_pos: Tuple[int, int], end_pos: Tuple[int, int]) -> None:
-        """Handle touch input. Override in subclasses."""
+    def _handle_gestures(self, gestures: Dict[str, bool]) -> None:
+        """Handle gestures. Override in subclasses."""
         pass
     
     def draw(self) -> None:

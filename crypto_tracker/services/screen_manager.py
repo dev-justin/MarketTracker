@@ -102,14 +102,14 @@ class ScreenManager:
             if current_time - self.transition_start_time >= self.transition_duration:
                 self.switching_in_progress = False
     
-    def handle_event(self, event: pygame.event.Event, gestures: Dict[str, bool]) -> bool:
+    def handle_event(self, event: pygame.event.Event) -> bool:
         """Handle pygame events and return whether screen needs update."""
         if not self.current_screen or self.switching_in_progress:
             return False
             
         try:
             # Let current screen handle the event
-            self.current_screen.handle_event(event, gestures)
+            self.current_screen.handle_event(event)
             return True
         except Exception as e:
             logger.error(f"Error handling event: {e}")
