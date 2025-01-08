@@ -77,7 +77,7 @@ class DashboardScreen(BaseScreen):
         
         # Draw menu grid if initialized
         if self.menu_grid:
-            menu_start_y = self.height - self.menu_grid.height - 20  # Position from bottom of screen
+            menu_start_y = self.height - self.menu_grid.height - 40  # Increased padding from 20 to 40
             self.menu_grid.draw(menu_start_y)
         
         # Update the display
