@@ -230,27 +230,80 @@ class NewsScreen(BaseScreen):
         
         return item_rect
     
-    def _draw_news_section(self, news_items: list, section_rect: pygame.Rect, scroll_offset: float) -> None:
-        """Draw a section of news items in a 2x2 grid."""
-        if not news_items:
-            # Draw "No news available" message
-            font = self.display.get_text_font('sm', 'regular')
-            text = font.render("No news available", True, AppConfig.GRAY)
-            text_rect = text.get_rect(center=section_rect.center)
-            self.display.surface.blit(text, text_rect)
-            return
-            
-        # Calculate grid positions
-        rows = (len(news_items) + 1) // 2  # Number of rows needed
-        current_y = section_rect.top + scroll_offset
+    def _draw_news_section(self, news_items, section_rect, scroll_offset):
+        """Draw a section of news items."""
+        # Calculate item dimensions for single row
+        news_item_width = self.width - (self.news_item_padding * 2)  # Full width minus padding
         
-        for row in range(rows):
-            for col in range(2):
-                idx = row * 2 + col
-                if idx < len(news_items):
-                    x = self.news_item_padding + col * (self.news_item_width + self.news_item_padding)
-                    self._draw_news_item(news_items[idx], x, current_y, section_rect)
-            current_y += self.news_item_height + self.news_item_padding
+        # Create a surface for the section with alpha channel
+        section_surface = pygame.Surface((section_rect.width, section_rect.height), pygame.SRCALPHA)
+        
+        # Draw each news item
+        for i, item in enumerate(news_items):
+            y = (i * (self.news_item_height + self.news_item_padding)) + scroll_offset
+            
+            # Skip if item is not visible
+            if y + self.news_item_height < 0 or y > section_rect.height:
+                continue
+            
+            # Create item background rect
+            item_rect = pygame.Rect(
+                self.news_item_padding,
+                y + self.news_item_padding,
+                news_item_width,
+                self.news_item_height - self.news_item_padding
+            )
+            
+            # Draw item background with gradient
+            pygame.draw.rect(
+                section_surface,
+                (30, 30, 30, 255),  # Slightly lighter than background
+                item_rect,
+                border_radius=10
+            )
+            
+            # Draw title and source on single line
+            title_font = self.display.get_text_font('md', 'bold')
+            source_font = self.display.get_text_font('sm', 'regular')
+            
+            # Combine title and source
+            title_text = item.get('title', 'No title')
+            source_text = f" • {item.get('source', 'Unknown')}"
+            
+            # Render title
+            title_surface = title_font.render(title_text, True, AppConfig.WHITE)
+            source_surface = source_font.render(source_text, True, AppConfig.GRAY)
+            
+            # Calculate positions
+            title_rect = title_surface.get_rect(
+                left=item_rect.left + 15,
+                top=item_rect.top + 15
+            )
+            source_rect = source_surface.get_rect(
+                left=title_rect.right + 5,
+                centery=title_rect.centery
+            )
+            
+            # Draw text
+            section_surface.blit(title_surface, title_rect)
+            section_surface.blit(source_surface, source_rect)
+            
+            # Draw summary below
+            if 'summary' in item:
+                summary_font = self.display.get_text_font('sm', 'regular')
+                summary_text = item['summary']
+                # Truncate summary if too long
+                if len(summary_text) > 150:
+                    summary_text = summary_text[:147] + "..."
+                summary_surface = summary_font.render(summary_text, True, AppConfig.GRAY)
+                summary_rect = summary_surface.get_rect(
+                    left=item_rect.left + 15,
+                    top=title_rect.bottom + 10
+                )
+                section_surface.blit(summary_surface, summary_rect)
+        
+        # Blit the section surface to the main display
+        self.display.surface.blit(section_surface, section_rect)
     
     def draw(self) -> None:
         """Draw the news screen."""
@@ -260,8 +313,8 @@ class NewsScreen(BaseScreen):
         # Fill background
         self.display.surface.fill(self.background_color)
         
-        # Draw section headers with pill/badge design
-        header_font = self.display.get_title_font('md', 'bold')  # Increased font size
+        # Draw section headers with compact pill/badge design
+        header_font = self.display.get_text_font('sm', 'bold')  # Smaller font
         
         # Crypto header with pill background
         crypto_header = header_font.render("Crypto News", True, (45, 156, 219))  # Blue accent
@@ -270,7 +323,7 @@ class NewsScreen(BaseScreen):
             centery=self.title_height // 2
         )
         # Draw pill background
-        pill_padding = 15  # Padding around text
+        pill_padding = 8  # Reduced padding
         crypto_pill_rect = pygame.Rect(
             crypto_header_rect.left - pill_padding,
             crypto_header_rect.top - pill_padding,
@@ -281,7 +334,7 @@ class NewsScreen(BaseScreen):
             self.display.surface,
             (20, 62, 88),  # Darker blue background
             crypto_pill_rect,
-            border_radius=crypto_pill_rect.height // 2  # Fully rounded corners
+            border_radius=crypto_pill_rect.height // 2  # Full circle corners
         )
         self.display.surface.blit(crypto_header, crypto_header_rect)
         
@@ -302,7 +355,7 @@ class NewsScreen(BaseScreen):
             self.display.surface,
             (16, 70, 38),  # Darker green background
             stock_pill_rect,
-            border_radius=stock_pill_rect.height // 2  # Fully rounded corners
+            border_radius=stock_pill_rect.height // 2  # Full circle corners
         )
         self.display.surface.blit(stock_header, stock_header_rect)
         
