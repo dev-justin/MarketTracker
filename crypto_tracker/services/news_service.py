@@ -4,7 +4,7 @@ import time
 import os
 import json
 import requests
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from ..utils.logger import get_logger
 from ..config.settings import AppConfig
 
@@ -23,7 +23,8 @@ class NewsService:
     def __init__(self) -> None:
         """Initialize the news service."""
         if not hasattr(self, 'initialized'):
-            self.news_cache = []
+            self.crypto_news = []
+            self.stock_news = []
             self.last_update = 0
             self.update_interval = 3600  # 1 hour
             self.cache_file = os.path.join(AppConfig.CACHE_DIR, 'news_cache.json')
@@ -32,9 +33,10 @@ class NewsService:
             self._load_cache()
             
             # Then fetch fresh news
-            fresh_news = self._fetch_news()
-            if fresh_news:
-                self.news_cache = fresh_news
+            crypto_news, stock_news = self._fetch_news()
+            if crypto_news or stock_news:
+                self.crypto_news = crypto_news
+                self.stock_news = stock_news
                 self.last_update = time.time()
                 self._save_cache()
             
@@ -47,29 +49,31 @@ class NewsService:
             if os.path.exists(self.cache_file):
                 with open(self.cache_file, 'r') as f:
                     cache_data = json.load(f)
-                    self.news_cache = cache_data.get('news', [])
+                    self.crypto_news = cache_data.get('crypto_news', [])
+                    self.stock_news = cache_data.get('stock_news', [])
                     self.last_update = cache_data.get('timestamp', 0)
                     logger.info("Loaded news from cache")
         except Exception as e:
             logger.error(f"Error loading news cache: {e}")
             # Initialize with default news items if cache load fails
-            self.news_cache = [
-                {
-                    'title': 'Loading Market News...',
-                    'source': 'System',
-                    'summary': 'Please wait while we fetch the latest market updates.',
-                    'image_path': '',
-                    'timestamp': time.time()
-                }
-            ]
+            default_news = {
+                'title': 'Loading Market News...',
+                'source': 'System',
+                'summary': 'Please wait while we fetch the latest market updates.',
+                'image_path': '',
+                'timestamp': time.time()
+            }
+            self.crypto_news = [default_news.copy()]
+            self.stock_news = [default_news.copy()]
     
     def _save_cache(self) -> None:
         """Save news data to cache."""
         try:
-            os.makedirs(AppConfig.CACHE_DIR, exist_ok=True)
+            os.makedirs(os.path.dirname(self.cache_file), exist_ok=True)
             with open(self.cache_file, 'w') as f:
                 json.dump({
-                    'news': self.news_cache,
+                    'crypto_news': self.crypto_news,
+                    'stock_news': self.stock_news,
                     'timestamp': self.last_update
                 }, f)
             logger.info("Saved news to cache")
@@ -98,67 +102,96 @@ class NewsService:
             logger.error(f"Error downloading image: {e}")
             return ""
     
-    def _fetch_news(self) -> List[Dict]:
+    def _fetch_news(self) -> Tuple[List[Dict], List[Dict]]:
         """Fetch news from various sources."""
-        news_items = []
+        crypto_news = []
+        stock_news = []
         
         try:
             # Fetch crypto news from CoinGecko
             crypto_news_url = "https://api.coingecko.com/api/v3/news"
             response = requests.get(crypto_news_url, timeout=10)
             if response.status_code == 200:
-                crypto_news = response.json()
-                for item in crypto_news[:5]:  # Get top 5 crypto news
+                news_data = response.json()
+                for item in news_data[:5]:  # Get top 5 crypto news
                     image_path = self._download_image(
                         item.get('thumb_2x', ''),
-                        f"crypto_{len(news_items)}"
+                        f"crypto_{len(crypto_news)}"
                     )
-                    news_items.append({
+                    crypto_news.append({
                         'title': item.get('title', ''),
                         'source': 'CoinGecko',
                         'summary': item.get('description', ''),
                         'image_path': image_path,
                         'url': item.get('url', ''),
-                        'timestamp': time.time()
+                        'timestamp': time.time(),
+                        'type': 'crypto'
                     })
             
-            # Add some market news from a financial API
+            # Fetch stock market news
             # Note: You'll need to replace this with your preferred financial news API
-            market_news = [
+            stock_news = [
                 {
                     'title': 'Market Update: Global Markets Show Mixed Performance',
                     'source': 'Market News',
-                    'summary': 'Major indices and cryptocurrencies display varied movements as investors assess economic data.',
+                    'summary': 'Major indices display varied movements as investors assess economic data.',
                     'image_path': '',
-                    'timestamp': time.time()
+                    'timestamp': time.time(),
+                    'type': 'stock'
                 },
                 {
                     'title': 'Central Banks Signal Policy Changes',
                     'source': 'Financial News',
                     'summary': 'Key central banks indicate potential shifts in monetary policy affecting market sentiment.',
                     'image_path': '',
-                    'timestamp': time.time()
+                    'timestamp': time.time(),
+                    'type': 'stock'
+                },
+                {
+                    'title': 'Tech Sector Leads Market Rally',
+                    'source': 'Stock News',
+                    'summary': 'Technology stocks surge as earnings reports exceed expectations.',
+                    'image_path': '',
+                    'timestamp': time.time(),
+                    'type': 'stock'
+                },
+                {
+                    'title': 'Energy Stocks React to Global Supply Changes',
+                    'source': 'Market Watch',
+                    'summary': 'Oil and gas companies see price movements following international developments.',
+                    'image_path': '',
+                    'timestamp': time.time(),
+                    'type': 'stock'
+                },
+                {
+                    'title': 'Manufacturing Data Impacts Industrial Stocks',
+                    'source': 'Financial Times',
+                    'summary': 'Industrial sector responds to latest manufacturing PMI data.',
+                    'image_path': '',
+                    'timestamp': time.time(),
+                    'type': 'stock'
                 }
             ]
-            news_items.extend(market_news)
             
         except Exception as e:
             logger.error(f"Error fetching news: {e}")
-            if not news_items:
-                # Return cached news if fetch fails
-                return self.news_cache
+            if not crypto_news:
+                crypto_news = self.crypto_news
+            if not stock_news:
+                stock_news = self.stock_news
         
-        return news_items
+        return crypto_news, stock_news
     
-    def get_combined_news(self) -> List[Dict]:
-        """Get combined news from all sources."""
+    def get_news(self) -> Tuple[List[Dict], List[Dict]]:
+        """Get crypto and stock news."""
         current_time = time.time()
         if current_time - self.last_update > self.update_interval:
             logger.info("Fetching fresh news data")
-            fresh_news = self._fetch_news()
-            if fresh_news:
-                self.news_cache = fresh_news
+            crypto_news, stock_news = self._fetch_news()
+            if crypto_news or stock_news:
+                self.crypto_news = crypto_news
+                self.stock_news = stock_news
                 self.last_update = current_time
                 self._save_cache()
-            
-        return self.news_cache 
+        
+        return self.crypto_news, self.stock_news 

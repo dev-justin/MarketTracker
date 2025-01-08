@@ -20,22 +20,41 @@ class NewsScreen(BaseScreen):
         
         # Initialize news service and get initial news
         self.news_service = NewsService()
-        self.news_items = self.news_service.get_combined_news()
+        self.crypto_news, self.stock_news = self.news_service.get_news()
         
-        # State
-        self.scroll_offset = 0
-        self.scroll_velocity = 0
+        # State for both sections
+        self.crypto_scroll_offset = 0
+        self.stock_scroll_offset = 0
+        self.crypto_scroll_velocity = 0
+        self.stock_scroll_velocity = 0
         self.last_update_time = time.time()
         self.update_interval = 3600  # 1 hour
         
         # Touch tracking
         self.last_touch_y = None
+        self.active_section = None  # 'crypto' or 'stock'
         
         # Dimensions
-        self.news_item_height = 200  # Increased to accommodate image
-        self.news_item_padding = 15
-        self.title_height = 80
-        self.image_size = (120, 120)  # Size for news images
+        self.news_item_height = 180  # Slightly smaller to fit more items
+        self.news_item_padding = 10
+        self.section_padding = 20
+        self.title_height = 60
+        self.section_height = (self.height - self.title_height - self.section_padding) // 2
+        self.image_size = (100, 100)  # Slightly smaller images
+        
+        # Calculate section boundaries
+        self.crypto_section_rect = pygame.Rect(
+            0,
+            self.title_height,
+            self.width,
+            self.section_height
+        )
+        self.stock_section_rect = pygame.Rect(
+            0,
+            self.title_height + self.section_height + self.section_padding,
+            self.width,
+            self.section_height
+        )
         
         logger.info("NewsScreen initialized")
     
@@ -43,7 +62,7 @@ class NewsScreen(BaseScreen):
         """Update news items if needed."""
         current_time = time.time()
         if current_time - self.last_update_time > self.update_interval:
-            self.news_items = self.news_service.get_combined_news()
+            self.crypto_news, self.stock_news = self.news_service.get_news()
             self.last_update_time = current_time
             logger.info("Updated news items")
     
@@ -55,22 +74,41 @@ class NewsScreen(BaseScreen):
             logger.info("Swipe down detected, returning to dashboard")
             self.screen_manager.switch_screen('dashboard')
         elif event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
+            x, y = self._scale_touch_input(event)
+            # Determine which section was touched
+            if self.crypto_section_rect.collidepoint(x, y):
+                self.active_section = 'crypto'
+            elif self.stock_section_rect.collidepoint(x, y):
+                self.active_section = 'stock'
+            else:
+                self.active_section = None
+            
             # Start tracking touch
             self.last_touch_y = event.y
-            self.scroll_velocity = 0
+            if self.active_section == 'crypto':
+                self.crypto_scroll_velocity = 0
+            elif self.active_section == 'stock':
+                self.stock_scroll_velocity = 0
+                
         elif event.type == AppConfig.EVENT_TYPES['FINGER_MOTION'] and self.last_touch_y is not None:
             # Calculate relative movement
             rel_y = event.y - self.last_touch_y
             self.last_touch_y = event.y
-            # Scale the velocity based on screen height
-            self.scroll_velocity = rel_y * self.height * 2
+            
+            # Apply scrolling to active section
+            if self.active_section == 'crypto':
+                self.crypto_scroll_velocity = rel_y * self.height * 2
+            elif self.active_section == 'stock':
+                self.stock_scroll_velocity = rel_y * self.height * 2
+                
         elif event.type == AppConfig.EVENT_TYPES['FINGER_UP']:
             # Stop tracking touch
             self.last_touch_y = None
+            self.active_section = None
     
-    def _draw_news_item(self, item: dict, y: int) -> pygame.Rect:
+    def _draw_news_item(self, item: dict, y: int, section_rect: pygame.Rect) -> pygame.Rect:
         """Draw a single news item."""
-        # Create item rectangle
+        # Create item rectangle within section bounds
         item_rect = pygame.Rect(
             self.news_item_padding,
             y,
@@ -78,98 +116,102 @@ class NewsScreen(BaseScreen):
             self.news_item_height
         )
         
-        # Draw background
-        pygame.draw.rect(
-            self.display.surface,
-            (30, 30, 30),
-            item_rect,
-            border_radius=15
-        )
-        
-        # Load and draw image if available
-        image_rect = None
-        if item.get('image_path') and os.path.exists(item['image_path']):
-            try:
-                image = pygame.image.load(item['image_path'])
-                image = pygame.transform.scale(image, self.image_size)
-                image_rect = image.get_rect(
-                    left=item_rect.left + 20,
-                    top=item_rect.top + 20
-                )
-                self.display.surface.blit(image, image_rect)
-            except Exception as e:
-                logger.error(f"Error loading news image: {e}")
-        
-        # Calculate text start position based on image
-        text_left = image_rect.right + 20 if image_rect else item_rect.left + 20
-        text_width = item_rect.right - text_left - 20
-        
-        # Draw title
-        title_font = self.display.get_text_font('md', 'bold')
-        title_words = item['title'].split()
-        title_lines = []
-        current_line = []
-        
-        for word in title_words:
-            test_line = ' '.join(current_line + [word])
-            test_surface = title_font.render(test_line, True, AppConfig.WHITE)
-            if test_surface.get_width() <= text_width:
-                current_line.append(word)
-            else:
-                if current_line:
-                    title_lines.append(' '.join(current_line))
-                current_line = [word]
-        if current_line:
-            title_lines.append(' '.join(current_line))
-        
-        title_y = item_rect.top + 20
-        for line in title_lines[:2]:  # Limit to 2 lines
-            title_surface = title_font.render(line, True, AppConfig.WHITE)
-            title_rect = title_surface.get_rect(
-                left=text_left,
-                top=title_y
+        # Only draw if item is visible within its section
+        if (y + self.news_item_height > section_rect.top and 
+            y < section_rect.bottom):
+            
+            # Draw background
+            pygame.draw.rect(
+                self.display.surface,
+                (30, 30, 30),
+                item_rect,
+                border_radius=15
             )
-            self.display.surface.blit(title_surface, title_rect)
-            title_y += title_font.get_height()
-        
-        # Draw source
-        source_font = self.display.get_text_font('sm', 'regular')
-        source_text = f"{item['source']}"
-        source_surface = source_font.render(source_text, True, AppConfig.GRAY)
-        source_rect = source_surface.get_rect(
-            left=text_left,
-            top=title_y + 10
-        )
-        self.display.surface.blit(source_surface, source_rect)
-        
-        # Draw summary if available
-        if 'summary' in item:
-            summary_font = self.display.get_text_font('sm', 'regular')
-            summary_words = item['summary'].split()
-            summary_lines = []
+            
+            # Load and draw image if available
+            image_rect = None
+            if item.get('image_path') and os.path.exists(item['image_path']):
+                try:
+                    image = pygame.image.load(item['image_path'])
+                    image = pygame.transform.scale(image, self.image_size)
+                    image_rect = image.get_rect(
+                        left=item_rect.left + 15,
+                        top=item_rect.top + 15
+                    )
+                    self.display.surface.blit(image, image_rect)
+                except Exception as e:
+                    logger.error(f"Error loading news image: {e}")
+            
+            # Calculate text start position based on image
+            text_left = image_rect.right + 15 if image_rect else item_rect.left + 15
+            text_width = item_rect.right - text_left - 15
+            
+            # Draw title
+            title_font = self.display.get_text_font('sm', 'bold')
+            title_words = item['title'].split()
+            title_lines = []
             current_line = []
             
-            for word in summary_words:
+            for word in title_words:
                 test_line = ' '.join(current_line + [word])
-                test_surface = summary_font.render(test_line, True, AppConfig.GRAY)
+                test_surface = title_font.render(test_line, True, AppConfig.WHITE)
                 if test_surface.get_width() <= text_width:
                     current_line.append(word)
                 else:
                     if current_line:
-                        summary_lines.append(' '.join(current_line))
+                        title_lines.append(' '.join(current_line))
                     current_line = [word]
             if current_line:
-                summary_lines.append(' '.join(current_line))
+                title_lines.append(' '.join(current_line))
             
-            summary_y = source_rect.bottom + 10
-            for line in summary_lines[:2]:  # Limit to 2 lines
-                summary_surface = summary_font.render(line, True, AppConfig.GRAY)
-                summary_rect = summary_surface.get_rect(
+            title_y = item_rect.top + 15
+            for line in title_lines[:2]:  # Limit to 2 lines
+                title_surface = title_font.render(line, True, AppConfig.WHITE)
+                title_rect = title_surface.get_rect(
                     left=text_left,
-                    top=summary_y
+                    top=title_y
                 )
-                self.display.surface.blit(summary_surface, summary_rect)
-                summary_y += summary_font.get_height()
+                self.display.surface.blit(title_surface, title_rect)
+                title_y += title_font.get_height()
+            
+            # Draw source
+            source_font = self.display.get_text_font('xs', 'regular')
+            source_text = f"{item['source']}"
+            source_surface = source_font.render(source_text, True, AppConfig.GRAY)
+            source_rect = source_surface.get_rect(
+                left=text_left,
+                top=title_y + 5
+            )
+            self.display.surface.blit(source_surface, source_rect)
+            
+            # Draw summary if available
+            if 'summary' in item:
+                summary_font = self.display.get_text_font('xs', 'regular')
+                summary_words = item['summary'].split()
+                summary_lines = []
+                current_line = []
+                
+                for word in summary_words:
+                    test_line = ' '.join(current_line + [word])
+                    test_surface = summary_font.render(test_line, True, AppConfig.GRAY)
+                    if test_surface.get_width() <= text_width:
+                        current_line.append(word)
+                    else:
+                        if current_line:
+                            summary_lines.append(' '.join(current_line))
+                        current_line = [word]
+                if current_line:
+                    summary_lines.append(' '.join(current_line))
+                
+                summary_y = source_rect.bottom + 5
+                for line in summary_lines[:2]:  # Limit to 2 lines
+                    summary_surface = summary_font.render(line, True, AppConfig.GRAY)
+                    summary_rect = summary_surface.get_rect(
+                        left=text_left,
+                        top=summary_y
+                    )
+                    self.display.surface.blit(summary_surface, summary_rect)
+                    summary_y += summary_font.get_height()
         
         return item_rect
     
@@ -181,32 +223,62 @@ class NewsScreen(BaseScreen):
         # Fill background
         self.display.surface.fill(self.background_color)
         
-        # Draw header
-        header_font = self.display.get_title_font('md', 'bold')
-        header_surface = header_font.render("Market News", True, AppConfig.WHITE)
-        header_rect = header_surface.get_rect(
+        # Draw section headers
+        header_font = self.display.get_title_font('sm', 'bold')
+        
+        # Crypto header
+        crypto_header = header_font.render("Crypto News", True, AppConfig.WHITE)
+        crypto_header_rect = crypto_header.get_rect(
             left=20,
-            top=20
+            top=10
         )
-        self.display.surface.blit(header_surface, header_rect)
+        self.display.surface.blit(crypto_header, crypto_header_rect)
         
-        # Apply scrolling physics
-        self.scroll_offset += self.scroll_velocity
-        self.scroll_velocity *= 0.95  # Damping
+        # Stock header
+        stock_header = header_font.render("Stock News", True, AppConfig.WHITE)
+        stock_header_rect = stock_header.get_rect(
+            left=20,
+            top=self.crypto_section_rect.bottom + 10
+        )
+        self.display.surface.blit(stock_header, stock_header_rect)
         
-        # Limit scrolling
-        max_scroll = len(self.news_items) * (self.news_item_height + self.news_item_padding) - self.height + self.title_height
-        if max_scroll > 0:
-            self.scroll_offset = max(min(self.scroll_offset, 0), -max_scroll)
+        # Draw section divider
+        pygame.draw.line(
+            self.display.surface,
+            (40, 40, 40),
+            (0, self.crypto_section_rect.bottom + self.section_padding // 2),
+            (self.width, self.crypto_section_rect.bottom + self.section_padding // 2),
+            2
+        )
+        
+        # Apply scrolling physics for both sections
+        self.crypto_scroll_offset += self.crypto_scroll_velocity
+        self.stock_scroll_offset += self.stock_scroll_velocity
+        self.crypto_scroll_velocity *= 0.95  # Damping
+        self.stock_scroll_velocity *= 0.95  # Damping
+        
+        # Draw crypto news section
+        max_crypto_scroll = len(self.crypto_news) * (self.news_item_height + self.news_item_padding) - self.section_height
+        if max_crypto_scroll > 0:
+            self.crypto_scroll_offset = max(min(self.crypto_scroll_offset, 0), -max_crypto_scroll)
         else:
-            self.scroll_offset = 0
+            self.crypto_scroll_offset = 0
         
-        # Draw news items
-        current_y = self.title_height + self.scroll_offset
-        for item in self.news_items:
-            # Only draw items that are visible
-            if current_y + self.news_item_height > 0 and current_y < self.height:
-                self._draw_news_item(item, current_y)
+        current_y = self.crypto_section_rect.top + self.crypto_scroll_offset
+        for item in self.crypto_news:
+            self._draw_news_item(item, current_y, self.crypto_section_rect)
+            current_y += self.news_item_height + self.news_item_padding
+        
+        # Draw stock news section
+        max_stock_scroll = len(self.stock_news) * (self.news_item_height + self.news_item_padding) - self.section_height
+        if max_stock_scroll > 0:
+            self.stock_scroll_offset = max(min(self.stock_scroll_offset, 0), -max_stock_scroll)
+        else:
+            self.stock_scroll_offset = 0
+        
+        current_y = self.stock_section_rect.top + self.stock_scroll_offset
+        for item in self.stock_news:
+            self._draw_news_item(item, current_y, self.stock_section_rect)
             current_y += self.news_item_height + self.news_item_padding
         
         self.update_screen()
