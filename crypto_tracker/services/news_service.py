@@ -121,7 +121,7 @@ class NewsService:
                 results = news_data.get('results', [])
                 logger.info(f"Received {len(results)} items from Crypto Panic")
                 
-                for item in results[:5]:  # Get top 5 crypto news
+                for item in results[:2]:  # Get top 2 crypto news
                     # Extract domain from URL for source
                     source = item.get('domain', 'Crypto News')
                     
@@ -153,30 +153,6 @@ class NewsService:
                         'image_path': '',
                         'timestamp': time.time(),
                         'type': 'crypto'
-                    },
-                    {
-                        'title': 'New Developments in Layer 2 Solutions',
-                        'source': 'Blockchain News',
-                        'summary': 'Layer 2 scaling solutions continue to evolve, promising lower fees and faster transactions.',
-                        'image_path': '',
-                        'timestamp': time.time(),
-                        'type': 'crypto'
-                    },
-                    {
-                        'title': 'DeFi Protocols Show Strong Growth',
-                        'source': 'DeFi Daily',
-                        'summary': 'Decentralized finance protocols report increased total value locked and user adoption.',
-                        'image_path': '',
-                        'timestamp': time.time(),
-                        'type': 'crypto'
-                    },
-                    {
-                        'title': 'Crypto Adoption Trends in 2024',
-                        'source': 'Crypto Insights',
-                        'summary': 'Analysis of current cryptocurrency adoption trends and future projections.',
-                        'image_path': '',
-                        'timestamp': time.time(),
-                        'type': 'crypto'
                     }
                 ]
             
@@ -197,39 +173,15 @@ class NewsService:
                     'image_path': '',
                     'timestamp': time.time(),
                     'type': 'stock'
-                },
-                {
-                    'title': 'Tech Sector Leads Market Rally',
-                    'source': 'Stock News',
-                    'summary': 'Technology stocks surge as earnings reports exceed expectations.',
-                    'image_path': '',
-                    'timestamp': time.time(),
-                    'type': 'stock'
-                },
-                {
-                    'title': 'Energy Stocks React to Global Supply Changes',
-                    'source': 'Market Watch',
-                    'summary': 'Oil and gas companies see price movements following international developments.',
-                    'image_path': '',
-                    'timestamp': time.time(),
-                    'type': 'stock'
-                },
-                {
-                    'title': 'Manufacturing Data Impacts Industrial Stocks',
-                    'source': 'Financial Times',
-                    'summary': 'Industrial sector responds to latest manufacturing PMI data.',
-                    'image_path': '',
-                    'timestamp': time.time(),
-                    'type': 'stock'
                 }
             ]
             
         except Exception as e:
             logger.error(f"Error fetching news: {str(e)}", exc_info=True)
             if not crypto_news:
-                crypto_news = self.crypto_news
+                crypto_news = self.crypto_news[:2]  # Only keep 2 items from cache
             if not stock_news:
-                stock_news = self.stock_news
+                stock_news = self.stock_news[:2]  # Only keep 2 items from cache
         
         logger.info(f"Returning {len(crypto_news)} crypto news items and {len(stock_news)} stock news items")
         return crypto_news, stock_news
