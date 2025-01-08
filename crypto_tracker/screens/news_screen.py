@@ -317,12 +317,10 @@ class NewsScreen(BaseScreen):
             self.stock_scroll_offset = 0
         
         self._draw_news_section(self.stock_news, self.stock_section_rect, self.stock_scroll_offset)
-        
-        self.update_screen()
     
     def on_screen_enter(self) -> None:
         """Called when entering the screen."""
         # Force news update
         self.last_update_time = 0
         self._update_news()
-        self.draw() 
+        self.needs_redraw = True  # Let the screen manager handle the redraw 
