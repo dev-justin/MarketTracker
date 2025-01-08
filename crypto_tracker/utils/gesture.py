@@ -13,8 +13,6 @@ class GestureHandler:
         """Initialize the gesture handler."""
         self.start_x = None
         self.start_y = None
-        self.last_gesture_time = 0
-        self.gesture_cooldown = 500  # 500ms cooldown between gestures
         logger.info("GestureHandler initialized")
     
     def handle_touch_event(self, event: pygame.event.Event) -> dict:
@@ -26,15 +24,10 @@ class GestureHandler:
             'swipe_right': False
         }
         
-        current_time = pygame.time.get_ticks()
-        
-        # Return early if we're still in cooldown
-        if current_time - self.last_gesture_time < self.gesture_cooldown:
-            return gestures
-        
         if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
             self.start_x = event.x
             self.start_y = event.y
+            logger.debug(f"Touch start at ({self.start_x:.2f}, {self.start_y:.2f})")
         
         elif event.type == AppConfig.EVENT_TYPES['FINGER_UP'] and self.start_x is not None and self.start_y is not None:
             dx = event.x - self.start_x
@@ -42,6 +35,7 @@ class GestureHandler:
             
             # Calculate distance moved
             distance = (dx * dx + dy * dy) ** 0.5
+            logger.debug(f"Touch end at ({event.x:.2f}, {event.y:.2f}), distance: {distance:.2f}")
             
             # Only register as swipe if moved more than 10% of screen
             if distance > 0.1:
@@ -49,19 +43,25 @@ class GestureHandler:
                 if abs(dx) > abs(dy):
                     if dx > 0:
                         gestures['swipe_right'] = True
+                        logger.debug(f"Detected swipe right (dx={dx:.2f}, dy={dy:.2f})")
                     else:
                         gestures['swipe_left'] = True
+                        logger.debug(f"Detected swipe left (dx={dx:.2f}, dy={dy:.2f})")
                 else:
                     if dy > 0:
                         gestures['swipe_down'] = True
+                        logger.debug(f"Detected swipe down (dx={dx:.2f}, dy={dy:.2f})")
                     else:
                         gestures['swipe_up'] = True
-                
-                # Update last gesture time
-                self.last_gesture_time = current_time
+                        logger.debug(f"Detected swipe up (dx={dx:.2f}, dy={dy:.2f})")
+            else:
+                logger.debug("Touch distance too small for gesture")
             
             # Reset start position
             self.start_x = None
             self.start_y = None
+        
+        elif event.type == AppConfig.EVENT_TYPES['FINGER_MOTION']:
+            logger.debug(f"Touch motion at ({event.x:.2f}, {event.y:.2f})")
         
         return gestures

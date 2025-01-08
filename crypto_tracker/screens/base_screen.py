@@ -52,7 +52,10 @@ class BaseScreen:
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
+        logger.debug(f"{self.__class__.__name__} received event type: {event.type}")
         gestures = self.gesture_handler.handle_touch_event(event)
+        if any(gestures.values()):
+            logger.debug(f"{self.__class__.__name__} detected gestures: {gestures}")
         self._handle_gestures(gestures)
     
     def _handle_gestures(self, gestures: Dict[str, bool]) -> None:
