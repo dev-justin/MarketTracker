@@ -5,6 +5,7 @@ import time
 from typing import List, Dict, Tuple
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
+from ..services.asset_manager import AssetManager
 
 logger = get_logger(__name__)
 
@@ -15,6 +16,7 @@ class MenuGrid:
         """Initialize the menu grid."""
         self.display = display
         self.screen_manager = screen_manager
+        self.assets = AssetManager()
         
         # Menu items
         self.menu_items = [
@@ -65,13 +67,15 @@ class MenuGrid:
         )
         
         # Draw icon
-        icon = self.display.assets.get_icon(item['icon'], size=self.icon_size, color=AppConfig.WHITE)
+        icon = self.assets.get_icon(item['icon'], size=self.icon_size, color=AppConfig.WHITE)
         if icon:
             icon_rect = icon.get_rect(
                 centerx=item_rect.centerx,
                 centery=item_rect.centery - 10
             )
             self.display.surface.blit(icon, icon_rect)
+        else:
+            logger.warning(f"Failed to load icon: {item['icon']}")
         
         # Draw title
         title_font = self.display.get_text_font('sm', 'bold')
