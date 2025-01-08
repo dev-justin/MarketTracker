@@ -35,9 +35,9 @@ class NewsScreen(BaseScreen):
         self.active_section = None  # 'crypto' or 'stock'
         
         # Dimensions
-        self.title_height = 40  # Reduced header height
-        self.section_padding = 10
-        self.news_item_padding = 10
+        self.title_height = 60  # Increased header height
+        self.section_padding = 20
+        self.news_item_padding = 15
         
         # Calculate section heights
         available_height = self.height - (self.title_height * 2) - self.section_padding
@@ -45,8 +45,7 @@ class NewsScreen(BaseScreen):
         
         # Calculate item dimensions for 2x2 grid
         self.news_item_width = (self.width - (self.news_item_padding * 3)) // 2  # 3 paddings: left, middle, right
-        self.news_item_height = (self.section_height - self.news_item_padding * 2) // 2  # Show 2 rows
-        self.image_size = (60, 60)  # Smaller images to fit in grid
+        self.news_item_height = self.section_height - (self.news_item_padding * 2)  # Full height minus padding
         
         # Calculate section boundaries
         self.crypto_section_rect = pygame.Rect(
@@ -127,34 +126,42 @@ class NewsScreen(BaseScreen):
         if (y + self.news_item_height > section_rect.top and 
             y < section_rect.bottom):
             
-            # Draw background
+            # Draw background with gradient effect
+            gradient_colors = [(25, 25, 25), (30, 30, 30)]
+            gradient_rects = []
+            gradient_height = item_rect.height // len(gradient_colors)
+            
+            for i, color in enumerate(gradient_colors):
+                gradient_rect = pygame.Rect(
+                    item_rect.left,
+                    item_rect.top + (i * gradient_height),
+                    item_rect.width,
+                    gradient_height
+                )
+                pygame.draw.rect(
+                    self.display.surface,
+                    color,
+                    gradient_rect,
+                    border_radius=15
+                )
+                gradient_rects.append(gradient_rect)
+            
+            # Draw border
             pygame.draw.rect(
                 self.display.surface,
-                (30, 30, 30),
+                (40, 40, 40),
                 item_rect,
-                border_radius=10
+                border_radius=15,
+                width=1
             )
             
-            # Load and draw image if available
-            image_rect = None
-            if item.get('image_path') and os.path.exists(item['image_path']):
-                try:
-                    image = pygame.image.load(item['image_path'])
-                    image = pygame.transform.scale(image, self.image_size)
-                    image_rect = image.get_rect(
-                        left=item_rect.left + 10,
-                        top=item_rect.top + 10
-                    )
-                    self.display.surface.blit(image, image_rect)
-                except Exception as e:
-                    logger.error(f"Error loading news image: {e}")
-            
-            # Calculate text start position based on image
-            text_left = image_rect.right + 10 if image_rect else item_rect.left + 10
-            text_width = item_rect.right - text_left - 10
+            # Calculate text area
+            text_padding = 20
+            text_left = item_rect.left + text_padding
+            text_width = item_rect.width - (text_padding * 2)
             
             # Draw title
-            title_font = self.display.get_text_font('xs', 'bold')  # Smaller font
+            title_font = self.display.get_text_font('md', 'bold')  # Increased font size
             title_words = item['title'].split()
             title_lines = []
             current_line = []
@@ -171,7 +178,7 @@ class NewsScreen(BaseScreen):
             if current_line:
                 title_lines.append(' '.join(current_line))
             
-            title_y = item_rect.top + 10
+            title_y = item_rect.top + text_padding
             for line in title_lines[:2]:  # Limit to 2 lines
                 title_surface = title_font.render(line, True, AppConfig.WHITE)
                 title_rect = title_surface.get_rect(
@@ -181,19 +188,20 @@ class NewsScreen(BaseScreen):
                 self.display.surface.blit(title_surface, title_rect)
                 title_y += title_font.get_height()
             
-            # Draw source
-            source_font = self.display.get_text_font('xs', 'regular')
+            # Draw source with accent color based on type
+            source_color = (45, 156, 219) if item['type'] == 'crypto' else (39, 174, 96)
+            source_font = self.display.get_text_font('sm', 'bold')  # Increased font size
             source_text = f"{item['source']}"
-            source_surface = source_font.render(source_text, True, AppConfig.GRAY)
+            source_surface = source_font.render(source_text, True, source_color)
             source_rect = source_surface.get_rect(
                 left=text_left,
-                top=title_y + 5
+                top=title_y + 10
             )
             self.display.surface.blit(source_surface, source_rect)
             
             # Draw summary if available
             if 'summary' in item:
-                summary_font = self.display.get_text_font('xs', 'regular')
+                summary_font = self.display.get_text_font('sm', 'regular')  # Increased font size
                 summary_words = item['summary'].split()
                 summary_lines = []
                 current_line = []
@@ -210,14 +218,15 @@ class NewsScreen(BaseScreen):
                 if current_line:
                     summary_lines.append(' '.join(current_line))
                 
-                summary_y = source_rect.bottom + 5
-                for line in summary_lines[:1]:  # Limit to 1 line for summary
+                summary_y = source_rect.bottom + 10
+                for line in summary_lines[:2]:  # Show up to 2 lines of summary
                     summary_surface = summary_font.render(line, True, AppConfig.GRAY)
                     summary_rect = summary_surface.get_rect(
                         left=text_left,
                         top=summary_y
                     )
                     self.display.surface.blit(summary_surface, summary_rect)
+                    summary_y += summary_font.get_height()
         
         return item_rect
     
@@ -252,32 +261,38 @@ class NewsScreen(BaseScreen):
         self.display.surface.fill(self.background_color)
         
         # Draw section headers
-        header_font = self.display.get_title_font('sm', 'bold')
+        header_font = self.display.get_title_font('md', 'bold')  # Increased font size
         
-        # Crypto header
-        crypto_header = header_font.render("Crypto News", True, AppConfig.WHITE)
+        # Crypto header with accent color
+        crypto_header = header_font.render("Crypto News", True, (45, 156, 219))  # Blue accent
         crypto_header_rect = crypto_header.get_rect(
             left=20,
             centery=self.title_height // 2
         )
         self.display.surface.blit(crypto_header, crypto_header_rect)
         
-        # Stock header
-        stock_header = header_font.render("Stock News", True, AppConfig.WHITE)
+        # Stock header with accent color
+        stock_header = header_font.render("Stock News", True, (39, 174, 96))  # Green accent
         stock_header_rect = stock_header.get_rect(
             left=20,
             centery=self.crypto_section_rect.bottom + self.title_height // 2
         )
         self.display.surface.blit(stock_header, stock_header_rect)
         
-        # Draw section divider
-        pygame.draw.line(
-            self.display.surface,
-            (40, 40, 40),
-            (0, self.crypto_section_rect.bottom + self.section_padding // 2),
-            (self.width, self.crypto_section_rect.bottom + self.section_padding // 2),
-            2
-        )
+        # Draw section divider with gradient
+        divider_y = self.crypto_section_rect.bottom + self.section_padding // 2
+        divider_gradient = [(30, 30, 30), (40, 40, 40), (30, 30, 30)]
+        divider_width = 2
+        
+        for i, color in enumerate(divider_gradient):
+            y_offset = i - len(divider_gradient) // 2
+            pygame.draw.line(
+                self.display.surface,
+                color,
+                (0, divider_y + y_offset),
+                (self.width, divider_y + y_offset),
+                divider_width
+            )
         
         # Apply scrolling physics for both sections
         self.crypto_scroll_offset += self.crypto_scroll_velocity
