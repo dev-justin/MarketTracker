@@ -7,7 +7,7 @@ from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 from .base_screen import BaseScreen
 from ..components.top_movers import TopMovers
-from ..components.favorites_grid import FavoritesGrid
+from ..components.menu_grid import MenuGrid
 
 logger = get_logger(__name__)
 
@@ -21,7 +21,7 @@ class DashboardScreen(BaseScreen):
         
         # Initialize components
         self.top_movers = TopMovers(display, self.crypto_manager)
-        self.favorites_grid = FavoritesGrid(display, self.crypto_manager)
+        self.menu_grid = MenuGrid(display, self.screen_manager)
         
         logger.info("DashboardScreen initialized")
     
@@ -29,12 +29,9 @@ class DashboardScreen(BaseScreen):
         """Handle pygame events."""
         gestures = self.gesture_handler.handle_touch_event(event)
         
-        if gestures['swipe_up']:
-            logger.info("Swipe up detected, switching to settings")
-            self.screen_manager.switch_screen('settings')
-        elif gestures['swipe_down']:
-            logger.info("Swipe down detected, switching to ticker")
-            self.screen_manager.switch_screen('ticker')
+        if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
+            x, y = self._scale_touch_input(event)
+            self.menu_grid.handle_click(x, y)
     
     def _draw_datetime(self) -> pygame.Rect:
         """Draw the current date and time."""
@@ -69,9 +66,9 @@ class DashboardScreen(BaseScreen):
         # Draw top movers section
         self.top_movers.draw()
         
-        # Draw favorites grid (starting below top movers)
-        favorites_start_y = time_rect.bottom + 160  # Start below top movers section
-        self.favorites_grid.draw(favorites_start_y)
+        # Draw menu grid (starting below top movers)
+        menu_start_y = time_rect.bottom + 160  # Start below top movers section
+        self.menu_grid.draw(menu_start_y)
         
         # Update the display
         self.update_screen()
@@ -80,7 +77,5 @@ class DashboardScreen(BaseScreen):
         """Refresh the list of tracked coins."""
         # Update top movers
         self.top_movers.update()
-        # Update favorites grid
-        self.favorites_grid.draw(self.top_movers.section_y + self.top_movers.section_height + 20)
         # Force redraw
         self.draw()
