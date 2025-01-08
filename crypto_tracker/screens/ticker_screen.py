@@ -116,9 +116,16 @@ class TickerScreen(BaseScreen):
                 self.showing_selector = True
                 return
         
-        if not self.showing_selector and gestures['swipe_down']:
-            logger.info("Swipe down detected, returning to dashboard")
-            self.screen_manager.switch_screen('dashboard')
+        if not self.showing_selector:
+            if gestures['swipe_up']:
+                logger.info("Swipe up detected, returning to dashboard")
+                self.screen_manager.switch_screen('dashboard')
+            elif gestures['swipe_left']:
+                logger.info("Swipe left detected, showing next coin")
+                self.next_coin()
+            elif gestures['swipe_right']:
+                logger.info("Swipe right detected, showing previous coin")
+                self.previous_coin()
     
     def draw_ticker_selector(self):
         """Draw the ticker selector overlay."""

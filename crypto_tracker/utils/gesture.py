@@ -1,19 +1,20 @@
+"""Gesture handling utilities."""
+
 import pygame
-import time
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 class GestureHandler:
-    """Handles touch gestures like swipes and taps."""
+    """Handles touch gestures."""
     
-    def __init__(self):
-        self.start_pos = None
-        self.start_time = None
-        self.last_tap_time = 0
-        self.last_tap_pos = None
-        
+    def __init__(self) -> None:
+        """Initialize the gesture handler."""
+        self.start_x = None
+        self.start_y = None
+        self.last_gesture_time = 0
+        self.gesture_cooldown = 500  # 500ms cooldown between gestures
         logger.info("GestureHandler initialized")
     
     def handle_touch_event(self, event: pygame.event.Event) -> dict:
@@ -22,47 +23,45 @@ class GestureHandler:
             'swipe_up': False,
             'swipe_down': False,
             'swipe_left': False,
-            'swipe_right': False,
-            'tap': False,
-            'double_tap': False
+            'swipe_right': False
         }
         
+        current_time = pygame.time.get_ticks()
+        
+        # Return early if we're still in cooldown
+        if current_time - self.last_gesture_time < self.gesture_cooldown:
+            return gestures
+        
         if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
-            self.start_pos = (event.x, event.y)
-            self.start_time = time.time()
+            self.start_x = event.x
+            self.start_y = event.y
+        
+        elif event.type == AppConfig.EVENT_TYPES['FINGER_UP'] and self.start_x is not None and self.start_y is not None:
+            dx = event.x - self.start_x
+            dy = event.y - self.start_y
             
-        elif event.type == AppConfig.EVENT_TYPES['FINGER_UP']:
-            if self.start_pos and self.start_time:
-                current_time = time.time()
-                dx = event.x - self.start_pos[0]
-                dy = event.y - self.start_pos[1]
-                dt = current_time - self.start_time
-                
-                # Check for swipe
-                if dt < AppConfig.SWIPE_TIME_THRESHOLD / 1000:  # Convert ms to seconds
-                    # Calculate swipe distance as percentage of screen
-                    if abs(dx) > abs(dy) and abs(dx) > AppConfig.SWIPE_THRESHOLD:
-                        gestures['swipe_right' if dx > 0 else 'swipe_left'] = True
-                        logger.debug(f"Horizontal swipe detected: {'right' if dx > 0 else 'left'}")
-                    elif abs(dy) > abs(dx) and abs(dy) > AppConfig.SWIPE_THRESHOLD:
-                        gestures['swipe_down' if dy > 0 else 'swipe_up'] = True
-                        logger.debug(f"Vertical swipe detected: {'down' if dy > 0 else 'up'}")
+            # Calculate distance moved
+            distance = (dx * dx + dy * dy) ** 0.5
+            
+            # Only register as swipe if moved more than 10% of screen
+            if distance > 0.1:
+                # Determine primary direction
+                if abs(dx) > abs(dy):
+                    if dx > 0:
+                        gestures['swipe_right'] = True
+                    else:
+                        gestures['swipe_left'] = True
                 else:
-                    # Check for tap/double tap
-                    if abs(dx) < AppConfig.TOUCH_MARGIN and abs(dy) < AppConfig.TOUCH_MARGIN:
-                        current_time_ms = current_time * 1000
-                        if (self.last_tap_time and 
-                            current_time_ms - self.last_tap_time < AppConfig.DOUBLE_TAP_THRESHOLD):
-                            gestures['double_tap'] = True
-                            logger.debug("Double tap detected")
-                        else:
-                            gestures['tap'] = True
-                            logger.debug("Tap detected")
-                        self.last_tap_time = current_time_ms
-                        self.last_tap_pos = (event.x, event.y)
+                    if dy > 0:
+                        gestures['swipe_down'] = True
+                    else:
+                        gestures['swipe_up'] = True
                 
-                # Reset tracking
-                self.start_pos = None
-                self.start_time = None
+                # Update last gesture time
+                self.last_gesture_time = current_time
+            
+            # Reset start position
+            self.start_x = None
+            self.start_y = None
         
         return gestures
