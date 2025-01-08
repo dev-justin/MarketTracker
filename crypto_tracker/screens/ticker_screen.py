@@ -280,9 +280,10 @@ class TickerScreen(BaseScreen):
         # Fill background
         self.display.surface.fill(self.background_color)
         
-        # If selector is showing, only draw it
+        # If selector is showing, only draw it and return
         if self.showing_selector:
             self.draw_ticker_selector()
+            self.needs_redraw = False
             return
             
         # Draw regular ticker screen content
@@ -441,9 +442,6 @@ class TickerScreen(BaseScreen):
                 # Position sparkline at bottom of screen with no padding
                 sparkline_rect.bottom = self.height
                 self.display.surface.blit(sparkline_surface, sparkline_rect)
-        
-        # Draw the ticker selector overlay last
-        self.draw_ticker_selector()
         
         # Reset needs_redraw flag
         self.needs_redraw = False 
