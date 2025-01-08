@@ -21,7 +21,8 @@ class DashboardScreen(BaseScreen):
         
         # Initialize components
         self.top_movers = TopMovers(display, self.crypto_manager)
-        self.menu_grid = MenuGrid(display, self.screen_manager)
+        # Wait to initialize menu_grid until screen_manager is set
+        self.menu_grid = None
         
         logger.info("DashboardScreen initialized")
     
@@ -29,7 +30,7 @@ class DashboardScreen(BaseScreen):
         """Handle pygame events."""
         gestures = self.gesture_handler.handle_touch_event(event)
         
-        if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
+        if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN'] and self.menu_grid:
             x, y = self._scale_touch_input(event)
             self.menu_grid.handle_click(x, y)
     
@@ -66,9 +67,10 @@ class DashboardScreen(BaseScreen):
         # Draw top movers section
         self.top_movers.draw()
         
-        # Draw menu grid (starting below top movers)
-        menu_start_y = time_rect.bottom + 160  # Start below top movers section
-        self.menu_grid.draw(menu_start_y)
+        # Draw menu grid if initialized
+        if self.menu_grid:
+            menu_start_y = time_rect.bottom + 160  # Start below top movers section
+            self.menu_grid.draw(menu_start_y)
         
         # Update the display
         self.update_screen()
@@ -78,4 +80,11 @@ class DashboardScreen(BaseScreen):
         # Update top movers
         self.top_movers.update()
         # Force redraw
+        self.draw()
+
+    def on_screen_enter(self) -> None:
+        """Called when entering the screen."""
+        # Initialize menu grid if not already done
+        if not self.menu_grid:
+            self.menu_grid = MenuGrid(self.display, self.screen_manager)
         self.draw()
