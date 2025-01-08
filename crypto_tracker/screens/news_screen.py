@@ -6,6 +6,7 @@ from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 from .base_screen import BaseScreen
 from ..services.news_service import NewsService
+import time
 
 logger = get_logger(__name__)
 
@@ -17,14 +18,14 @@ class NewsScreen(BaseScreen):
         super().__init__(display)
         self.background_color = (13, 13, 13)  # Darker black for more contrast
         
-        # Initialize news service
+        # Initialize news service and get initial news
         self.news_service = NewsService()
+        self.news_items = self.news_service.get_combined_news()
         
-        # News items state
-        self.news_items = []
+        # State
         self.scroll_offset = 0
         self.scroll_velocity = 0
-        self.last_update_time = 0
+        self.last_update_time = time.time()
         self.update_interval = 3600  # 1 hour
         
         # Dimensions
@@ -37,10 +38,11 @@ class NewsScreen(BaseScreen):
     
     def _update_news(self) -> None:
         """Update news items if needed."""
-        current_time = pygame.time.get_ticks()
-        if current_time - self.last_update_time > self.update_interval * 1000:
+        current_time = time.time()
+        if current_time - self.last_update_time > self.update_interval:
             self.news_items = self.news_service.get_combined_news()
             self.last_update_time = current_time
+            logger.info("Updated news items")
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
