@@ -19,7 +19,7 @@ class DashboardScreen(BaseScreen):
         self.background_color = (13, 13, 13)  # Darker black for more contrast
         
         # Initialize components
-        self.top_movers = TopMovers(display)
+        self.top_movers = TopMovers(display, self.crypto_manager)
         self.menu_grid = MenuGrid(display, None)  # screen_manager will be set later
         
         # Menu grid position
@@ -75,3 +75,8 @@ class DashboardScreen(BaseScreen):
         self.clickable_areas = self.menu_grid.draw(self.menu_start_y)
         
         self.update_screen()
+    
+    def refresh_coins(self) -> None:
+        """Refresh the list of tracked coins."""
+        self.top_movers.update()
+        self.draw()
