@@ -1,62 +1,66 @@
+"""Screen manager service."""
+
 import pygame
+from typing import Dict, Optional
 from ..utils.logger import get_logger
-from typing import Dict, Any, Optional
+from ..screens.base_screen import BaseScreen
+from ..screens.ticker_screen import TickerScreen
+from ..screens.dashboard_screen import DashboardScreen
+from ..screens.settings_screen import SettingsScreen
+from ..screens.edit_ticker_screen import EditTickerScreen
+from ..screens.add_ticker_screen import AddTickerScreen
+from ..screens.news_screen import NewsScreen
 
 logger = get_logger(__name__)
 
 class ScreenManager:
-    """Manages screen switching and state."""
+    """Manages different screens in the application."""
     
     def __init__(self, display) -> None:
         """Initialize the screen manager."""
         self.display = display
-        self.screens = {}
-        self.current_screen = None
+        self.screens: Dict[str, BaseScreen] = {}
+        self.current_screen: Optional[BaseScreen] = None
+        self.current_screen_name: Optional[str] = None
+        
+        # Initialize screens
+        self.screens['ticker'] = TickerScreen(display)
+        self.screens['dashboard'] = DashboardScreen(display)
+        self.screens['settings'] = SettingsScreen(display)
+        self.screens['edit_ticker'] = EditTickerScreen(display)
+        self.screens['add_ticker'] = AddTickerScreen(display)
+        self.screens['news'] = NewsScreen(display)
+        
+        # Set screen manager reference in each screen
+        for screen in self.screens.values():
+            screen.screen_manager = self
+        
+        # Set initial screen
+        self.switch_screen('dashboard')
+        
         logger.info("ScreenManager initialized")
     
-    def add_screen(self, name: str, screen_class: Any, is_singleton: bool = True) -> None:
-        """
-        Add a screen to the manager.
-        
-        Args:
-            name: The name of the screen
-            screen_class: The screen class to instantiate
-            is_singleton: Kept for backward compatibility, no longer used
-        """
-        screen = screen_class(self.display)
-        self.screens[name] = screen
-        screen.screen_manager = self
-        logger.info(f"Added screen: {name}")
-    
-    def switch_screen(self, name: str, *args, **kwargs) -> None:
+    def switch_screen(self, screen_name: str) -> None:
         """Switch to a different screen."""
-        if name not in self.screens:
-            logger.error(f"Screen not found: {name}")
+        if screen_name not in self.screens:
+            logger.error(f"Screen {screen_name} not found")
             return
-            
-        if self.current_screen:
-            self.current_screen.on_screen_exit()
-            
-        self.current_screen = self.screens[name]
         
-        # Special handling for edit_ticker screen
-        if name == 'edit_ticker' and args:
-            self.current_screen.load_coin(args[0])
-        
+        logger.info(f"Switching to screen: {screen_name}")
+        self.current_screen_name = screen_name
+        self.current_screen = self.screens[screen_name]
         self.current_screen.on_screen_enter()
-        logger.info(f"Switched to screen: {name}")
     
-    def handle_event(self, event: pygame.event.Event) -> None:
-        """Handle pygame events by passing them to the current screen."""
-        if self.current_screen:
-            self.current_screen.handle_event(event)
+    def get_screen(self, screen_name: str) -> Optional[BaseScreen]:
+        """Get a screen by name."""
+        return self.screens.get(screen_name)
     
     def update_screen(self) -> None:
         """Update the current screen."""
         if self.current_screen:
             self.current_screen.draw()
-            pygame.display.flip()
     
-    def get_current_screen(self) -> Optional[Any]:
-        """Get the current screen."""
-        return self.current_screen
+    def handle_event(self, event: pygame.event.Event) -> None:
+        """Handle pygame events."""
+        if self.current_screen:
+            self.current_screen.handle_event(event)

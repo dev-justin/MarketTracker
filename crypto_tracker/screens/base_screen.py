@@ -5,6 +5,9 @@ from ..utils.logger import get_logger
 from ..utils.gesture import GestureHandler
 from ..services.service_manager import ServiceManager
 from ..services.asset_manager import AssetManager
+from datetime import datetime
+from zoneinfo import ZoneInfo
+from typing import Optional
 
 logger = get_logger(__name__)
 
@@ -54,3 +57,17 @@ class BaseScreen(ABC):
             int(event.x * self.width),
             int(event.y * self.height)
         )
+    
+    def get_current_time(self) -> str:
+        """Get the current time formatted for display."""
+        now = datetime.now(ZoneInfo(AppConfig.TIMEZONE))
+        return now.strftime("%I:%M %p").lstrip("0")
+    
+    def get_current_date(self) -> str:
+        """Get the current date formatted for display."""
+        now = datetime.now(ZoneInfo(AppConfig.TIMEZONE))
+        return now.strftime("%A, %B %d")
+    
+    def refresh_coins(self) -> None:
+        """Refresh the list of tracked coins."""
+        pass

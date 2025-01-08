@@ -1,103 +1,108 @@
-"""Component for displaying the main menu grid."""
+"""Menu grid component for the dashboard screen."""
 
 import pygame
+from typing import List, Dict, Tuple
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 class MenuGrid:
-    """Component for displaying the main menu grid."""
+    """Menu grid component for the dashboard screen."""
     
-    def __init__(self, display, screen_manager):
-        """Initialize the menu grid component."""
+    def __init__(self, display, screen_manager) -> None:
+        """Initialize the menu grid."""
         self.display = display
         self.screen_manager = screen_manager
         
-        # Dimensions
-        self.width = self.display.surface.get_width()
-        self.height = 160  # Reduced from 200
-        self.padding = 15
-        
-        # Calculate card dimensions
-        usable_width = self.width - (self.padding * 4)  # 4 paddings (left, between cards, right)
-        self.card_width = usable_width // 3
-        self.card_height = 120  # Reduced from 140
-        
-        # Menu items configuration
+        # Menu items
         self.menu_items = [
             {
                 'title': 'Ticker',
                 'screen': 'ticker',
-                'icon': 'trending-up'
+                'icon': '📊'
             },
             {
                 'title': 'News',
-                'screen': None,  # Placeholder for now
-                'icon': 'trending-up'  # Use appropriate icon when available
+                'screen': 'news',
+                'icon': '📰'
             },
             {
                 'title': 'Settings',
                 'screen': 'settings',
-                'icon': 'edit'
+                'icon': '⚙️'
             }
         ]
         
+        # Dimensions
+        self.grid_height = 160
+        self.card_height = 120
+        self.padding = 15
+        self.icon_size = 36
+        
+        # Calculate card width based on number of items
+        self.card_width = (self.display.width - (self.padding * (len(self.menu_items) + 1))) // len(self.menu_items)
+        
+        # Click handling
+        self.last_click_time = 0
+        self.click_delay = 300  # milliseconds
+        
         logger.info("MenuGrid initialized")
     
-    def _draw_menu_card(self, x: int, y: int, item: dict) -> pygame.Rect:
-        """Draw a single menu card."""
-        # Create card rectangle
-        card_rect = pygame.Rect(x, y, self.card_width, self.card_height)
+    def _draw_menu_item(self, item: Dict, x: int, y: int) -> pygame.Rect:
+        """Draw a single menu item."""
+        # Create item rectangle
+        item_rect = pygame.Rect(x, y, self.card_width, self.card_height)
         
-        # Draw card background with gradient effect
-        gradient_surface = pygame.Surface((self.card_width, self.card_height), pygame.SRCALPHA)
+        # Draw background
         pygame.draw.rect(
-            gradient_surface,
-            (45, 45, 45, 230),  # Semi-transparent dark gray
-            gradient_surface.get_rect(),
+            self.display.surface,
+            (30, 30, 30),
+            item_rect,
             border_radius=15
         )
-        self.display.surface.blit(gradient_surface, card_rect)
         
-        # Draw icon if available
-        if item['icon']:
-            icon = self.display.assets.get_icon(item['icon'], size=(36, 36), color=AppConfig.WHITE)
-            if icon:
-                icon_rect = icon.get_rect(
-                    centerx=card_rect.centerx,
-                    top=card_rect.top + 20  # Reduced from 25
-                )
-                self.display.surface.blit(icon, icon_rect)
+        # Draw icon
+        icon_font = self.display.get_text_font('lg', 'bold')
+        icon_surface = icon_font.render(item['icon'], True, AppConfig.WHITE)
+        icon_rect = icon_surface.get_rect(
+            centerx=item_rect.centerx,
+            centery=item_rect.centery - 10
+        )
+        self.display.surface.blit(icon_surface, icon_rect)
         
         # Draw title
-        title_font = self.display.get_title_font('sm', 'bold')
+        title_font = self.display.get_text_font('sm', 'bold')
         title_surface = title_font.render(item['title'], True, AppConfig.WHITE)
         title_rect = title_surface.get_rect(
-            centerx=card_rect.centerx,
-            top=card_rect.top + 70  # Reduced from 80
+            centerx=item_rect.centerx,
+            top=icon_rect.bottom + 10
         )
         self.display.surface.blit(title_surface, title_rect)
         
-        return card_rect
+        return item_rect
     
-    def draw(self, start_y: int) -> None:
+    def draw(self, start_y: int) -> List[Tuple[pygame.Rect, str]]:
         """Draw the menu grid."""
-        # Calculate starting x position for first card
+        clickable_areas = []
         current_x = self.padding
         
-        # Store card rects for click detection
-        self.card_rects = []
-        
-        # Draw each menu card
         for item in self.menu_items:
-            card_rect = self._draw_menu_card(current_x, start_y, item)
-            self.card_rects.append((card_rect, item))
+            item_rect = self._draw_menu_item(item, current_x, start_y)
+            clickable_areas.append((item_rect, item['screen']))
             current_x += self.card_width + self.padding
+        
+        return clickable_areas
     
-    def handle_click(self, x: int, y: int) -> None:
-        """Handle click events on menu cards."""
-        for rect, item in self.card_rects:
-            if rect.collidepoint(x, y) and item['screen']:
-                logger.info(f"Menu item clicked: {item['title']}")
-                self.screen_manager.switch_screen(item['screen']) 
+    def handle_click(self, pos: Tuple[int, int], clickable_areas: List[Tuple[pygame.Rect, str]]) -> None:
+        """Handle click events."""
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_click_time < self.click_delay:
+            return
+        
+        for rect, screen_name in clickable_areas:
+            if rect.collidepoint(pos):
+                logger.info(f"Menu item clicked: {screen_name}")
+                self.screen_manager.switch_screen(screen_name)
+                self.last_click_time = current_time
+                break 

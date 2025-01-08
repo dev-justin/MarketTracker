@@ -1,19 +1,17 @@
-"""Screen for displaying the dashboard with time, top movers, and favorites."""
+"""Dashboard screen for the crypto tracker application."""
 
 import pygame
-from datetime import datetime
-from zoneinfo import ZoneInfo
+from typing import List, Tuple
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 from .base_screen import BaseScreen
 from ..components.top_movers import TopMovers
 from ..components.menu_grid import MenuGrid
-import time
 
 logger = get_logger(__name__)
 
 class DashboardScreen(BaseScreen):
-    """Screen for displaying the current day and time."""
+    """Dashboard screen showing market overview and navigation menu."""
     
     def __init__(self, display) -> None:
         """Initialize the dashboard screen."""
@@ -21,12 +19,14 @@ class DashboardScreen(BaseScreen):
         self.background_color = (13, 13, 13)  # Darker black for more contrast
         
         # Initialize components
-        self.top_movers = TopMovers(display, self.crypto_manager)
-        # Wait to initialize menu_grid until screen_manager is set
-        self.menu_grid = None
+        self.top_movers = TopMovers(display)
+        self.menu_grid = MenuGrid(display, None)  # screen_manager will be set later
         
-        # Track last click time to prevent rapid screen switches
-        self.last_click_time = 0
+        # Menu grid position
+        self.menu_start_y = 300
+        
+        # Store clickable areas
+        self.clickable_areas: List[Tuple[pygame.Rect, str]] = []
         
         logger.info("DashboardScreen initialized")
     
@@ -34,78 +34,44 @@ class DashboardScreen(BaseScreen):
         """Handle pygame events."""
         gestures = self.gesture_handler.handle_touch_event(event)
         
-        # Handle swipe gestures
         if gestures['swipe_up']:
-            logger.info("Swipe up detected, switching to settings")
+            logger.info("Swipe up detected, switching to settings screen")
             self.screen_manager.switch_screen('settings')
         elif gestures['swipe_down']:
-            logger.info("Swipe down detected, switching to ticker")
+            logger.info("Swipe down detected, switching to ticker screen")
             self.screen_manager.switch_screen('ticker')
-        # Handle menu clicks
-        elif event.type == AppConfig.EVENT_TYPES['FINGER_DOWN'] and self.menu_grid:
-            current_time = time.time()
-            # Only handle click if enough time has passed since last click (300ms)
-            if current_time - self.last_click_time > 0.3:
-                x, y = self._scale_touch_input(event)
-                self.menu_grid.handle_click(x, y)
-                self.last_click_time = current_time
-    
-    def _draw_datetime(self) -> pygame.Rect:
-        """Draw the current date and time."""
-        # Get current time 
-        now = datetime.now()
-        local_time = now.astimezone(ZoneInfo(AppConfig.TIMEZONE))
-        
-        # Draw date
-        date_text = local_time.strftime("%A, %B %d")
-        date_font = self.display.get_font('light', 'lg')
-        date_surface = date_font.render(date_text, True, AppConfig.WHITE)
-        date_rect = date_surface.get_rect(centerx=self.width // 2, top=20)
-        self.display.surface.blit(date_surface, date_rect)
-        
-        # Draw time (larger)
-        time_text = local_time.strftime("%I:%M %p").lstrip("0")
-        time_font = self.display.get_title_font('xl')  # Use title-xl font
-        time_surface = time_font.render(time_text, True, AppConfig.WHITE)
-        time_rect = time_surface.get_rect(centerx=self.width // 2, top=date_rect.bottom + 10)
-        self.display.surface.blit(time_surface, time_rect)
-        
-        return time_rect
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            # Handle menu clicks
+            self.menu_grid.handle_click(event.pos, self.clickable_areas)
     
     def draw(self) -> None:
         """Draw the dashboard screen."""
         # Fill background
         self.display.surface.fill(self.background_color)
         
-        # Draw date and time
-        time_rect = self._draw_datetime()
+        # Draw time
+        time_font = self.display.get_title_font('lg', 'bold')
+        time_surface = time_font.render(self.get_current_time(), True, AppConfig.WHITE)
+        time_rect = time_surface.get_rect(
+            centerx=self.width // 2,
+            top=20
+        )
+        self.display.surface.blit(time_surface, time_rect)
         
-        # Draw top movers section
-        self.top_movers.draw()
+        # Draw date
+        date_font = self.display.get_text_font('md', 'regular')
+        date_surface = date_font.render(self.get_current_date(), True, AppConfig.GRAY)
+        date_rect = date_surface.get_rect(
+            centerx=self.width // 2,
+            top=time_rect.bottom + 10
+        )
+        self.display.surface.blit(date_surface, date_rect)
         
-        # Draw menu grid if initialized
-        if self.menu_grid:
-            # Calculate available space
-            top_movers_bottom = self.top_movers.section_y + self.top_movers.section_height
-            available_height = self.height - top_movers_bottom
-            padding = available_height // 3  # Use 1/3 of remaining space as padding
-            menu_start_y = top_movers_bottom + padding
-            
-            self.menu_grid.draw(menu_start_y)
+        # Draw top movers
+        self.top_movers.draw(date_rect.bottom + 20)
         
-        # Update the display
+        # Draw menu grid
+        self.menu_grid.screen_manager = self.screen_manager
+        self.clickable_areas = self.menu_grid.draw(self.menu_start_y)
+        
         self.update_screen()
-
-    def refresh_coins(self):
-        """Refresh the list of tracked coins."""
-        # Update top movers
-        self.top_movers.update()
-        # Force redraw
-        self.draw()
-
-    def on_screen_enter(self) -> None:
-        """Called when entering the screen."""
-        # Initialize menu grid if not already done
-        if not self.menu_grid:
-            self.menu_grid = MenuGrid(self.display, self.screen_manager)
-        self.draw()
