@@ -28,25 +28,16 @@ class DashboardScreen(BaseScreen):
         # Store clickable areas
         self.clickable_areas: List[Tuple[pygame.Rect, str]] = []
         
+        # Track if redraw is needed
+        self.needs_redraw = True
+        
         logger.info("DashboardScreen initialized")
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
-        logger.debug(f"DashboardScreen received event: {event.type}")
+        logger.debug(f"DashboardScreen received event type: {event.type}")
         
-        if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
-            # Log raw touch coordinates
-            logger.debug(f"Raw touch coordinates: ({event.x}, {event.y})")
-            x, y = self._scale_touch_input(event)
-            logger.debug(f"Scaled touch coordinates: ({x}, {y})")
-            
-            if self.menu_grid:
-                logger.debug("Menu grid exists, handling click")
-                self.menu_grid.handle_click((x, y), self.clickable_areas)
-            else:
-                logger.warning("Menu grid not initialized for touch event")
-        
-        # Handle gestures after direct touch events
+        # Handle gestures first
         gestures = self.gesture_handler.handle_touch_event(event)
         logger.debug(f"Gesture detected: {gestures}")
         
@@ -62,9 +53,28 @@ class DashboardScreen(BaseScreen):
                 self.screen_manager.switch_screen('ticker')
             else:
                 logger.error("Screen manager not initialized for swipe down")
+        
+        # Handle direct touch events
+        if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
+            # Log raw touch coordinates
+            logger.debug(f"Raw touch coordinates: ({event.x}, {event.y})")
+            x, y = self._scale_touch_input(event)
+            logger.debug(f"Scaled touch coordinates: ({x}, {y})")
+            
+            if self.menu_grid:
+                logger.debug("Menu grid exists, handling click")
+                self.menu_grid.handle_click((x, y), self.clickable_areas)
+            else:
+                logger.warning("Menu grid not initialized for touch event")
     
     def draw(self) -> None:
         """Draw the dashboard screen."""
+        # Only redraw if needed
+        if not self.needs_redraw:
+            return
+            
+        logger.debug("Drawing dashboard screen")
+        
         # Fill background
         self.display.surface.fill(self.background_color)
         
@@ -102,8 +112,22 @@ class DashboardScreen(BaseScreen):
             logger.debug(f"Menu grid drawn with {len(self.clickable_areas)} clickable areas")
         
         self.update_screen()
+        self.needs_redraw = False
     
     def refresh_coins(self) -> None:
         """Refresh the list of tracked coins."""
         self.top_movers.update()
+        self.needs_redraw = True
         self.draw()
+    
+    def on_screen_enter(self) -> None:
+        """Called when entering the screen."""
+        logger.debug("Entering dashboard screen")
+        self.needs_redraw = True
+        self.draw()
+    
+    def update_screen(self) -> None:
+        """Update the display."""
+        pygame.display.flip()
+        # Set needs_redraw to True every second to update time
+        self.needs_redraw = True

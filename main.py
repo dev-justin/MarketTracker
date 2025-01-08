@@ -11,7 +11,7 @@ from crypto_tracker.services.crypto.crypto_manager import CryptoManager
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -41,8 +41,10 @@ def main():
         # Main game loop
         clock = pygame.time.Clock()
         running = True
+        last_time_update = pygame.time.get_ticks()
         
         while running:
+            # Handle all events
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
@@ -50,9 +52,15 @@ def main():
                     if event.key == pygame.K_q:
                         running = False
                 else:
+                    logger.debug(f"Main loop received event: {event.type}")
                     screen_manager.handle_event(event)
             
-            screen_manager.update_screen()
+            # Update time display every second
+            current_time = pygame.time.get_ticks()
+            if current_time - last_time_update >= 1000:  # 1 second
+                screen_manager.update_screen()
+                last_time_update = current_time
+            
             clock.tick(AppConfig.FPS)
         
         # Clean up
