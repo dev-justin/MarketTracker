@@ -55,6 +55,7 @@ class ScreenManager:
         """Update the current screen."""
         if self.current_screen:
             self.current_screen.draw()
+            pygame.display.flip()
     
     def get_current_screen(self) -> Optional[Any]:
         """Get the current screen."""
