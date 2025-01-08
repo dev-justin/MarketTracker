@@ -30,7 +30,7 @@ class AssetManager:
     
     def _load_icons(self):
         """Load all application icons."""
-        icon_names = ['star', 'edit', 'trending-up', 'trending-down']
+        icon_names = ['star', 'edit', 'trending-up', 'trending-down', 'settings', 'news', 'stocks']
         for name in icon_names:
             self.icons[name] = self._load_and_process_icon(name)
     
