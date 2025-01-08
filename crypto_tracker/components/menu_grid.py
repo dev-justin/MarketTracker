@@ -16,13 +16,13 @@ class MenuGrid:
         
         # Dimensions
         self.width = self.display.surface.get_width()
-        self.height = 200  # Reduced from 300
+        self.height = 160  # Reduced from 200
         self.padding = 15
         
         # Calculate card dimensions
         usable_width = self.width - (self.padding * 4)  # 4 paddings (left, between cards, right)
         self.card_width = usable_width // 3
-        self.card_height = 140  # Reduced from 220
+        self.card_height = 120  # Reduced from 140
         
         # Menu items configuration
         self.menu_items = [
@@ -66,7 +66,7 @@ class MenuGrid:
             if icon:
                 icon_rect = icon.get_rect(
                     centerx=card_rect.centerx,
-                    top=card_rect.top + 25  # Reduced from 30
+                    top=card_rect.top + 20  # Reduced from 25
                 )
                 self.display.surface.blit(icon, icon_rect)
         
@@ -75,7 +75,7 @@ class MenuGrid:
         title_surface = title_font.render(item['title'], True, AppConfig.WHITE)
         title_rect = title_surface.get_rect(
             centerx=card_rect.centerx,
-            top=card_rect.top + 80  # Reduced from 90
+            top=card_rect.top + 70  # Reduced from 80
         )
         self.display.surface.blit(title_surface, title_rect)
         

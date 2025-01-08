@@ -77,7 +77,12 @@ class DashboardScreen(BaseScreen):
         
         # Draw menu grid if initialized
         if self.menu_grid:
-            menu_start_y = self.height - self.menu_grid.height - 40  # Increased padding from 20 to 40
+            # Calculate available space
+            top_movers_bottom = self.top_movers.section_y + self.top_movers.section_height
+            available_height = self.height - top_movers_bottom
+            padding = available_height // 3  # Use 1/3 of remaining space as padding
+            menu_start_y = top_movers_bottom + padding
+            
             self.menu_grid.draw(menu_start_y)
         
         # Update the display
