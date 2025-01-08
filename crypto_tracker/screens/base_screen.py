@@ -32,11 +32,16 @@ class BaseScreen:
         self.gesture_handler = GestureHandler()
         self.width = AppConfig.DISPLAY_WIDTH
         self.height = AppConfig.DISPLAY_HEIGHT
+        self.needs_redraw = True
+        
+        # Create a surface for double buffering
+        self.surface = pygame.Surface((self.width, self.height))
+        
         logger.info(f"{self.__class__.__name__} initialized with dimensions {self.width}x{self.height}")
     
     def on_screen_enter(self) -> None:
         """Called when entering the screen. Override in subclasses."""
-        pass
+        self.needs_redraw = True
     
     def on_screen_exit(self) -> None:
         """Called when exiting the screen. Override in subclasses."""
@@ -52,13 +57,19 @@ class BaseScreen:
     
     def update_screen(self) -> None:
         """Update the display."""
-        pygame.display.flip()
+        if self.needs_redraw:
+            # Draw to our surface first
+            self.surface.fill(self.background_color if hasattr(self, 'background_color') else AppConfig.BLACK)
+            self.draw()
+            # Then blit to the display surface
+            self.display.surface.blit(self.surface, (0, 0))
+            pygame.display.flip()
+            self.needs_redraw = False
     
     def _scale_touch_input(self, event: pygame.event.Event) -> tuple:
         """Scale touch input coordinates to screen dimensions."""
         scaled_x = int(event.x * self.width)
         scaled_y = int(event.y * self.height)
-        logger.debug(f"Scaling touch input: ({event.x}, {event.y}) -> ({scaled_x}, {scaled_y})")
         return (scaled_x, scaled_y)
     
     def get_current_time(self) -> str:
@@ -73,4 +84,4 @@ class BaseScreen:
     
     def refresh_coins(self) -> None:
         """Refresh the list of tracked coins."""
-        pass
+        self.needs_redraw = True

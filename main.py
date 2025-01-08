@@ -42,6 +42,7 @@ def main():
         clock = pygame.time.Clock()
         running = True
         last_time_update = pygame.time.get_ticks()
+        needs_update = True
         
         while running:
             # Handle all events
@@ -51,15 +52,22 @@ def main():
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_q:
                         running = False
-                else:
-                    logger.debug(f"Main loop received event: {event.type}")
+                elif event.type in [AppConfig.EVENT_TYPES['FINGER_DOWN'], 
+                                  AppConfig.EVENT_TYPES['FINGER_UP'],
+                                  AppConfig.EVENT_TYPES['FINGER_MOTION']]:
                     screen_manager.handle_event(event)
+                    needs_update = True
             
             # Update time display every second
             current_time = pygame.time.get_ticks()
             if current_time - last_time_update >= 1000:  # 1 second
-                screen_manager.update_screen()
+                needs_update = True
                 last_time_update = current_time
+            
+            # Only update screen when needed
+            if needs_update:
+                screen_manager.update_screen()
+                needs_update = False
             
             clock.tick(AppConfig.FPS)
         

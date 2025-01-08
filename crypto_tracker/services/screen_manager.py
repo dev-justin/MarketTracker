@@ -48,10 +48,22 @@ class ScreenManager:
             logger.error(f"Screen {screen_name} not found")
             return
         
+        if screen_name == self.current_screen_name:
+            return  # Don't switch if already on the screen
+            
         logger.info(f"Switching to screen: {screen_name}")
+        
+        # Call exit on current screen
+        if self.current_screen:
+            self.current_screen.on_screen_exit()
+        
         self.current_screen_name = screen_name
         self.current_screen = self.screens[screen_name]
+        
+        # Pre-draw the new screen
         self.current_screen.on_screen_enter()
+        self.current_screen.draw()
+        pygame.display.flip()  # Immediate screen update
     
     def get_screen(self, screen_name: str) -> Optional[BaseScreen]:
         """Get a screen by name."""
@@ -59,10 +71,12 @@ class ScreenManager:
     
     def update_screen(self) -> None:
         """Update the current screen."""
-        if self.current_screen:
+        if self.current_screen and hasattr(self.current_screen, 'needs_redraw') and self.current_screen.needs_redraw:
             self.current_screen.draw()
+            self.current_screen.needs_redraw = False
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
         if self.current_screen:
+            # Process the event immediately
             self.current_screen.handle_event(event)
