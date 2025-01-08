@@ -41,7 +41,8 @@ class MenuGrid:
         self.icon_size = 36
         
         # Calculate card width based on number of items
-        self.card_width = (self.display.width - (self.padding * (len(self.menu_items) + 1))) // len(self.menu_items)
+        display_width = self.display.surface.get_width()
+        self.card_width = (display_width - (self.padding * (len(self.menu_items) + 1))) // len(self.menu_items)
         
         # Click handling
         self.last_click_time = 0
