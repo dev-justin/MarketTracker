@@ -22,6 +22,7 @@ class ScreenManager:
         self.screens: Dict[str, BaseScreen] = {}
         self.current_screen: Optional[BaseScreen] = None
         self.current_screen_name: Optional[str] = None
+        self.switching_in_progress = False
         
         # Initialize screens
         self.screens['ticker'] = TickerScreen(display)
@@ -51,19 +52,29 @@ class ScreenManager:
         if screen_name == self.current_screen_name:
             return  # Don't switch if already on the screen
             
-        logger.info(f"Switching to screen: {screen_name}")
-        
-        # Call exit on current screen
-        if self.current_screen:
-            self.current_screen.on_screen_exit()
-        
-        self.current_screen_name = screen_name
-        self.current_screen = self.screens[screen_name]
-        
-        # Pre-draw the new screen
-        self.current_screen.on_screen_enter()
-        self.current_screen.draw()
-        pygame.display.flip()  # Immediate screen update
+        if self.switching_in_progress:
+            logger.debug("Screen switch already in progress, ignoring request")
+            return
+            
+        try:
+            self.switching_in_progress = True
+            logger.info(f"Switching to screen: {screen_name}")
+            
+            # Call exit on current screen
+            if self.current_screen:
+                self.current_screen.on_screen_exit()
+            
+            # Update screen references
+            self.current_screen_name = screen_name
+            self.current_screen = self.screens[screen_name]
+            
+            # Initialize new screen
+            self.current_screen.on_screen_enter()
+            self.current_screen.draw()
+            pygame.display.flip()  # Immediate screen update
+            
+        finally:
+            self.switching_in_progress = False
     
     def get_screen(self, screen_name: str) -> Optional[BaseScreen]:
         """Get a screen by name."""
@@ -77,6 +88,6 @@ class ScreenManager:
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
-        if self.current_screen:
+        if self.current_screen and not self.switching_in_progress:
             # Process the event immediately
             self.current_screen.handle_event(event)
