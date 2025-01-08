@@ -230,6 +230,31 @@ class NewsScreen(BaseScreen):
         
         return item_rect
     
+    def _wrap_text(self, text: str, font: pygame.font.Font, max_width: int) -> list:
+        """Wrap text to fit within a given width."""
+        words = text.split(' ')
+        lines = []
+        current_line = []
+        current_width = 0
+        
+        for word in words:
+            word_surface = font.render(word + ' ', True, AppConfig.WHITE)
+            word_width = word_surface.get_width()
+            
+            if current_width + word_width <= max_width:
+                current_line.append(word)
+                current_width += word_width
+            else:
+                if current_line:  # Add the current line if it's not empty
+                    lines.append(' '.join(current_line))
+                current_line = [word]
+                current_width = word_width
+        
+        if current_line:  # Add the last line
+            lines.append(' '.join(current_line))
+        
+        return lines
+    
     def _draw_news_section(self, news_items: list, section_rect: pygame.Rect, scroll_offset: float) -> None:
         """Draw a section of news items in a 2x2 grid."""
         if not news_items:
@@ -275,18 +300,21 @@ class NewsScreen(BaseScreen):
                 border_radius=10
             )
             
-            # Draw title
+            # Draw wrapped title
             title_font = self.display.get_text_font('md', 'bold')
             title_text = item.get('title', 'No title')
-            # Truncate title if too long
-            if len(title_text) > 60:
-                title_text = title_text[:57] + "..."
-            title_surface = title_font.render(title_text, True, AppConfig.WHITE)
-            title_rect = title_surface.get_rect(
-                left=item_rect.left + 15,
-                top=item_rect.top + 15
-            )
-            section_surface.blit(title_surface, title_rect)
+            max_title_width = item_width - 30  # 15px padding on each side
+            wrapped_title = self._wrap_text(title_text, title_font, max_title_width)
+            
+            current_y = item_rect.top + 15
+            for line in wrapped_title[:2]:  # Show max 2 lines
+                title_surface = title_font.render(line, True, AppConfig.WHITE)
+                title_rect = title_surface.get_rect(
+                    left=item_rect.left + 15,
+                    top=current_y
+                )
+                section_surface.blit(title_surface, title_rect)
+                current_y += title_rect.height + 5  # 5px spacing between lines
             
             # Draw source with accent color
             source_color = (45, 156, 219) if item.get('type') == 'crypto' else (39, 174, 96)
@@ -295,7 +323,7 @@ class NewsScreen(BaseScreen):
             source_surface = source_font.render(source_text, True, source_color)
             source_rect = source_surface.get_rect(
                 left=item_rect.left + 15,
-                top=title_rect.bottom + 10
+                top=current_y + 10
             )
             section_surface.blit(source_surface, source_rect)
             
@@ -303,14 +331,17 @@ class NewsScreen(BaseScreen):
             if 'summary' in item:
                 summary_font = self.display.get_text_font('sm', 'regular')
                 summary_text = item['summary']
-                if len(summary_text) > 100:
-                    summary_text = summary_text[:97] + "..."
-                summary_surface = summary_font.render(summary_text, True, AppConfig.GRAY)
-                summary_rect = summary_surface.get_rect(
-                    left=item_rect.left + 15,
-                    top=source_rect.bottom + 10
-                )
-                section_surface.blit(summary_surface, summary_rect)
+                wrapped_summary = self._wrap_text(summary_text, summary_font, max_title_width)
+                
+                current_y = source_rect.bottom + 10
+                for line in wrapped_summary[:2]:  # Show max 2 lines
+                    summary_surface = summary_font.render(line, True, AppConfig.GRAY)
+                    summary_rect = summary_surface.get_rect(
+                        left=item_rect.left + 15,
+                        top=current_y
+                    )
+                    section_surface.blit(summary_surface, summary_rect)
+                    current_y += summary_rect.height + 3  # 3px spacing between summary lines
         
         # Blit the section surface to the main display
         self.display.surface.blit(section_surface, section_rect)
