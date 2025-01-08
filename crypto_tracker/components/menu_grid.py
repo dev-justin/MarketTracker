@@ -21,17 +21,17 @@ class MenuGrid:
             {
                 'title': 'Ticker',
                 'screen': 'ticker',
-                'icon': '📊'
+                'icon': 'stocks'  # Using stocks.svg
             },
             {
                 'title': 'News',
                 'screen': 'news',
-                'icon': '📰'
+                'icon': 'news'  # Using news.svg
             },
             {
                 'title': 'Settings',
                 'screen': 'settings',
-                'icon': '⚙️'
+                'icon': 'settings'  # Using settings.svg
             }
         ]
         
@@ -39,7 +39,7 @@ class MenuGrid:
         self.grid_height = 160
         self.card_height = 120
         self.padding = 15
-        self.icon_size = 36
+        self.icon_size = (36, 36)  # Size for SVG icons
         
         # Calculate card width based on number of items
         display_width = self.display.surface.get_width()
@@ -65,20 +65,20 @@ class MenuGrid:
         )
         
         # Draw icon
-        icon_font = self.display.get_text_font('lg', 'bold')
-        icon_surface = icon_font.render(item['icon'], True, AppConfig.WHITE)
-        icon_rect = icon_surface.get_rect(
-            centerx=item_rect.centerx,
-            centery=item_rect.centery - 10
-        )
-        self.display.surface.blit(icon_surface, icon_rect)
+        icon = self.display.assets.get_icon(item['icon'], size=self.icon_size, color=AppConfig.WHITE)
+        if icon:
+            icon_rect = icon.get_rect(
+                centerx=item_rect.centerx,
+                centery=item_rect.centery - 10
+            )
+            self.display.surface.blit(icon, icon_rect)
         
         # Draw title
         title_font = self.display.get_text_font('sm', 'bold')
         title_surface = title_font.render(item['title'], True, AppConfig.WHITE)
         title_rect = title_surface.get_rect(
             centerx=item_rect.centerx,
-            top=icon_rect.bottom + 10
+            top=item_rect.centery + 20
         )
         self.display.surface.blit(title_surface, title_rect)
         
