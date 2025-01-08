@@ -13,14 +13,33 @@ logger = get_logger(__name__)
 class NewsService:
     """Service for fetching and managing news data."""
     
+    _instance = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
     def __init__(self) -> None:
         """Initialize the news service."""
-        self.news_cache = []
-        self.last_update = 0
-        self.update_interval = 3600  # 1 hour
-        self.cache_file = os.path.join(AppConfig.CACHE_DIR, 'news_cache.json')
-        self._load_cache()
-        logger.info("NewsService initialized")
+        if not hasattr(self, 'initialized'):
+            self.news_cache = []
+            self.last_update = 0
+            self.update_interval = 3600  # 1 hour
+            self.cache_file = os.path.join(AppConfig.CACHE_DIR, 'news_cache.json')
+            
+            # Load cache first for immediate display
+            self._load_cache()
+            
+            # Then fetch fresh news
+            fresh_news = self._fetch_news()
+            if fresh_news:
+                self.news_cache = fresh_news
+                self.last_update = time.time()
+                self._save_cache()
+            
+            self.initialized = True
+            logger.info("NewsService initialized")
     
     def _load_cache(self) -> None:
         """Load cached news data."""
@@ -33,6 +52,16 @@ class NewsService:
                     logger.info("Loaded news from cache")
         except Exception as e:
             logger.error(f"Error loading news cache: {e}")
+            # Initialize with default news items if cache load fails
+            self.news_cache = [
+                {
+                    'title': 'Loading Market News...',
+                    'source': 'System',
+                    'summary': 'Please wait while we fetch the latest market updates.',
+                    'image_path': '',
+                    'timestamp': time.time()
+                }
+            ]
     
     def _save_cache(self) -> None:
         """Save news data to cache."""
