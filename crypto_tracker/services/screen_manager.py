@@ -36,7 +36,7 @@ class ScreenManager:
             screen.screen_manager = self
         
         # Set initial screen
-        self.switch_screen('dashboard')
+        self.switch_screen('ticker')
         
         logger.info("ScreenManager initialized")
     
