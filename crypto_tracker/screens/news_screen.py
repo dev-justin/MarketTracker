@@ -29,7 +29,7 @@ class NewsScreen(BaseScreen):
         self.stock_scroll_velocity = 0
         self.last_update_time = time.time()
         self.update_interval = 3600  # 1 hour
-        
+
         # Touch tracking
         self.last_touch_y = None
         self.active_section = None  # 'crypto' or 'stock'

@@ -101,6 +101,7 @@ class TickerScreen(BaseScreen):
                         if logo_rect.collidepoint(x, y):
                             self.current_index = self.coins.index(coin)
                             self.showing_selector = False
+                            self.needs_redraw = True
                             return
                 
                 # Check stock section
@@ -121,10 +122,12 @@ class TickerScreen(BaseScreen):
                         if logo_rect.collidepoint(x, y):
                             self.current_index = self.coins.index(coin)
                             self.showing_selector = False
+                            self.needs_redraw = True
                             return
                 
                 # Hide selector if clicked outside
                 self.showing_selector = False
+                self.needs_redraw = True
         
         if not self.showing_selector:
             if gestures['swipe_up']:
@@ -133,12 +136,15 @@ class TickerScreen(BaseScreen):
             elif gestures['swipe_left']:
                 logger.info("Swipe left detected, showing next coin")
                 self.next_coin()
+                self.needs_redraw = True
             elif gestures['swipe_right']:
                 logger.info("Swipe right detected, showing previous coin")
                 self.previous_coin()
+                self.needs_redraw = True
             elif gestures['long_press']:
                 logger.info("Long press detected, showing selector")
                 self.showing_selector = True
+                self.needs_redraw = True
     
     def draw_ticker_selector(self):
         """Draw the ticker selector overlay."""
