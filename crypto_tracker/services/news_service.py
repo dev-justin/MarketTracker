@@ -109,49 +109,31 @@ class NewsService:
         
         try:
             # Fetch crypto news from Crypto Panic
-            # Free API endpoint with public filter (only shows public news)
             crypto_news_url = "https://cryptopanic.com/api/v1/posts/?auth_token=NONE&public=true&kind=news"
-            logger.info(f"Fetching crypto news from Crypto Panic")
-            
             response = requests.get(crypto_news_url, timeout=10)
-            logger.info(f"Crypto Panic API response status: {response.status_code}")
             
             if response.status_code == 200:
                 news_data = response.json()
-                logger.info("Raw API response data:")
-                logger.info(json.dumps(news_data, indent=2))
-                
                 results = news_data.get('results', [])
-                logger.info(f"Received {len(results)} items from Crypto Panic")
                 
                 for item in results[:2]:  # Get top 2 crypto news
-                    # Extract domain from URL for source
                     source = item.get('domain', 'Crypto News')
-                    logger.info(f"Processing news item:")
-                    logger.info(f"  Title: {item.get('title', '')}")
-                    logger.info(f"  Source: {source}")
-                    logger.info(f"  Description: {item.get('metadata', {}).get('description', '')}")
-                    
                     crypto_news.append({
                         'title': item.get('title', ''),
                         'source': source,
-                        'summary': item.get('metadata', {}).get('description', ''),
                         'type': 'crypto'
                     })
             else:
-                logger.warning(f"Crypto Panic API error: {response.text}")
                 # Use fallback crypto news
                 crypto_news = [
                     {
                         'title': 'Bitcoin Continues to Dominate Crypto Market',
                         'source': 'Crypto News',
-                        'summary': 'Bitcoin maintains its position as the leading cryptocurrency by market capitalization.',
                         'type': 'crypto'
                     },
                     {
                         'title': 'Ethereum Network Activity Surges',
                         'source': 'DeFi Updates',
-                        'summary': 'Increased DeFi and NFT activity drives Ethereum network usage to new highs.',
                         'type': 'crypto'
                     }
                 ]
@@ -161,32 +143,22 @@ class NewsService:
                 {
                     'title': 'Market Update: Global Markets Show Mixed Performance',
                     'source': 'Market News',
-                    'summary': 'Major indices display varied movements as investors assess economic data.',
                     'type': 'stock'
                 },
                 {
                     'title': 'Central Banks Signal Policy Changes',
                     'source': 'Financial News',
-                    'summary': 'Key central banks indicate potential shifts in monetary policy affecting market sentiment.',
                     'type': 'stock'
                 }
             ]
             
         except Exception as e:
-            logger.error(f"Error fetching news: {str(e)}", exc_info=True)
+            logger.error(f"Error fetching news: {str(e)}")
             if not crypto_news:
-                crypto_news = self.crypto_news[:2]  # Only keep 2 items from cache
+                crypto_news = self.crypto_news[:2]
             if not stock_news:
-                stock_news = self.stock_news[:2]  # Only keep 2 items from cache
+                stock_news = self.stock_news[:2]
         
-        logger.info(f"Final news items:")
-        logger.info("Crypto news:")
-        for item in crypto_news:
-            logger.info(json.dumps(item, indent=2))
-        logger.info("Stock news:")
-        for item in stock_news:
-            logger.info(json.dumps(item, indent=2))
-            
         return crypto_news, stock_news
     
     def get_news(self) -> Tuple[List[Dict], List[Dict]]:
