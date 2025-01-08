@@ -39,9 +39,9 @@ class MenuGrid:
         
         # Dimensions
         self.grid_height = 160
-        self.card_height = 120
+        self.card_height = 130
         self.padding = 15
-        self.icon_size = (36, 36)  # Size for SVG icons
+        self.icon_size = (32, 32)  # Size for SVG icons
         
         # Calculate card width based on number of items
         display_width = self.display.surface.get_width()
