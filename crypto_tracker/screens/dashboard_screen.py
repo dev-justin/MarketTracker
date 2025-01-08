@@ -34,7 +34,15 @@ class DashboardScreen(BaseScreen):
         """Handle pygame events."""
         gestures = self.gesture_handler.handle_touch_event(event)
         
-        if event.type == AppConfig.EVENT_TYPES['FINGER_DOWN'] and self.menu_grid:
+        # Handle swipe gestures
+        if gestures['swipe_up']:
+            logger.info("Swipe up detected, switching to settings")
+            self.screen_manager.switch_screen('settings')
+        elif gestures['swipe_down']:
+            logger.info("Swipe down detected, switching to ticker")
+            self.screen_manager.switch_screen('ticker')
+        # Handle menu clicks
+        elif event.type == AppConfig.EVENT_TYPES['FINGER_DOWN'] and self.menu_grid:
             current_time = time.time()
             # Only handle click if enough time has passed since last click (300ms)
             if current_time - self.last_click_time > 0.3:
