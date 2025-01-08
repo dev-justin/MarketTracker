@@ -16,13 +16,13 @@ class MenuGrid:
         
         # Dimensions
         self.width = self.display.surface.get_width()
-        self.height = 400  # Fixed height for menu section
-        self.padding = 20
+        self.height = 300  # Reduced from 400
+        self.padding = 15  # Reduced from 20
         
         # Calculate card dimensions
         usable_width = self.width - (self.padding * 4)  # 4 paddings (left, between cards, right)
         self.card_width = usable_width // 3
-        self.card_height = 300
+        self.card_height = 220  # Reduced from 300
         
         # Menu items configuration
         self.menu_items = [
@@ -59,31 +59,31 @@ class MenuGrid:
             gradient_surface,
             (45, 45, 45, 230),  # Semi-transparent dark gray
             gradient_surface.get_rect(),
-            border_radius=20
+            border_radius=15  # Reduced from 20
         )
         self.display.surface.blit(gradient_surface, card_rect)
         
         # Draw icon if available
         if item['icon']:
-            icon = self.display.assets.get_icon(item['icon'], size=(48, 48), color=AppConfig.WHITE)
+            icon = self.display.assets.get_icon(item['icon'], size=(36, 36), color=AppConfig.WHITE)  # Reduced from 48
             if icon:
                 icon_rect = icon.get_rect(
                     centerx=card_rect.centerx,
-                    top=card_rect.top + 40
+                    top=card_rect.top + 30  # Reduced from 40
                 )
                 self.display.surface.blit(icon, icon_rect)
         
         # Draw title
-        title_font = self.display.get_title_font('md', 'bold')
+        title_font = self.display.get_title_font('sm', 'bold')  # Changed from md to sm
         title_surface = title_font.render(item['title'], True, AppConfig.WHITE)
         title_rect = title_surface.get_rect(
             centerx=card_rect.centerx,
-            top=card_rect.top + 120
+            top=card_rect.top + 90  # Reduced from 120
         )
         self.display.surface.blit(title_surface, title_rect)
         
         # Draw subtitle (wrapped to fit card width)
-        subtitle_font = self.display.get_text_font('md', 'regular')
+        subtitle_font = self.display.get_text_font('sm', 'regular')  # Changed from md to sm
         subtitle_words = item['subtitle'].split()
         subtitle_lines = []
         current_line = []
@@ -91,7 +91,7 @@ class MenuGrid:
         for word in subtitle_words:
             test_line = ' '.join(current_line + [word])
             test_surface = subtitle_font.render(test_line, True, AppConfig.GRAY)
-            if test_surface.get_width() <= self.card_width - 40:  # 20px padding on each side
+            if test_surface.get_width() <= self.card_width - 30:  # Reduced padding from 40 to 30
                 current_line.append(word)
             else:
                 if current_line:
@@ -100,7 +100,7 @@ class MenuGrid:
         if current_line:
             subtitle_lines.append(' '.join(current_line))
         
-        subtitle_y = title_rect.bottom + 20
+        subtitle_y = title_rect.bottom + 15  # Reduced from 20
         for line in subtitle_lines:
             subtitle_surface = subtitle_font.render(line, True, AppConfig.GRAY)
             subtitle_rect = subtitle_surface.get_rect(
@@ -108,7 +108,7 @@ class MenuGrid:
                 top=subtitle_y
             )
             self.display.surface.blit(subtitle_surface, subtitle_rect)
-            subtitle_y += subtitle_font.get_height() + 5
+            subtitle_y += subtitle_font.get_height() + 4  # Reduced from 5
         
         return card_rect
     
