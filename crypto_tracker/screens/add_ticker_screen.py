@@ -304,7 +304,8 @@ class AddTickerScreen(BaseScreen):
         save_text_rect = save_surface.get_rect(center=self.save_rect.center)
         self.display.surface.blit(save_surface, save_text_rect)
         
-        self.update_screen()
+        # Reset needs_redraw flag
+        self.needs_redraw = False
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""

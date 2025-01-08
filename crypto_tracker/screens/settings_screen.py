@@ -49,7 +49,7 @@ class SettingsScreen(BaseScreen):
         """Called when entering the screen."""
         logger.info("Refreshing tracked coins list")
         self.load_tracked_coins()
-        self.draw()  # Ensure screen is redrawn immediately
+        self.needs_redraw = True  # Let the screen manager handle the redraw
     
     def load_tracked_coins(self) -> None:
         """Load tracked coins using crypto manager."""
@@ -246,6 +246,4 @@ class SettingsScreen(BaseScreen):
                 centerx=self.width // 2,
                 bottom=self.height - self.padding
             )
-            self.display.surface.blit(page_surface, page_rect)
-        
-        self.update_screen() 
+            self.display.surface.blit(page_surface, page_rect) 

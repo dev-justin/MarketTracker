@@ -177,7 +177,8 @@ class EditTickerScreen(BaseScreen):
         back_text_rect = back_surface.get_rect(center=self.back_rect.center)
         self.display.surface.blit(back_surface, back_text_rect)
         
-        self.update_screen()
+        # Reset needs_redraw flag
+        self.needs_redraw = False
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""

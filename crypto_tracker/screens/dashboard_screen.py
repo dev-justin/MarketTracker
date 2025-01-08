@@ -103,23 +103,15 @@ class DashboardScreen(BaseScreen):
         if self.menu_grid:
             self.clickable_areas = self.menu_grid.draw(self.menu_start_y)
         
-        self.update_screen()
+        # Reset needs_redraw flag
         self.needs_redraw = False
     
     def refresh_coins(self) -> None:
         """Refresh the list of tracked coins."""
         self.top_movers.update()
         self.needs_redraw = True
-        self.draw()
     
     def on_screen_enter(self) -> None:
         """Called when entering the screen."""
         logger.debug("Entering dashboard screen")
-        self.needs_redraw = True
-        self.draw()
-    
-    def update_screen(self) -> None:
-        """Update the display."""
-        pygame.display.flip()
-        # Set needs_redraw to True every second to update time
         self.needs_redraw = True

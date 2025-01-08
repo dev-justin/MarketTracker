@@ -270,7 +270,6 @@ class TickerScreen(BaseScreen):
         # If selector is showing, only draw it
         if self.showing_selector:
             self.draw_ticker_selector()
-            self.update_screen()
             return
             
         # Draw regular ticker screen content
@@ -369,38 +368,22 @@ class TickerScreen(BaseScreen):
                     self.sparkline_height
                 )
                 
+                # Calculate points for sparkline
                 min_price = min(prices)
                 max_price = max(prices)
                 price_range = max_price - min_price
                 
                 if price_range > 0:
-                    # Generate base points from price data
+                    # Calculate base points
                     base_points = []
                     for i, price in enumerate(prices):
                         x = int((i / (len(prices) - 1)) * sparkline_rect.width)
-                        y = int(sparkline_rect.height - ((price - min_price) / price_range) * sparkline_rect.height * 0.8)
+                        y = int(sparkline_rect.height - ((price - min_price) / price_range) * sparkline_rect.height)
                         base_points.append((x, y))
                     
-                    # Generate smooth points using Catmull-Rom spline interpolation
+                    # Generate smooth points using Catmull-Rom splines
                     points = []
-                    num_segments = 32  # Number of segments between each pair of points
-                    
-                    # Helper function for Catmull-Rom interpolation
-                    def catmull_rom(p0, p1, p2, p3, t):
-                        t2 = t * t
-                        t3 = t2 * t
-                        
-                        # Catmull-Rom matrix coefficients
-                        a = -0.5 * t3 + t2 - 0.5 * t
-                        b = 1.5 * t3 - 2.5 * t2 + 1.0
-                        c = -1.5 * t3 + 2.0 * t2 + 0.5 * t
-                        d = 0.5 * t3 - 0.5 * t2
-                        
-                        # Interpolate x and y separately
-                        x = a * p0[0] + b * p1[0] + c * p2[0] + d * p3[0]
-                        y = a * p0[1] + b * p1[1] + c * p2[1] + d * p3[1]
-                        
-                        return (int(x), int(y))
+                    num_segments = 10  # Number of segments between each pair of points
                     
                     # Add extra control points at the ends
                     control_points = [base_points[0]]  # Start with first point
@@ -449,4 +432,5 @@ class TickerScreen(BaseScreen):
         # Draw the ticker selector overlay last
         self.draw_ticker_selector()
         
-        self.update_screen() 
+        # Reset needs_redraw flag
+        self.needs_redraw = False 
