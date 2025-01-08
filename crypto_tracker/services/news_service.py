@@ -110,23 +110,40 @@ class NewsService:
         try:
             # Fetch crypto news from CoinGecko
             crypto_news_url = "https://api.coingecko.com/api/v3/news"
+            logger.info(f"Fetching crypto news from: {crypto_news_url}")
+            
             response = requests.get(crypto_news_url, timeout=10)
+            logger.info(f"CoinGecko API response status: {response.status_code}")
+            
             if response.status_code == 200:
                 news_data = response.json()
-                for item in news_data[:5]:  # Get top 5 crypto news
-                    image_path = self._download_image(
-                        item.get('thumb_2x', ''),
-                        f"crypto_{len(crypto_news)}"
-                    )
-                    crypto_news.append({
-                        'title': item.get('title', ''),
-                        'source': 'CoinGecko',
-                        'summary': item.get('description', ''),
-                        'image_path': image_path,
-                        'url': item.get('url', ''),
-                        'timestamp': time.time(),
-                        'type': 'crypto'
-                    })
+                logger.info(f"Received {len(news_data) if isinstance(news_data, list) else 'non-list'} items from CoinGecko")
+                logger.debug(f"Raw CoinGecko response: {news_data}")
+                
+                if isinstance(news_data, list):
+                    for item in news_data[:5]:  # Get top 5 crypto news
+                        image_url = item.get('thumb_2x', '')
+                        logger.debug(f"Processing news item: {item.get('title', 'No Title')} with image URL: {image_url}")
+                        
+                        image_path = self._download_image(
+                            image_url,
+                            f"crypto_{len(crypto_news)}"
+                        )
+                        logger.debug(f"Downloaded image to: {image_path}")
+                        
+                        crypto_news.append({
+                            'title': item.get('title', ''),
+                            'source': 'CoinGecko',
+                            'summary': item.get('description', ''),
+                            'image_path': image_path,
+                            'url': item.get('url', ''),
+                            'timestamp': time.time(),
+                            'type': 'crypto'
+                        })
+                else:
+                    logger.error(f"Unexpected response format from CoinGecko: {type(news_data)}")
+            else:
+                logger.error(f"CoinGecko API error: {response.text}")
             
             # Fetch stock market news
             # Note: You'll need to replace this with your preferred financial news API
@@ -174,12 +191,13 @@ class NewsService:
             ]
             
         except Exception as e:
-            logger.error(f"Error fetching news: {e}")
+            logger.error(f"Error fetching news: {str(e)}", exc_info=True)  # Added full traceback
             if not crypto_news:
                 crypto_news = self.crypto_news
             if not stock_news:
                 stock_news = self.stock_news
         
+        logger.info(f"Returning {len(crypto_news)} crypto news items and {len(stock_news)} stock news items")
         return crypto_news, stock_news
     
     def get_news(self) -> Tuple[List[Dict], List[Dict]]:
