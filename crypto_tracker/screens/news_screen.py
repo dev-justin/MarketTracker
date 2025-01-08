@@ -28,6 +28,9 @@ class NewsScreen(BaseScreen):
         self.last_update_time = time.time()
         self.update_interval = 3600  # 1 hour
         
+        # Touch tracking
+        self.last_touch_y = None
+        
         # Dimensions
         self.news_item_height = 200  # Increased to accommodate image
         self.news_item_padding = 15
@@ -51,14 +54,19 @@ class NewsScreen(BaseScreen):
         if gestures['swipe_down']:
             logger.info("Swipe down detected, returning to dashboard")
             self.screen_manager.switch_screen('dashboard')
-        elif event.type == AppConfig.EVENT_TYPES['FINGER_MOTION']:
-            # Scale the touch input to screen coordinates
-            x, y = self._scale_touch_input(event)
-            # Get the relative movement
-            rel_x = event.x - event.last_x
-            rel_y = event.y - event.last_y
+        elif event.type == AppConfig.EVENT_TYPES['FINGER_DOWN']:
+            # Start tracking touch
+            self.last_touch_y = event.y
+            self.scroll_velocity = 0
+        elif event.type == AppConfig.EVENT_TYPES['FINGER_MOTION'] and self.last_touch_y is not None:
+            # Calculate relative movement
+            rel_y = event.y - self.last_touch_y
+            self.last_touch_y = event.y
             # Scale the velocity based on screen height
-            self.scroll_velocity = rel_y * self.height
+            self.scroll_velocity = rel_y * self.height * 2
+        elif event.type == AppConfig.EVENT_TYPES['FINGER_UP']:
+            # Stop tracking touch
+            self.last_touch_y = None
     
     def _draw_news_item(self, item: dict, y: int) -> pygame.Rect:
         """Draw a single news item."""
