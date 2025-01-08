@@ -1,6 +1,7 @@
 """Screen for displaying crypto and stock news."""
 
 import pygame
+import os
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
 from .base_screen import BaseScreen
@@ -24,12 +25,13 @@ class NewsScreen(BaseScreen):
         self.scroll_offset = 0
         self.scroll_velocity = 0
         self.last_update_time = 0
-        self.update_interval = 300  # 5 minutes
+        self.update_interval = 3600  # 1 hour
         
         # Dimensions
-        self.news_item_height = 150
+        self.news_item_height = 200  # Increased to accommodate image
         self.news_item_padding = 15
         self.title_height = 80
+        self.image_size = (120, 120)  # Size for news images
         
         logger.info("NewsScreen initialized")
     
@@ -70,6 +72,24 @@ class NewsScreen(BaseScreen):
             border_radius=15
         )
         
+        # Load and draw image if available
+        image_rect = None
+        if item.get('image_path') and os.path.exists(item['image_path']):
+            try:
+                image = pygame.image.load(item['image_path'])
+                image = pygame.transform.scale(image, self.image_size)
+                image_rect = image.get_rect(
+                    left=item_rect.left + 20,
+                    top=item_rect.top + 20
+                )
+                self.display.surface.blit(image, image_rect)
+            except Exception as e:
+                logger.error(f"Error loading news image: {e}")
+        
+        # Calculate text start position based on image
+        text_left = image_rect.right + 20 if image_rect else item_rect.left + 20
+        text_width = item_rect.right - text_left - 20
+        
         # Draw title
         title_font = self.display.get_text_font('md', 'bold')
         title_words = item['title'].split()
@@ -79,7 +99,7 @@ class NewsScreen(BaseScreen):
         for word in title_words:
             test_line = ' '.join(current_line + [word])
             test_surface = title_font.render(test_line, True, AppConfig.WHITE)
-            if test_surface.get_width() <= item_rect.width - 40:
+            if test_surface.get_width() <= text_width:
                 current_line.append(word)
             else:
                 if current_line:
@@ -88,22 +108,22 @@ class NewsScreen(BaseScreen):
         if current_line:
             title_lines.append(' '.join(current_line))
         
-        title_y = item_rect.top + 15
+        title_y = item_rect.top + 20
         for line in title_lines[:2]:  # Limit to 2 lines
             title_surface = title_font.render(line, True, AppConfig.WHITE)
             title_rect = title_surface.get_rect(
-                left=item_rect.left + 20,
+                left=text_left,
                 top=title_y
             )
             self.display.surface.blit(title_surface, title_rect)
             title_y += title_font.get_height()
         
-        # Draw source and time
+        # Draw source
         source_font = self.display.get_text_font('sm', 'regular')
         source_text = f"{item['source']}"
         source_surface = source_font.render(source_text, True, AppConfig.GRAY)
         source_rect = source_surface.get_rect(
-            left=item_rect.left + 20,
+            left=text_left,
             top=title_y + 10
         )
         self.display.surface.blit(source_surface, source_rect)
@@ -118,7 +138,7 @@ class NewsScreen(BaseScreen):
             for word in summary_words:
                 test_line = ' '.join(current_line + [word])
                 test_surface = summary_font.render(test_line, True, AppConfig.GRAY)
-                if test_surface.get_width() <= item_rect.width - 40:
+                if test_surface.get_width() <= text_width:
                     current_line.append(word)
                 else:
                     if current_line:
@@ -131,7 +151,7 @@ class NewsScreen(BaseScreen):
             for line in summary_lines[:2]:  # Limit to 2 lines
                 summary_surface = summary_font.render(line, True, AppConfig.GRAY)
                 summary_rect = summary_surface.get_rect(
-                    left=item_rect.left + 20,
+                    left=text_left,
                     top=summary_y
                 )
                 self.display.surface.blit(summary_surface, summary_rect)

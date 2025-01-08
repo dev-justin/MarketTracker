@@ -1,6 +1,9 @@
 """Service for fetching and managing news data."""
 
 import time
+import os
+import json
+import requests
 from typing import List, Dict
 from ..utils.logger import get_logger
 from ..config.settings import AppConfig
@@ -14,51 +17,119 @@ class NewsService:
         """Initialize the news service."""
         self.news_cache = []
         self.last_update = 0
-        self.update_interval = 300  # 5 minutes
+        self.update_interval = 3600  # 1 hour
+        self.cache_file = os.path.join(AppConfig.CACHE_DIR, 'news_cache.json')
+        self._load_cache()
         logger.info("NewsService initialized")
+    
+    def _load_cache(self) -> None:
+        """Load cached news data."""
+        try:
+            if os.path.exists(self.cache_file):
+                with open(self.cache_file, 'r') as f:
+                    cache_data = json.load(f)
+                    self.news_cache = cache_data.get('news', [])
+                    self.last_update = cache_data.get('timestamp', 0)
+                    logger.info("Loaded news from cache")
+        except Exception as e:
+            logger.error(f"Error loading news cache: {e}")
+    
+    def _save_cache(self) -> None:
+        """Save news data to cache."""
+        try:
+            os.makedirs(AppConfig.CACHE_DIR, exist_ok=True)
+            with open(self.cache_file, 'w') as f:
+                json.dump({
+                    'news': self.news_cache,
+                    'timestamp': self.last_update
+                }, f)
+            logger.info("Saved news to cache")
+        except Exception as e:
+            logger.error(f"Error saving news cache: {e}")
+    
+    def _download_image(self, image_url: str, symbol: str) -> str:
+        """Download and cache a news image."""
+        try:
+            if not image_url:
+                return ""
+                
+            # Create a filename based on the symbol and timestamp
+            filename = f"news_{symbol}_{int(time.time())}.jpg"
+            image_path = os.path.join(AppConfig.CACHE_DIR, filename)
+            
+            # Download and save the image
+            response = requests.get(image_url, timeout=5)
+            if response.status_code == 200:
+                with open(image_path, 'wb') as f:
+                    f.write(response.content)
+                return image_path
+            
+            return ""
+        except Exception as e:
+            logger.error(f"Error downloading image: {e}")
+            return ""
     
     def _fetch_news(self) -> List[Dict]:
         """Fetch news from various sources."""
-        # TODO: Implement actual news fetching from APIs
-        # For now, return placeholder news items
-        return [
-            {
-                'title': 'Market Update: Crypto and Stock Markets Show Mixed Signals',
-                'source': 'Market News',
-                'summary': 'Major cryptocurrencies and stock indices are showing mixed performance as investors weigh global economic factors.',
-                'timestamp': time.time()
-            },
-            {
-                'title': 'New Regulations Impact Digital Asset Trading',
-                'source': 'Crypto News',
-                'summary': 'Regulatory changes in key markets are affecting how digital assets are traded and managed.',
-                'timestamp': time.time()
-            },
-            {
-                'title': 'Tech Stocks Lead Market Rally',
-                'source': 'Stock Market News',
-                'summary': 'Technology sector shows strong performance amid positive earnings reports.',
-                'timestamp': time.time()
-            },
-            {
-                'title': 'Bitcoin Mining Difficulty Reaches New All-Time High',
-                'source': 'Crypto Mining News',
-                'summary': 'Network security increases as mining difficulty adjusts to higher hash rates.',
-                'timestamp': time.time()
-            },
-            {
-                'title': 'Global Markets React to Economic Data',
-                'source': 'Financial News',
-                'summary': 'Markets adjust positions following the release of key economic indicators.',
-                'timestamp': time.time()
-            }
-        ]
+        news_items = []
+        
+        try:
+            # Fetch crypto news from CoinGecko
+            crypto_news_url = "https://api.coingecko.com/api/v3/news"
+            response = requests.get(crypto_news_url, timeout=10)
+            if response.status_code == 200:
+                crypto_news = response.json()
+                for item in crypto_news[:5]:  # Get top 5 crypto news
+                    image_path = self._download_image(
+                        item.get('thumb_2x', ''),
+                        f"crypto_{len(news_items)}"
+                    )
+                    news_items.append({
+                        'title': item.get('title', ''),
+                        'source': 'CoinGecko',
+                        'summary': item.get('description', ''),
+                        'image_path': image_path,
+                        'url': item.get('url', ''),
+                        'timestamp': time.time()
+                    })
+            
+            # Add some market news from a financial API
+            # Note: You'll need to replace this with your preferred financial news API
+            market_news = [
+                {
+                    'title': 'Market Update: Global Markets Show Mixed Performance',
+                    'source': 'Market News',
+                    'summary': 'Major indices and cryptocurrencies display varied movements as investors assess economic data.',
+                    'image_path': '',
+                    'timestamp': time.time()
+                },
+                {
+                    'title': 'Central Banks Signal Policy Changes',
+                    'source': 'Financial News',
+                    'summary': 'Key central banks indicate potential shifts in monetary policy affecting market sentiment.',
+                    'image_path': '',
+                    'timestamp': time.time()
+                }
+            ]
+            news_items.extend(market_news)
+            
+        except Exception as e:
+            logger.error(f"Error fetching news: {e}")
+            if not news_items:
+                # Return cached news if fetch fails
+                return self.news_cache
+        
+        return news_items
     
     def get_combined_news(self) -> List[Dict]:
         """Get combined news from all sources."""
         current_time = time.time()
         if current_time - self.last_update > self.update_interval:
             logger.info("Fetching fresh news data")
-            self.news_cache = self._fetch_news()
-            self.last_update = current_time
+            fresh_news = self._fetch_news()
+            if fresh_news:
+                self.news_cache = fresh_news
+                self.last_update = current_time
+                self._save_cache()
+            
         return self.news_cache 
