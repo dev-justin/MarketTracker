@@ -31,7 +31,17 @@ class DashboardScreen(BaseScreen):
         # Track if redraw is needed
         self.needs_redraw = True
         
+        # Track last time update
+        self.last_time = self.get_current_time()
+        
         logger.info("DashboardScreen initialized")
+    
+    def update(self) -> None:
+        """Update screen state."""
+        current_time = self.get_current_time()
+        if current_time != self.last_time:
+            self.last_time = current_time
+            self.needs_redraw = True
     
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle pygame events."""
@@ -62,6 +72,9 @@ class DashboardScreen(BaseScreen):
     
     def draw(self) -> None:
         """Draw the dashboard screen."""
+        # Check if time needs updating
+        self.update()
+        
         # Only redraw if needed
         if not self.needs_redraw:
             return
