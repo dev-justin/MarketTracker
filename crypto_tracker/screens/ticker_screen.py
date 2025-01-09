@@ -55,6 +55,11 @@ class TickerScreen(BaseScreen):
         if self.coins and self.current_index >= len(self.coins):
             self.current_index = 0
     
+    def update(self) -> None:
+        """Update screen state."""
+        self.refresh_coins()
+        self.needs_redraw = True
+    
     def next_coin(self):
         """Switch to next coin."""
         if self.coins:
