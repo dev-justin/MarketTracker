@@ -71,26 +71,26 @@ class DashboardScreen(BaseScreen):
         # Fill background
         self.display.surface.fill(self.background_color)
         
-        # Draw time
-        time_font = self.display.get_title_font('lg', 'bold')
-        time_surface = time_font.render(self.get_current_time(), True, AppConfig.WHITE)
-        time_rect = time_surface.get_rect(
-            centerx=self.width // 2,
-            top=20
-        )
-        self.display.surface.blit(time_surface, time_rect)
-        
         # Draw date
         date_font = self.display.get_text_font('md', 'regular')
         date_surface = date_font.render(self.get_current_date(), True, AppConfig.GRAY)
         date_rect = date_surface.get_rect(
             centerx=self.width // 2,
-            top=time_rect.bottom + 10
+            top=20
         )
         self.display.surface.blit(date_surface, date_rect)
         
+        # Draw time
+        time_font = self.display.get_title_font('lg', 'bold')
+        time_surface = time_font.render(self.get_current_time(), True, AppConfig.WHITE)
+        time_rect = time_surface.get_rect(
+            centerx=self.width // 2,
+            top=date_rect.bottom + 10
+        )
+        self.display.surface.blit(time_surface, time_rect)
+        
         # Draw top movers
-        self.top_movers.draw(date_rect.bottom + 10)
+        self.top_movers.draw(time_rect.bottom + 10)
         
         # Initialize menu grid if needed
         if not self.menu_grid and self.screen_manager:
