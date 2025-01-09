@@ -7,6 +7,7 @@ from ..utils.logger import get_logger
 from .base_screen import BaseScreen
 from ..components.top_movers import TopMovers
 from ..components.menu_grid import MenuGrid
+from ..managers.crypto_manager import CryptoManager
 
 logger = get_logger(__name__)
 
@@ -19,6 +20,7 @@ class DashboardScreen(BaseScreen):
         self.background_color = (13, 13, 13)  # Darker black for more contrast
         
         # Initialize components
+        self.crypto_manager = CryptoManager()
         self.top_movers = TopMovers(display, self.crypto_manager)
         self.menu_grid = None  # Will be initialized when screen_manager is set
         
@@ -126,5 +128,5 @@ class DashboardScreen(BaseScreen):
     
     def on_screen_enter(self) -> None:
         """Called when entering the screen."""
-        logger.debug("Entering dashboard screen")
+        self.top_movers.screen_manager = self.screen_manager
         self.needs_redraw = True

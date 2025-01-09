@@ -17,7 +17,7 @@ class TopMovers:
         """Initialize the top movers component."""
         self.display = display
         self.crypto_manager = crypto_manager
-        self.screen_manager = self.display.screen_manager  # Add reference to screen manager
+        self.screen_manager = None  # Will be set by the dashboard screen
         
         # Component dimensions
         self.section_height = 120  # Height for the section
