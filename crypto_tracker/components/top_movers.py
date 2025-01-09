@@ -93,16 +93,20 @@ class TopMovers:
         # Calculate text start position after logo
         text_start_x = logo_x + self.logo_size + self.element_spacing
         
-        # Draw symbol (ticker) to the right of logo
+        # Calculate vertical center positions for stacked text
+        total_height = symbol_surface.get_height() + 4 + change_surface.get_height()  # 4px spacing between
+        text_start_y = card_rect.centery - (total_height / 2)
+        
+        # Draw symbol (ticker) centered
         symbol_font = self.display.get_text_font('md', 'bold')
         symbol_surface = symbol_font.render(coin['symbol'].upper(), True, AppConfig.WHITE)
         symbol_rect = symbol_surface.get_rect(
             left=text_start_x,
-            top=card_rect.top + self.top_padding  # Position at top with padding
+            top=text_start_y
         )
         self.display.surface.blit(symbol_surface, symbol_rect)
         
-        # Draw percentage change below symbol
+        # Draw percentage change below symbol with less spacing
         change = float(coin.get('price_change_24h', 0))
         change_color = AppConfig.GREEN if change >= 0 else AppConfig.RED
         change_text = f"{'+' if change >= 0 else ''}{change:.1f}%"
@@ -110,7 +114,7 @@ class TopMovers:
         change_surface = change_font.render(change_text, True, change_color)
         change_rect = change_surface.get_rect(
             left=text_start_x,
-            top=symbol_rect.bottom + self.element_spacing  # Position below symbol
+            top=symbol_rect.bottom + 4  # Reduced spacing from element_spacing to 4px
         )
         self.display.surface.blit(change_surface, change_rect)
         
