@@ -107,7 +107,7 @@ class TopMovers:
         self.display.surface.blit(symbol_surface, symbol_rect)
         
         # Draw price (slightly smaller than before but still prominent)
-        price_font = self.display.get_title_font('sm', 'bold')
+        price_font = self.display.get_title_font('xs', 'bold')
         price_text = f"${float(coin['current_price']):,.2f}"
         price_surface = price_font.render(price_text, True, AppConfig.WHITE)
         price_rect = price_surface.get_rect(

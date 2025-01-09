@@ -81,7 +81,7 @@ class DashboardScreen(BaseScreen):
         self.display.surface.blit(date_surface, date_rect)
         
         # Draw time
-        time_font = self.display.get_title_font('lg', 'bold')
+        time_font = self.display.get_title_font('xl', 'bold')
         time_surface = time_font.render(self.get_current_time(), True, AppConfig.WHITE)
         time_rect = time_surface.get_rect(
             centerx=self.width // 2,
