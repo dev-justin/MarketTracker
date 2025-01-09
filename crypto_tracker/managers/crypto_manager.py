@@ -51,6 +51,10 @@ class CryptoManager:
             if isinstance(coin_ids, str):
                 coin_ids = [coin_ids]
             
+            # If we received a list of dictionaries, extract the IDs
+            if coin_ids and isinstance(coin_ids[0], dict):
+                coin_ids = [coin['id'] for coin in coin_ids]
+            
             # Join coin IDs with commas for the API
             ids_string = ','.join(coin_ids)
             
