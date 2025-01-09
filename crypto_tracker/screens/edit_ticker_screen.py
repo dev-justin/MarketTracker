@@ -202,3 +202,15 @@ class EditTickerScreen(BaseScreen):
             elif self.favorite_rect.collidepoint(x, y):
                 logger.info("Favorite button clicked")
                 self.toggle_favorite() 
+    
+    def on_screen_enter(self, coin_id: str) -> None:
+        """Called when entering the screen."""
+        self.load_coin(coin_id)
+        self.needs_redraw = True
+    
+    def update(self) -> None:
+        """Update screen state."""
+        if self.current_coin:
+            # Refresh coin data
+            self.load_coin(self.current_coin['id'])
+            self.needs_redraw = True 
