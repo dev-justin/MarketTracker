@@ -450,4 +450,11 @@ class NewsScreen(BaseScreen):
         # Force news update
         self.last_update_time = 0
         self._update_news()
-        self.needs_redraw = True  # Let the screen manager handle the redraw 
+        self.needs_redraw = True  # Let the screen manager handle the redraw
+    
+    def update(self) -> None:
+        """Update screen state."""
+        current_time = time.time()
+        if current_time - self.last_update_time > self.update_interval:
+            self._update_news()
+            self.needs_redraw = True 
