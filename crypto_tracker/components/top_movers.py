@@ -31,7 +31,7 @@ class TopMovers:
         tracked_coins = self.crypto_manager.get_tracked_coins()
         self.movers = sorted(
             tracked_coins,
-            key=lambda x: abs(float(x.get('price_change_percentage_24h', 0))),
+            key=lambda x: abs(float(x.get('price_change_24h', 0))),
             reverse=True
         )[:3]  # Get top 3 movers
     
@@ -68,7 +68,7 @@ class TopMovers:
         self.display.surface.blit(price_surface, price_rect)
         
         # Draw percentage change
-        change = float(coin.get('price_change_percentage_24h', 0))
+        change = float(coin.get('price_change_24h', 0))
         change_color = AppConfig.GREEN if change >= 0 else AppConfig.RED
         change_text = f"{'+' if change >= 0 else ''}{change:.1f}%"
         change_font = self.display.get_text_font('md', 'bold')
