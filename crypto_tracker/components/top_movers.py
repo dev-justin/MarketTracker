@@ -132,14 +132,23 @@ class TopMovers:
                 )
                 self.display.surface.blit(symbol_surface, symbol_rect)
                 
-                # Draw large percentage change below
+                # Draw large percentage change below, ensuring it fits within the card
                 change = float(coin.get('price_change_24h', 0))
                 change_text = f"{'+' if change >= 0 else ''}{change:.1f}%"
-                change_font = self.display.get_title_font('lg', 'bold')  # Larger font for percentage
+                change_font = self.display.get_title_font('lg', 'bold')
                 change_surface = change_font.render(change_text, True, AppConfig.WHITE)
+                
+                # Calculate maximum width available for percentage
+                max_width = card_rect.width - (self.side_padding * 2)
+                
+                # Scale down font if needed to fit within card
+                if change_surface.get_width() > max_width:
+                    change_font = self.display.get_title_font('md', 'bold')
+                    change_surface = change_font.render(change_text, True, AppConfig.WHITE)
+                
                 change_rect = change_surface.get_rect(
-                    left=self.side_padding,
-                    top=logo_rect.bottom + 15
+                    left=card_rect.left + self.side_padding,
+                    bottom=card_rect.bottom - self.top_padding  # Position from bottom with padding
                 )
                 self.display.surface.blit(change_surface, change_rect)
                 
