@@ -33,10 +33,10 @@ class TopMovers:
         self.top_padding = 15
         self.side_padding = 20
         
-        # Load trending icons
+        # Load trending icons with larger size
         self.trending_up = pygame.image.load(os.path.join(AppConfig.ASSETS_DIR, 'icons', 'trending-up.svg'))
         self.trending_down = pygame.image.load(os.path.join(AppConfig.ASSETS_DIR, 'icons', 'trending-down.svg'))
-        self.trending_icon_size = 24
+        self.trending_icon_size = 42  # Increased from 24 to 42
         self.trending_up = pygame.transform.scale(self.trending_up, (self.trending_icon_size, self.trending_icon_size))
         self.trending_down = pygame.transform.scale(self.trending_down, (self.trending_icon_size, self.trending_icon_size))
         
@@ -154,16 +154,16 @@ class TopMovers:
                     change_surface = change_font.render(change_text, True, AppConfig.WHITE)
                 
                 change_rect = change_surface.get_rect(
-                    left=card_rect.left + self.side_padding + self.trending_icon_size + 5,  # Add space for icon
+                    left=card_rect.left + self.side_padding,
                     bottom=card_rect.bottom - self.top_padding
                 )
                 self.display.surface.blit(change_surface, change_rect)
                 
-                # Draw trending icon
+                # Draw trending icon in bottom right
                 trending_icon = self.trending_up if change >= 0 else self.trending_down
                 icon_rect = trending_icon.get_rect(
-                    right=change_rect.left - 5,  # 5px spacing between icon and text
-                    centery=change_rect.centery
+                    right=card_rect.right - self.side_padding,
+                    bottom=card_rect.bottom - self.top_padding
                 )
                 self.display.surface.blit(trending_icon, icon_rect)
                 
