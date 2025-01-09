@@ -136,7 +136,13 @@ class TopMovers:
                 change = float(coin.get('price_change_24h', 0))
                 change_text = f"{'+' if change >= 0 else ''}{change:.1f}%"
                 change_font = self.display.get_title_font('xl', 'bold')
-                change_surface = change_font.render(change_text, True, AppConfig.WHITE)
+                
+                # Use faded colors for percentage text
+                faded_green = (144, 238, 144)  # Light green
+                faded_red = (255, 182, 193)    # Light red
+                text_color = faded_green if change >= 0 else faded_red
+                
+                change_surface = change_font.render(change_text, True, text_color)
                 
                 # Calculate maximum width available for percentage
                 max_width = card_rect.width - (self.side_padding * 2)
@@ -144,7 +150,7 @@ class TopMovers:
                 # Scale down font if needed to fit within card
                 if change_surface.get_width() > max_width:
                     change_font = self.display.get_title_font('md', 'bold')
-                    change_surface = change_font.render(change_text, True, AppConfig.WHITE)
+                    change_surface = change_font.render(change_text, True, text_color)
                 
                 change_rect = change_surface.get_rect(
                     left=card_rect.left + self.side_padding,
