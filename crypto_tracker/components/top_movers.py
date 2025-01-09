@@ -33,6 +33,13 @@ class TopMovers:
         self.top_padding = 15
         self.side_padding = 20
         
+        # Load trending icons
+        self.trending_up = pygame.image.load(os.path.join(AppConfig.ASSETS_DIR, 'icons', 'trending-up.svg'))
+        self.trending_down = pygame.image.load(os.path.join(AppConfig.ASSETS_DIR, 'icons', 'trending-down.svg'))
+        self.trending_icon_size = 24
+        self.trending_up = pygame.transform.scale(self.trending_up, (self.trending_icon_size, self.trending_icon_size))
+        self.trending_down = pygame.transform.scale(self.trending_down, (self.trending_icon_size, self.trending_icon_size))
+        
         # Cache for logo colors
         self.logo_colors = {}
         
@@ -136,13 +143,7 @@ class TopMovers:
                 change = float(coin.get('price_change_24h', 0))
                 change_text = f"{'+' if change >= 0 else ''}{change:.1f}%"
                 change_font = self.display.get_title_font('xl', 'bold')
-                
-                # Use fully solid colors for percentage text
-                solid_green = (0, 255, 0)  # Pure green
-                solid_red = (255, 0, 0)    # Pure red
-                text_color = solid_green if change >= 0 else solid_red
-                
-                change_surface = change_font.render(change_text, True, text_color)
+                change_surface = change_font.render(change_text, True, AppConfig.WHITE)
                 
                 # Calculate maximum width available for percentage
                 max_width = card_rect.width - (self.side_padding * 2)
@@ -150,13 +151,21 @@ class TopMovers:
                 # Scale down font if needed to fit within card
                 if change_surface.get_width() > max_width:
                     change_font = self.display.get_title_font('md', 'bold')
-                    change_surface = change_font.render(change_text, True, text_color)
+                    change_surface = change_font.render(change_text, True, AppConfig.WHITE)
                 
                 change_rect = change_surface.get_rect(
-                    left=card_rect.left + self.side_padding,
-                    bottom=card_rect.bottom - self.top_padding  # Position from bottom with padding
+                    left=card_rect.left + self.side_padding + self.trending_icon_size + 5,  # Add space for icon
+                    bottom=card_rect.bottom - self.top_padding
                 )
                 self.display.surface.blit(change_surface, change_rect)
+                
+                # Draw trending icon
+                trending_icon = self.trending_up if change >= 0 else self.trending_down
+                icon_rect = trending_icon.get_rect(
+                    right=change_rect.left - 5,  # 5px spacing between icon and text
+                    centery=change_rect.centery
+                )
+                self.display.surface.blit(trending_icon, icon_rect)
                 
             except Exception as e:
                 logger.error(f"Error loading logo: {e}")
