@@ -18,7 +18,12 @@ class TopMovers:
         
         # Component dimensions
         self.section_height = 180
-        self.card_width = 160
+        
+        # Calculate card width to span full width with padding
+        total_padding = 40  # 20px padding on each side
+        spacing_between = 20  # 20px between cards
+        total_spacing = total_padding + (spacing_between * 2)  # Total horizontal space used for padding
+        self.card_width = (AppConfig.DISPLAY_WIDTH - total_spacing) // 3  # Divide remaining space by 3
         
         # Calculate card height based on content
         self.logo_size = 32
@@ -27,7 +32,7 @@ class TopMovers:
         
         # Font heights (approximate)
         self.symbol_height = 20
-        self.price_height = 22
+        self.price_height = 24  # Increased from 22
         self.change_height = 20
         
         # Total height calculation:
@@ -36,7 +41,7 @@ class TopMovers:
         # - spacing (8px)
         # - symbol text (20px)
         # - spacing (8px)
-        # - price text (22px)
+        # - price text (24px)
         # - spacing (8px)
         # - change text (20px)
         # - bottom padding (12px)
@@ -52,7 +57,7 @@ class TopMovers:
             12                 # Bottom padding
         )
         
-        self.padding = 15
+        self.padding = 20  # Reduced from 15 to match total_padding calculation
         
         # State
         self.movers: List[Dict] = []
@@ -97,7 +102,7 @@ class TopMovers:
             except Exception as e:
                 logger.error(f"Error loading logo: {e}")
         
-        # Draw symbol
+        # Draw symbol (ticker)
         symbol_font = self.display.get_text_font('md', 'bold')
         symbol_surface = symbol_font.render(coin['symbol'].upper(), True, AppConfig.WHITE)
         symbol_rect = symbol_surface.get_rect(
@@ -106,8 +111,8 @@ class TopMovers:
         )
         self.display.surface.blit(symbol_surface, symbol_rect)
         
-        # Draw price (slightly smaller than before but still prominent)
-        price_font = self.display.get_title_font('xs', 'bold')
+        # Draw price (slightly larger)
+        price_font = self.display.get_title_font('sm', 'bold')  # Changed from 'xs' to 'sm'
         price_text = f"${float(coin['current_price']):,.2f}"
         price_surface = price_font.render(price_text, True, AppConfig.WHITE)
         price_rect = price_surface.get_rect(
@@ -145,7 +150,8 @@ class TopMovers:
         # Draw mover cards
         card_y = title_rect.bottom + 15
         card_x = self.padding
+        spacing = 20  # Space between cards
         
         for coin in self.movers:
             self._draw_mover_card(coin, card_x, card_y)
-            card_x += self.card_width + self.padding 
+            card_x += self.card_width + spacing 
