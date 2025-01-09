@@ -17,6 +17,7 @@ class TopMovers:
         """Initialize the top movers component."""
         self.display = display
         self.crypto_manager = crypto_manager
+        self.screen_manager = self.display.screen_manager  # Add reference to screen manager
         
         # Component dimensions
         self.section_height = 120  # Height for the section
@@ -192,3 +193,26 @@ class TopMovers:
         for coin in self.movers:
             self._draw_mover_card(coin, card_x, card_y)
             card_x += self.card_width + spacing 
+
+    def handle_event(self, event: pygame.event.Event, start_y: int) -> bool:
+        """Handle touch events on the cards."""
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = event.pos
+            
+            # Calculate card positions
+            card_y = start_y + self.display.get_text_font('md', 'bold').get_height() + 15
+            card_x = 20
+            spacing = 20
+            
+            # Check each card
+            for coin in self.movers:
+                card_rect = pygame.Rect(card_x, card_y, self.card_width, self.card_height)
+                
+                if card_rect.collidepoint(mouse_pos):
+                    # Navigate to ticker screen for this coin
+                    self.screen_manager.switch_screen('ticker', coin_id=coin['id'])
+                    return True
+                
+                card_x += self.card_width + spacing 
+        
+        return False 
