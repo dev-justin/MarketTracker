@@ -105,7 +105,7 @@ class TopMovers:
                 logger.error(f"Error loading logo: {e}")
         
         # Calculate text start position after logo
-        text_start_x = logo_x + self.logo_size + self.element_spacing
+        text_start_x = logo_x + self.logo_size + 16  # Increased spacing from element_spacing to 16px
         
         # Create surfaces first
         symbol_font = self.display.get_text_font('md', 'bold')
