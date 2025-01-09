@@ -102,27 +102,27 @@ class TopMovers:
         )
         self.display.surface.blit(symbol_surface, symbol_rect)
         
-        # Draw price below symbol
-        price_font = self.display.get_title_font('sm', 'bold')
-        price_text = f"${float(coin['current_price']):,.2f}"
-        price_surface = price_font.render(price_text, True, AppConfig.WHITE)
-        price_rect = price_surface.get_rect(
-            left=text_start_x,
-            top=symbol_rect.bottom + self.element_spacing
-        )
-        self.display.surface.blit(price_surface, price_rect)
-        
-        # Draw percentage change to the right of price
+        # Draw percentage change below symbol
         change = float(coin.get('price_change_24h', 0))
         change_color = AppConfig.GREEN if change >= 0 else AppConfig.RED
         change_text = f"{'+' if change >= 0 else ''}{change:.1f}%"
         change_font = self.display.get_text_font('md', 'bold')
         change_surface = change_font.render(change_text, True, change_color)
         change_rect = change_surface.get_rect(
-            right=card_rect.right - self.top_padding,
-            centery=price_rect.centery
+            left=text_start_x,
+            top=symbol_rect.bottom + self.element_spacing
         )
         self.display.surface.blit(change_surface, change_rect)
+        
+        # Draw price on the right side
+        price_font = self.display.get_title_font('sm', 'bold')
+        price_text = f"${float(coin['current_price']):,.2f}"
+        price_surface = price_font.render(price_text, True, AppConfig.WHITE)
+        price_rect = price_surface.get_rect(
+            right=card_rect.right - self.top_padding,
+            centery=card_rect.centery  # Center vertically in card
+        )
+        self.display.surface.blit(price_surface, price_rect)
     
     def draw(self, start_y: int) -> None:
         """Draw the top movers section."""
