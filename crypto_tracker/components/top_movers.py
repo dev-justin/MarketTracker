@@ -19,7 +19,34 @@ class TopMovers:
         # Component dimensions
         self.section_height = 180
         self.card_width = 140
-        self.card_height = 120
+        
+        # Calculate card height based on content
+        self.logo_size = 32
+        self.top_padding = 12
+        self.element_spacing = 8
+        
+        # Total height calculation:
+        # - top padding (12px)
+        # - logo (32px)
+        # - spacing (8px)
+        # - symbol text (~20px)
+        # - spacing (8px)
+        # - price text (~20px)
+        # - spacing (8px)
+        # - change text (~20px)
+        # - bottom padding (12px)
+        self.card_height = (
+            self.top_padding +  # Top padding
+            self.logo_size +    # Logo height
+            self.element_spacing +  # Spacing after logo
+            20 +               # Symbol text
+            self.element_spacing +  # Spacing after symbol
+            20 +               # Price text
+            self.element_spacing +  # Spacing after price
+            20 +               # Change text
+            12                 # Bottom padding
+        )
+        
         self.padding = 15
         
         # State
@@ -50,14 +77,13 @@ class TopMovers:
         )
         
         # Draw logo
-        logo_size = 32  # Size for the logo
         logo_path = os.path.join(AppConfig.CACHE_DIR, f"{coin['symbol'].lower()}_logo.png")
-        logo_y = card_rect.top + 12  # Position logo at top with some padding
+        logo_y = card_rect.top + self.top_padding
         
         if os.path.exists(logo_path):
             try:
                 logo = pygame.image.load(logo_path)
-                logo = pygame.transform.scale(logo, (logo_size, logo_size))
+                logo = pygame.transform.scale(logo, (self.logo_size, self.logo_size))
                 logo_rect = logo.get_rect(
                     centerx=card_rect.centerx,
                     top=logo_y
@@ -66,12 +92,12 @@ class TopMovers:
             except Exception as e:
                 logger.error(f"Error loading logo: {e}")
         
-        # Draw symbol (moved down to make room for logo)
+        # Draw symbol
         symbol_font = self.display.get_text_font('md', 'bold')
         symbol_surface = symbol_font.render(coin['symbol'].upper(), True, AppConfig.WHITE)
         symbol_rect = symbol_surface.get_rect(
             centerx=card_rect.centerx,
-            top=logo_y + logo_size + 8  # Position below logo with spacing
+            top=logo_y + self.logo_size + self.element_spacing
         )
         self.display.surface.blit(symbol_surface, symbol_rect)
         
@@ -81,7 +107,7 @@ class TopMovers:
         price_surface = price_font.render(price_text, True, AppConfig.GRAY)
         price_rect = price_surface.get_rect(
             centerx=card_rect.centerx,
-            top=symbol_rect.bottom + 8
+            top=symbol_rect.bottom + self.element_spacing
         )
         self.display.surface.blit(price_surface, price_rect)
         
@@ -93,7 +119,7 @@ class TopMovers:
         change_surface = change_font.render(change_text, True, change_color)
         change_rect = change_surface.get_rect(
             centerx=card_rect.centerx,
-            top=price_rect.bottom + 8
+            top=price_rect.bottom + self.element_spacing
         )
         self.display.surface.blit(change_surface, change_rect)
     
