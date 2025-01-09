@@ -66,6 +66,10 @@ def main():
             if current_time - last_time_update >= 1000:  # 1 second
                 needs_update = True
                 last_time_update = current_time
+                
+                # Force update of current screen
+                if screen_manager.current_screen:
+                    screen_manager.current_screen.update()
             
             # Only update screen when needed
             if needs_update:
