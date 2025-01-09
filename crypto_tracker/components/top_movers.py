@@ -26,7 +26,7 @@ class TopMovers:
         self.card_width = (AppConfig.DISPLAY_WIDTH - total_spacing) // 3  # Divide remaining space by 3
         
         # Calculate card height based on content
-        self.logo_size = 40  # Increased from 32 to 40
+        self.logo_size = 46  # Increased from 40 to 46
         self.top_padding = 12
         self.element_spacing = 6  # Reduced from 8 for tighter vertical spacing
         
