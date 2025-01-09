@@ -78,9 +78,9 @@ class CryptoManager:
                     'id': coin_id,
                     'symbol': coin_id,  # We'll update this with proper symbols later
                     'price_usd': coin_data['usd'],
-                    'price_change_24h': coin_data['usd_24h_change'],
-                    'market_cap': coin_data['usd_market_cap'],
-                    'last_updated': coin_data['last_updated_at']
+                    'price_change_24h': coin_data.get('usd_24h_change', 0),
+                    'market_cap': coin_data.get('usd_market_cap', 0),
+                    'last_updated': coin_data.get('last_updated_at', 0)
                 }
                 coins.append(coin)
             
