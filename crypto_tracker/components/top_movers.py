@@ -4,6 +4,7 @@ import pygame
 from typing import List, Dict, Optional
 from ..config.settings import AppConfig
 from ..utils.logger import get_logger
+import os
 
 logger = get_logger(__name__)
 
@@ -48,12 +49,29 @@ class TopMovers:
             border_radius=15
         )
         
-        # Draw symbol
+        # Draw logo
+        logo_size = 32  # Size for the logo
+        logo_path = os.path.join(AppConfig.CACHE_DIR, f"{coin['symbol'].lower()}_logo.png")
+        logo_y = card_rect.top + 12  # Position logo at top with some padding
+        
+        if os.path.exists(logo_path):
+            try:
+                logo = pygame.image.load(logo_path)
+                logo = pygame.transform.scale(logo, (logo_size, logo_size))
+                logo_rect = logo.get_rect(
+                    centerx=card_rect.centerx,
+                    top=logo_y
+                )
+                self.display.surface.blit(logo, logo_rect)
+            except Exception as e:
+                logger.error(f"Error loading logo: {e}")
+        
+        # Draw symbol (moved down to make room for logo)
         symbol_font = self.display.get_text_font('md', 'bold')
         symbol_surface = symbol_font.render(coin['symbol'].upper(), True, AppConfig.WHITE)
         symbol_rect = symbol_surface.get_rect(
             centerx=card_rect.centerx,
-            top=card_rect.top + 15
+            top=logo_y + logo_size + 8  # Position below logo with spacing
         )
         self.display.surface.blit(symbol_surface, symbol_rect)
         
@@ -63,7 +81,7 @@ class TopMovers:
         price_surface = price_font.render(price_text, True, AppConfig.GRAY)
         price_rect = price_surface.get_rect(
             centerx=card_rect.centerx,
-            top=symbol_rect.bottom + 10
+            top=symbol_rect.bottom + 8
         )
         self.display.surface.blit(price_surface, price_rect)
         
@@ -75,7 +93,7 @@ class TopMovers:
         change_surface = change_font.render(change_text, True, change_color)
         change_rect = change_surface.get_rect(
             centerx=card_rect.centerx,
-            top=price_rect.bottom + 10
+            top=price_rect.bottom + 8
         )
         self.display.surface.blit(change_surface, change_rect)
     
