@@ -26,7 +26,7 @@ class TopMovers:
         self.card_width = (AppConfig.DISPLAY_WIDTH - total_spacing) // 3  # Divide remaining space by 3
         
         # Calculate card height based on content
-        self.logo_size = 32
+        self.logo_size = 40  # Increased from 32 to 40
         self.top_padding = 12
         self.element_spacing = 6  # Reduced from 8 for tighter vertical spacing
         
@@ -60,6 +60,18 @@ class TopMovers:
             reverse=True
         )[:3]  # Get top 3 movers
     
+    def _create_circular_icon(self, surface: pygame.Surface) -> pygame.Surface:
+        """Create a circular icon from a square surface."""
+        size = surface.get_width()
+        circular = pygame.Surface((size, size), pygame.SRCALPHA)
+        
+        # Create a circle mask
+        pygame.draw.circle(circular, (255, 255, 255, 255), (size//2, size//2), size//2)
+        
+        # Apply the mask to the original surface
+        circular.blit(surface, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+        return circular
+
     def _draw_mover_card(self, coin: Dict, x: int, y: int) -> None:
         """Draw a single mover card."""
         # Create card rectangle
@@ -82,6 +94,8 @@ class TopMovers:
             try:
                 logo = pygame.image.load(logo_path)
                 logo = pygame.transform.scale(logo, (self.logo_size, self.logo_size))
+                # Create circular icon
+                logo = self._create_circular_icon(logo)
                 logo_rect = logo.get_rect(
                     left=logo_x,
                     centery=logo_y + self.logo_size//2
