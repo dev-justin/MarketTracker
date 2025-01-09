@@ -98,29 +98,29 @@ class TopMovers:
         symbol_surface = symbol_font.render(coin['symbol'].upper(), True, AppConfig.WHITE)
         symbol_rect = symbol_surface.get_rect(
             left=text_start_x,
-            centery=card_rect.centery  # Center vertically in card
+            top=card_rect.top + self.top_padding  # Position at top with padding
         )
         self.display.surface.blit(symbol_surface, symbol_rect)
         
-        # Draw percentage change to the right of symbol with spacing
+        # Draw percentage change below symbol
         change = float(coin.get('price_change_24h', 0))
         change_color = AppConfig.GREEN if change >= 0 else AppConfig.RED
         change_text = f"{'+' if change >= 0 else ''}{change:.1f}%"
         change_font = self.display.get_text_font('md', 'bold')
         change_surface = change_font.render(change_text, True, change_color)
         change_rect = change_surface.get_rect(
-            left=symbol_rect.right + self.element_spacing,
-            centery=card_rect.centery  # Align with symbol vertically
+            left=text_start_x,
+            top=symbol_rect.bottom + self.element_spacing  # Position below symbol
         )
         self.display.surface.blit(change_surface, change_rect)
         
         # Draw price on the right side with smaller font
-        price_font = self.display.get_text_font('md', 'bold')  # Changed from title font to text font
+        price_font = self.display.get_text_font('md', 'bold')
         price_text = f"${float(coin['current_price']):,.2f}"
         price_surface = price_font.render(price_text, True, AppConfig.WHITE)
         price_rect = price_surface.get_rect(
             right=card_rect.right - self.top_padding,
-            centery=card_rect.centery  # Center vertically in card
+            centery=card_rect.centery  # Keep price centered vertically
         )
         self.display.surface.blit(price_surface, price_rect)
     
