@@ -93,13 +93,21 @@ class TopMovers:
         # Calculate text start position after logo
         text_start_x = logo_x + self.logo_size + self.element_spacing
         
-        # Calculate vertical center positions for stacked text
+        # Create surfaces first
+        symbol_font = self.display.get_text_font('md', 'bold')
+        symbol_surface = symbol_font.render(coin['symbol'].upper(), True, AppConfig.WHITE)
+        
+        change = float(coin.get('price_change_24h', 0))
+        change_color = AppConfig.GREEN if change >= 0 else AppConfig.RED
+        change_text = f"{'+' if change >= 0 else ''}{change:.1f}%"
+        change_font = self.display.get_text_font('md', 'bold')
+        change_surface = change_font.render(change_text, True, change_color)
+        
+        # Now calculate vertical center positions for stacked text
         total_height = symbol_surface.get_height() + 4 + change_surface.get_height()  # 4px spacing between
         text_start_y = card_rect.centery - (total_height / 2)
         
         # Draw symbol (ticker) centered
-        symbol_font = self.display.get_text_font('md', 'bold')
-        symbol_surface = symbol_font.render(coin['symbol'].upper(), True, AppConfig.WHITE)
         symbol_rect = symbol_surface.get_rect(
             left=text_start_x,
             top=text_start_y
@@ -107,11 +115,6 @@ class TopMovers:
         self.display.surface.blit(symbol_surface, symbol_rect)
         
         # Draw percentage change below symbol with less spacing
-        change = float(coin.get('price_change_24h', 0))
-        change_color = AppConfig.GREEN if change >= 0 else AppConfig.RED
-        change_text = f"{'+' if change >= 0 else ''}{change:.1f}%"
-        change_font = self.display.get_text_font('md', 'bold')
-        change_surface = change_font.render(change_text, True, change_color)
         change_rect = change_surface.get_rect(
             left=text_start_x,
             top=symbol_rect.bottom + 4  # Reduced spacing from element_spacing to 4px
