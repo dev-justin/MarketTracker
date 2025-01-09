@@ -17,7 +17,7 @@ class TopMovers:
         self.crypto_manager = crypto_manager
         
         # Component dimensions
-        self.section_height = 180
+        self.section_height = 120  # Reduced from 180 for more horizontal layout
         
         # Calculate card width to span full width with padding
         total_padding = 40  # 20px padding on each side
@@ -28,36 +28,23 @@ class TopMovers:
         # Calculate card height based on content
         self.logo_size = 32
         self.top_padding = 12
-        self.element_spacing = 8
+        self.element_spacing = 6  # Reduced from 8 for tighter vertical spacing
         
         # Font heights (approximate)
         self.symbol_height = 20
-        self.price_height = 24  # Increased from 22
+        self.price_height = 24
         self.change_height = 20
         
-        # Total height calculation:
-        # - top padding (12px)
-        # - logo (32px)
-        # - spacing (8px)
-        # - symbol text (20px)
-        # - spacing (8px)
-        # - price text (24px)
-        # - spacing (8px)
-        # - change text (20px)
-        # - bottom padding (12px)
+        # Total height calculation for more compact layout
         self.card_height = (
             self.top_padding +  # Top padding
-            self.logo_size +    # Logo height
-            self.element_spacing +  # Spacing after logo
-            self.symbol_height +  # Symbol text
-            self.element_spacing +  # Spacing after symbol
-            self.price_height +  # Price text
-            self.element_spacing +  # Spacing after price
-            self.change_height +  # Change text
-            12                 # Bottom padding
+            max(self.logo_size, self.symbol_height) +  # Logo and symbol side by side
+            self.element_spacing +  # Single spacing
+            max(self.price_height, self.change_height) +  # Price and change side by side
+            self.top_padding  # Bottom padding
         )
         
-        self.padding = 20  # Reduced from 15 to match total_padding calculation
+        self.padding = 20
         
         # State
         self.movers: List[Dict] = []
@@ -86,50 +73,54 @@ class TopMovers:
             border_radius=15
         )
         
-        # Draw logo
+        # Draw logo on left side
         logo_path = os.path.join(AppConfig.CACHE_DIR, f"{coin['symbol'].lower()}_logo.png")
-        logo_y = card_rect.top + self.top_padding
+        logo_x = card_rect.left + self.top_padding
+        logo_y = card_rect.top + (card_rect.height - self.logo_size) // 2  # Centered vertically
         
         if os.path.exists(logo_path):
             try:
                 logo = pygame.image.load(logo_path)
                 logo = pygame.transform.scale(logo, (self.logo_size, self.logo_size))
                 logo_rect = logo.get_rect(
-                    centerx=card_rect.centerx,
-                    top=logo_y
+                    left=logo_x,
+                    centery=logo_y + self.logo_size//2
                 )
                 self.display.surface.blit(logo, logo_rect)
             except Exception as e:
                 logger.error(f"Error loading logo: {e}")
         
-        # Draw symbol (ticker)
+        # Calculate text start position after logo
+        text_start_x = logo_x + self.logo_size + self.element_spacing
+        
+        # Draw symbol (ticker) to the right of logo
         symbol_font = self.display.get_text_font('md', 'bold')
         symbol_surface = symbol_font.render(coin['symbol'].upper(), True, AppConfig.WHITE)
         symbol_rect = symbol_surface.get_rect(
-            centerx=card_rect.centerx,
-            top=logo_y + self.logo_size + self.element_spacing
+            left=text_start_x,
+            top=card_rect.top + self.top_padding
         )
         self.display.surface.blit(symbol_surface, symbol_rect)
         
-        # Draw price (slightly larger)
-        price_font = self.display.get_title_font('sm', 'bold')  # Changed from 'xs' to 'sm'
+        # Draw price below symbol
+        price_font = self.display.get_title_font('sm', 'bold')
         price_text = f"${float(coin['current_price']):,.2f}"
         price_surface = price_font.render(price_text, True, AppConfig.WHITE)
         price_rect = price_surface.get_rect(
-            centerx=card_rect.centerx,
+            left=text_start_x,
             top=symbol_rect.bottom + self.element_spacing
         )
         self.display.surface.blit(price_surface, price_rect)
         
-        # Draw percentage change
+        # Draw percentage change to the right of price
         change = float(coin.get('price_change_24h', 0))
         change_color = AppConfig.GREEN if change >= 0 else AppConfig.RED
         change_text = f"{'+' if change >= 0 else ''}{change:.1f}%"
         change_font = self.display.get_text_font('md', 'bold')
         change_surface = change_font.render(change_text, True, change_color)
         change_rect = change_surface.get_rect(
-            centerx=card_rect.centerx,
-            top=price_rect.bottom + self.element_spacing
+            right=card_rect.right - self.top_padding,
+            centery=price_rect.centery
         )
         self.display.surface.blit(change_surface, change_rect)
     
