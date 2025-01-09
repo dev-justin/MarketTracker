@@ -29,7 +29,7 @@ class TopMovers:
         
         # Card dimensions and styling
         self.logo_size = 52  # Increased logo size
-        self.card_height = 120
+        self.card_height = 150  # Increased from 120 to 150 for better spacing
         self.top_padding = 15
         self.side_padding = 20
         
@@ -124,7 +124,7 @@ class TopMovers:
                 self.display.surface.blit(logo, logo_rect)
                 
                 # Draw symbol (ticker) to the right of logo
-                symbol_font = self.display.get_text_font('md', 'bold')
+                symbol_font = self.display.get_title_font('md', 'bold')
                 symbol_surface = symbol_font.render(coin['symbol'].upper(), True, AppConfig.WHITE)
                 symbol_rect = symbol_surface.get_rect(
                     left=logo_rect.right + 15,
@@ -135,7 +135,7 @@ class TopMovers:
                 # Draw large percentage change below, ensuring it fits within the card
                 change = float(coin.get('price_change_24h', 0))
                 change_text = f"{'+' if change >= 0 else ''}{change:.1f}%"
-                change_font = self.display.get_title_font('lg', 'bold')
+                change_font = self.display.get_title_font('xl', 'bold')
                 change_surface = change_font.render(change_text, True, AppConfig.WHITE)
                 
                 # Calculate maximum width available for percentage
