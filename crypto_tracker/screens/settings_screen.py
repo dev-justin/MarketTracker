@@ -182,7 +182,7 @@ class SettingsScreen(BaseScreen):
             for edit_rect, coin in self.edit_icon_areas:
                 if edit_rect.collidepoint(x, y):
                     logger.info(f"Edit icon clicked for {coin['symbol']}")
-                    self.screen_manager.switch_screen('edit_ticker', coin['id'])
+                    self.screen_manager.switch_screen('edit_ticker', coin_id=coin['id'])
                     return
     
     def draw(self) -> None:
