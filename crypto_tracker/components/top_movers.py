@@ -137,10 +137,10 @@ class TopMovers:
                 change_text = f"{'+' if change >= 0 else ''}{change:.1f}%"
                 change_font = self.display.get_title_font('xl', 'bold')
                 
-                # Use faded colors for percentage text
-                faded_green = (144, 238, 144)  # Light green
-                faded_red = (255, 182, 193)    # Light red
-                text_color = faded_green if change >= 0 else faded_red
+                # Use more solid but still slightly soft colors for percentage text
+                solid_green = (100, 220, 100)  # More solid light green
+                solid_red = (255, 100, 100)    # More solid light red
+                text_color = solid_green if change >= 0 else solid_red
                 
                 change_surface = change_font.render(change_text, True, text_color)
                 
