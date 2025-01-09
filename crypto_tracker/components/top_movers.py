@@ -18,7 +18,7 @@ class TopMovers:
         
         # Component dimensions
         self.section_height = 180
-        self.card_width = 140
+        self.card_width = 160
         
         # Calculate card height based on content
         self.logo_size = 32
@@ -27,7 +27,7 @@ class TopMovers:
         
         # Font heights (approximate)
         self.symbol_height = 20
-        self.price_height = 24  # Increased for larger price text
+        self.price_height = 22
         self.change_height = 20
         
         # Total height calculation:
@@ -36,7 +36,7 @@ class TopMovers:
         # - spacing (8px)
         # - symbol text (20px)
         # - spacing (8px)
-        # - price text (24px)  # Increased
+        # - price text (22px)
         # - spacing (8px)
         # - change text (20px)
         # - bottom padding (12px)
@@ -106,10 +106,10 @@ class TopMovers:
         )
         self.display.surface.blit(symbol_surface, symbol_rect)
         
-        # Draw price (larger)
-        price_font = self.display.get_title_font('md', 'bold')  # Using title font for larger size
+        # Draw price (slightly smaller than before but still prominent)
+        price_font = self.display.get_title_font('sm', 'bold')
         price_text = f"${float(coin['current_price']):,.2f}"
-        price_surface = price_font.render(price_text, True, AppConfig.WHITE)  # Changed to white for better visibility
+        price_surface = price_font.render(price_text, True, AppConfig.WHITE)
         price_rect = price_surface.get_rect(
             centerx=card_rect.centerx,
             top=symbol_rect.bottom + self.element_spacing
