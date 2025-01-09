@@ -51,6 +51,12 @@ class SettingsScreen(BaseScreen):
         self.load_tracked_coins()
         self.needs_redraw = True  # Let the screen manager handle the redraw
     
+    def update(self) -> None:
+        """Update screen state."""
+        # Refresh tracked coins periodically
+        self.load_tracked_coins()
+        self.needs_redraw = True
+    
     def load_tracked_coins(self) -> None:
         """Load tracked coins using crypto manager."""
         self.tracked_coins = self.crypto_manager.get_tracked_coins()
