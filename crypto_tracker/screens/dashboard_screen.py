@@ -90,7 +90,7 @@ class DashboardScreen(BaseScreen):
         self.display.surface.blit(date_surface, date_rect)
         
         # Draw top movers
-        self.top_movers.draw(date_rect.bottom + 20)
+        self.top_movers.draw(date_rect.bottom + 10)
         
         # Initialize menu grid if needed
         if not self.menu_grid and self.screen_manager:

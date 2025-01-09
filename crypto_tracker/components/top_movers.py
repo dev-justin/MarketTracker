@@ -25,25 +25,30 @@ class TopMovers:
         self.top_padding = 12
         self.element_spacing = 8
         
+        # Font heights (approximate)
+        self.symbol_height = 20
+        self.price_height = 24  # Increased for larger price text
+        self.change_height = 20
+        
         # Total height calculation:
         # - top padding (12px)
         # - logo (32px)
         # - spacing (8px)
-        # - symbol text (~20px)
+        # - symbol text (20px)
         # - spacing (8px)
-        # - price text (~20px)
+        # - price text (24px)  # Increased
         # - spacing (8px)
-        # - change text (~20px)
+        # - change text (20px)
         # - bottom padding (12px)
         self.card_height = (
             self.top_padding +  # Top padding
             self.logo_size +    # Logo height
             self.element_spacing +  # Spacing after logo
-            20 +               # Symbol text
+            self.symbol_height +  # Symbol text
             self.element_spacing +  # Spacing after symbol
-            20 +               # Price text
+            self.price_height +  # Price text
             self.element_spacing +  # Spacing after price
-            20 +               # Change text
+            self.change_height +  # Change text
             12                 # Bottom padding
         )
         
@@ -101,10 +106,10 @@ class TopMovers:
         )
         self.display.surface.blit(symbol_surface, symbol_rect)
         
-        # Draw price
-        price_font = self.display.get_text_font('sm', 'regular')
+        # Draw price (larger)
+        price_font = self.display.get_title_font('md', 'bold')  # Using title font for larger size
         price_text = f"${float(coin['current_price']):,.2f}"
-        price_surface = price_font.render(price_text, True, AppConfig.GRAY)
+        price_surface = price_font.render(price_text, True, AppConfig.WHITE)  # Changed to white for better visibility
         price_rect = price_surface.get_rect(
             centerx=card_rect.centerx,
             top=symbol_rect.bottom + self.element_spacing
